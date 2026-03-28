@@ -1,0 +1,36 @@
+<div class="league-list-container">
+    <h2>Your Leagues</h2>
+
+    <div class="actions-section">
+        <div class="action-card">
+            <h3>Create a League</h3>
+            <div class="input-group">
+                <input type="text" [(ngModel)]="newLeagueName" placeholder="League Name" />
+                <button (click)="createLeague()">Create</button>
+            </div>
+        </div>
+        <div class="action-card">
+            <h3>Join a League</h3>
+            <div class="input-group">
+                <input type="text" [(ngModel)]="joinLeagueId" placeholder="League ID to join" />
+                <button (click)="joinByInput()">Join</button>
+            </div>
+        </div>
+    </div>
+
+    <ul class="leagues-grid" *ngIf="leagueService.leagues().length > 0; else noLeagues">
+        <li *ngFor="let league of leagueService.leagues()" class="league-item">
+            <div class="league-info">
+                <span class="league-name">{{ league.name }}</span>
+                <span class="league-id">ID: {{ league.id }}</span>
+            </div>
+            <span class="member-count">{{ league.memberIds.length }} Member(s)</span>
+        </li>
+    </ul>
+
+    <ng-template #noLeagues>
+        <div class="empty-state">
+            <p>You haven't joined any leagues yet.</p>
+        </div>
+    </ng-template>
+</div>

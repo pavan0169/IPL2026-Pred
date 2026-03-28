@@ -1,0 +1,218 @@
+<!-- Admin Content -->
+<div class="admin-page fade-in">
+    <div class="admin-header">
+        <div>
+            <h2>⚙️ Admin Panel</h2>
+            <p>Update match results and user predictions</p>
+        </div>
+        <div class="admin-actions">
+            <button class="btn btn-ghost btn-sm" (click)="resetAll()">🔄 Reset All</button>
+        </div>
+    </div>
+
+    <div class="match-list">
+        @for (match of matches(); track match.id) {
+        <div class="admin-card" [class.expanded]="expandedMatchId() === match.id">
+            <div class="admin-card-header" (click)="toggleExpand(match.id)">
+                <div class="teams-summary">
+                    <span class="team-emoji">{{ match.team1.emoji }}</span>
+                    <span class="match-vs">{{ match.team1.shortName }} vs {{ match.team2.shortName }}</span>
+                    <span class="team-emoji">{{ match.team2.emoji }}</span>
+                </div>
+                <div class="admin-card-meta">
+                    <span class="badge" [class.badge-upcoming]="match.status==='upcoming'"
+                        [class.badge-live]="match.status==='live'" [class.badge-completed]="match.status==='completed'">
+                        {{ match.status | titlecase }}
+                    </span>
+                    <span class="expand-icon">{{ expandedMatchId() === match.id ? '▲' : '▼' }}</span>
+                </div>
+            </div>
+
+            @if (match.result) {
+            <div class="current-result">
+                Result: {{ match.team1.shortName }} {{ match.result.team1Score }} – {{ match.result.team2Score }} {{
+                match.team2.shortName }}
+                · Winner: {{ match.result.winner === match.team1.id ? match.team1.shortName : match.team2.shortName }}
+            </div>
+            }
+
+            @if (expandedMatchId() === match.id && formData[match.id]) {
+            <div class="admin-form fade-in-up">
+                <div class="divider"></div>
+                <span class="form-label">{{ formatDate(match.date) }} · {{ formatTime(match.date) }}</span>
+                <p style="font-size:0.78rem;color:var(--text-muted);margin:0.25rem 0 1rem">📍 {{ match.venue }}</p>
+
+                <!-- Status -->
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].status"
+                        (change)="updateStatus(match.id)">
+                        <option value="upcoming">Upcoming</option>
+                        <option value="live">Live</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+
+                <div class="divider"></div>
+                <h4 style="margin-bottom: 0.75rem; color: var(--accent); font-weight: 600;">Match Metrics</h4>
+
+                <!-- 1. Winner -->
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">1. Winner</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].winner">
+                        <option [value]="match.team1.id">{{ match.team1.shortName }}</option>
+                        <option [value]="match.team2.id">{{ match.team2.shortName }}</option>
+                    </select>
+                </div>
+
+                <!-- 2 & 3. Innings Ranges -->
+                <div class="score-grid">
+                    <div class="form-group">
+                        <label class="form-label">2. 1st Innings Range</label>
+                        <select class="form-input" [(ngModel)]="formData[match.id].firstInningRange">
+                            <option value="">Select Range</option>
+                            <option value="<150">&lt;150</option>
+                            <option value="150-174">150-174</option>
+                            <option value="175-199">175-199</option>
+                            <option value="200-224">200-224</option>
+                            <option value="225+">225+</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">3. 2nd Innings Range</label>
+                        <select class="form-input" [(ngModel)]="formData[match.id].secondInningRange">
+                            <option value="">Select Range</option>
+                            <option value="<150">&lt;150</option>
+                            <option value="150-174">150-174</option>
+                            <option value="175-199">175-199</option>
+                            <option value="200-224">200-224</option>
+                            <option value="225+">225+</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 4 & 5. More Boundaries -->
+                <div class="score-grid">
+                    <div class="form-group">
+                        <label class="form-label">4. Most 4s</label>
+                        <select class="form-input" [(ngModel)]="formData[match.id].teamMore4s">
+                            <option value="">Select Team</option>
+                            <option [value]="match.team1.id">{{ match.team1.shortName }}</option>
+                            <option [value]="match.team2.id">{{ match.team2.shortName }}</option>
+                            <option value="tie">Tie</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">5. Most 6s</label>
+                        <select class="form-input" [(ngModel)]="formData[match.id].teamMore6s">
+                            <option value="">Select Team</option>
+                            <option [value]="match.team1.id">{{ match.team1.shortName }}</option>
+                            <option [value]="match.team2.id">{{ match.team2.shortName }}</option>
+                            <option value="tie">Tie</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Players (6, 7, 8, 9, 10) -->
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">6. Max 6s Player</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].playerMax6s">
+                        <option value="">Select Player</option>
+                        @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
+                        <option [value]="player">{{ player }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">7. Fantasy Player of Match</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].fantasyPlayer">
+                        <option value="">Select Player</option>
+                        @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
+                        <option [value]="player">{{ player }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">8. Player of the Match ⭐</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].playerOfMatch">
+                        <option value="">Select Player</option>
+                        @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
+                        <option [value]="player">{{ player }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">9. Super Striker</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].superStriker">
+                        <option value="">Select Player</option>
+                        @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
+                        <option [value]="player">{{ player }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                    <label class="form-label">10. Most Dot Balls</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].mostDotBalls">
+                        <option value="">Select Bowler</option>
+                        @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
+                        <option [value]="player">{{ player }}</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Exact Scores -->
+                <div class="divider"></div>
+                <h4 style="margin-bottom: 0.75rem; color: var(--accent); font-weight: 600;">Exact Scores</h4>
+                <div class="score-grid">
+                    <div class="form-group">
+                        <label class="form-label">{{ match.team1.emoji }} {{ match.team1.shortName }} Score</label>
+                        <input type="number" class="form-input" min="0" max="300"
+                            [(ngModel)]="formData[match.id].team1Score">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">{{ match.team2.emoji }} {{ match.team2.shortName }} Score</label>
+                        <input type="number" class="form-input" min="0" max="300"
+                            [(ngModel)]="formData[match.id].team2Score">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" style="width:100%; margin-top:0.5rem" (click)="saveResult(match.id)">
+                    ✅ Save Result
+                </button>
+                <button class="btn btn-ghost btn-sm" style="width:100%; margin-top:0.5rem; color: var(--danger)"
+                    (click)="resetMatch(match.id)">
+                    🔄 Reset Match Result
+                </button>
+
+                <!-- User Predictions Override -->
+                <div class="divider"></div>
+                <h4 style="margin-bottom: 0.75rem; color: var(--accent); font-weight: 600;">User Predictions</h4>
+                @if (getPredictions(match.id).length === 0) {
+                <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">No predictions yet.</p>
+                }
+
+                <div class="predictions-list">
+                    @for (pred of getPredictions(match.id); track pred.id) {
+                    <div class="pred-row">
+                        <div class="pred-uname">👤 {{ pred.username }}</div>
+                        <div class="pred-inputs">
+                            <input type="number" class="form-input btn-sm" [(ngModel)]="pred.team1Score"
+                                title="{{ match.team1.shortName }}">
+                            <input type="number" class="form-input btn-sm" [(ngModel)]="pred.team2Score"
+                                title="{{ match.team2.shortName }}">
+                            <select class="form-input btn-sm" [(ngModel)]="pred.winner">
+                                <option [value]="match.team1.id">{{ match.team1.shortName }}</option>
+                                <option [value]="match.team2.id">{{ match.team2.shortName }}</option>
+                            </select>
+                            <button class="btn btn-ghost btn-sm"
+                                (click)="updateUserPrediction(pred.id, pred.team1Score, pred.team2Score, pred.winner)">💾</button>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+</div>

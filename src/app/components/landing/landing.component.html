@@ -1,0 +1,228 @@
+<div class="landing-root" [class.dark]="themeService.isDark()">
+
+    <!-- Animated Background Orbs -->
+    <div class="bg-orbs" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <button class="theme-btn" (click)="themeService.toggle()" aria-label="Toggle theme">
+        {{ themeService.isDark() ? '🌙' : '☀️' }}
+    </button>
+
+    <!-- ============ LANDING VIEW ============ -->
+    @if (mode() === 'landing') {
+    <div class="landing-page fade-in">
+
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-badge bounce-in">🏏 IPL 2025 Season</div>
+            <h1 class="hero-title fade-in-up">
+                Predict.<br>
+                <span class="gradient-text">Compete.</span><br>
+                Win.
+            </h1>
+            <p class="hero-sub fade-in-up">
+                Make score predictions, pick winners, and climb the leaderboard with friends.
+            </p>
+            <div class="hero-actions fade-in-up">
+                <button class="btn btn-primary btn-hero" (click)="goTo('signup')">
+                    🚀 Get Started Free
+                </button>
+                <button class="btn btn-ghost btn-hero" (click)="goTo('login')">
+                    Sign In
+                </button>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="features-grid">
+            @for (f of features; track f.title; let i = $index) {
+            <div class="feature-card card fade-in-up" [style.animation-delay]="i * 0.1 + 's'">
+                <div class="feature-icon">{{ f.icon }}</div>
+                <h3 class="feature-title">{{ f.title }}</h3>
+                <p class="feature-desc">{{ f.desc }}</p>
+            </div>
+            }
+        </div>
+
+        <!-- Footer CTA -->
+        <div class="landing-footer fade-in-up">
+            <p>Already have an account?
+                <button class="link-btn" (click)="goTo('login')">Sign in →</button>
+            </p>
+        </div>
+
+    </div>
+    }
+
+    <!-- ============ LOGIN VIEW ============ -->
+    @if (mode() === 'login') {
+    <div class="auth-page fade-in">
+        <div class="auth-card bounce-in">
+
+            <!-- Back -->
+            <button class="back-btn" (click)="goTo('landing')">← Back</button>
+
+            <div class="auth-icon">🔐</div>
+            <h2 class="auth-title">Welcome Back</h2>
+            <p class="auth-sub">Sign in to your IPL Predict account</p>
+
+            <form class="auth-form" (ngSubmit)="onLogin()" #lf="ngForm">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" placeholder="you@example.com" [value]="loginEmail()"
+                        (input)="loginEmail.set($any($event.target).value)" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" placeholder="••••••••" [value]="loginPassword()"
+                        (input)="loginPassword.set($any($event.target).value)" required autocomplete="current-password">
+                </div>
+
+                @if (loginError()) {
+                <div class="error-msg bounce-in">❌ {{ loginError() }}</div>
+                }
+
+                <button type="submit" class="btn btn-primary submit-btn" [disabled]="loginLoading()">
+                    {{ loginLoading() ? '⏳ Signing in…' : '🚀 Sign In' }}
+                </button>
+            </form>
+
+            <div class="auth-divider"><span>or</span></div>
+            <div class="social-login">
+                <button type="button" class="btn-social" (click)="onGoogleLogin()">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"
+                        width="18" height="18"> Continue with Google
+                </button>
+                <button type="button" class="btn-social" (click)="goTo('phone')">
+                    📱 Continue with Phone
+                </button>
+            </div>
+
+            <div class="auth-switch">
+                Don't have an account?
+                <button class="link-btn" (click)="goTo('signup')">Sign up →</button>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- ============ SIGNUP VIEW ============ -->
+    @if (mode() === 'signup') {
+    <div class="auth-page fade-in">
+        <div class="auth-card bounce-in">
+
+            <!-- Back -->
+            <button class="back-btn" (click)="goTo('landing')">← Back</button>
+
+            <div class="auth-icon">✨</div>
+            <h2 class="auth-title">Create Account</h2>
+            <p class="auth-sub">Join the IPL prediction challenge</p>
+
+            <form class="auth-form" (ngSubmit)="onSignup()">
+                <div class="form-group">
+                    <label class="form-label">Display Name</label>
+                    <input type="text" class="form-input" placeholder="Cricket Fan 🏏" [value]="signupName()"
+                        (input)="signupName.set($any($event.target).value)" required autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" placeholder="you@example.com" [value]="signupEmail()"
+                        (input)="signupEmail.set($any($event.target).value)" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" placeholder="Min. 4 characters" [value]="signupPassword()"
+                        (input)="signupPassword.set($any($event.target).value)" required autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-input" placeholder="Repeat password" [value]="signupConfirm()"
+                        (input)="signupConfirm.set($any($event.target).value)" required autocomplete="new-password">
+                </div>
+
+                @if (signupError()) {
+                <div class="error-msg bounce-in">❌ {{ signupError() }}</div>
+                }
+
+                <button type="submit" class="btn btn-primary submit-btn" [disabled]="signupLoading()">
+                    {{ signupLoading() ? '⏳ Creating…' : '🎉 Create Account' }}
+                </button>
+            </form>
+
+            <div class="auth-divider"><span>or</span></div>
+            <div class="social-login">
+                <button type="button" class="btn-social" (click)="onGoogleLogin()">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"
+                        width="18" height="18"> Continue with Google
+                </button>
+                <button type="button" class="btn-social" (click)="goTo('phone')">
+                    📱 Continue with Phone
+                </button>
+            </div>
+
+            <div class="auth-switch">
+                Already have an account?
+                <button class="link-btn" (click)="goTo('login')">Sign in →</button>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- ============ PHONE AUTH VIEW ============ -->
+    @if (mode() === 'phone') {
+    <div class="auth-page fade-in">
+        <div class="auth-card bounce-in">
+
+            <button class="back-btn" (click)="goTo('login')">← Back to Login</button>
+
+            <div class="auth-icon">📱</div>
+            <h2 class="auth-title">Phone Login</h2>
+            <p class="auth-sub">{{ phoneStep() === 1 ? 'Enter your mobile number' : 'Enter the verification code' }}</p>
+
+            @if (phoneStep() === 1) {
+            <form class="auth-form" (ngSubmit)="onPhoneLogin()">
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" class="form-input" placeholder="+1234567890" [value]="phoneNumber()"
+                        (input)="phoneNumber.set($any($event.target).value)" required>
+                </div>
+                <!-- ReCAPTCHA Container -->
+                <div id="recaptcha-container"></div>
+
+                @if (phoneError()) {
+                <div class="error-msg bounce-in">❌ {{ phoneError() }}</div>
+                }
+
+                <button type="submit" class="btn btn-primary submit-btn" [disabled]="phoneLoading()">
+                    {{ phoneLoading() ? '⏳ Sending…' : '📨 Send Code' }}
+                </button>
+            </form>
+            }
+
+            @if (phoneStep() === 2) {
+            <form class="auth-form" (ngSubmit)="onPhoneVerify()">
+                <div class="form-group">
+                    <label class="form-label">Verification Code</label>
+                    <input type="text" class="form-input" placeholder="123456" [value]="phoneCode()"
+                        (input)="phoneCode.set($any($event.target).value)" required>
+                </div>
+
+                @if (phoneError()) {
+                <div class="error-msg bounce-in">❌ {{ phoneError() }}</div>
+                }
+
+                <button type="submit" class="btn btn-primary submit-btn" [disabled]="phoneLoading()">
+                    {{ phoneLoading() ? '⏳ Verifying…' : '✅ Verify & Login' }}
+                </button>
+            </form>
+            }
+        </div>
+    </div>
+    }
+
+</div>

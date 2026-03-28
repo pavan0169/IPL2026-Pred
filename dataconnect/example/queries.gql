@@ -1,0 +1,56 @@
+query AllUsers @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  users {
+    id
+    displayName
+    email
+    photoUrl
+    createdAt
+  }
+}
+
+query MyIdeas @auth(level: USER) {
+  ideas(where: {userId: {eq_expr: "auth.uid"}}) {
+    id
+    title
+    description
+    status
+    createdAt
+    attachments_on_idea {
+      id
+      fileName
+      url
+      type
+    }
+    tags_via_IdeaTag {
+      id
+      name
+    }
+  }
+}
+
+mutation CreateIdea($title: String!, $description: String, $status: String, $isFavorite: Boolean, $isPriority: Boolean) @auth(level: USER) {
+  idea_insert(data: {
+    userId_expr: "auth.uid",
+    title: $title,
+    description: $description,
+    status: $status,
+    isFavorite: $isFavorite,
+    isPriority: $isPriority,
+    createdAt_expr: "request.time"
+  }) {
+    id
+  }
+}
+
+mutation AddAttachmentToIdea($ideaId: UUID!, $type: String!, $url: String!, $fileName: String, $description: String) @auth(level: USER) {
+  attachment_insert(data: {
+    ideaId: $ideaId,
+    type: $type,
+    url: $url,
+    fileName: $fileName,
+    description: $description,
+    createdAt_expr: "request.time"
+  }) {
+    id
+  }
+}

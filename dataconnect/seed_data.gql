@@ -1,0 +1,93 @@
+mutation SeedData @transaction @auth(level: USER, insecureReason: "Seed data mutation is only for authenticated users.") {
+  user_insertMany(data: [
+    {
+      id: "b21c4353-7a91-443b-8589-3d02f5a5c67d",
+      displayName: "Alice Smith",
+      email: "alice@example.com",
+      createdAt: "2023-01-01T10:00:00Z"
+    },
+    {
+      id: "f8b7e01e-2e6b-4e01-8b02-4d2a1c0d5e1f",
+      displayName: "Bob Johnson",
+      email: "bob@example.com",
+      createdAt: "2023-01-02T11:00:00Z"
+    }
+  ])
+  idea_insertMany(data: [
+    {
+      id: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+      userId: "b21c4353-7a91-443b-8589-3d02f5a5c67d",
+      title: "New Marketing Campaign",
+      description: "Develop a new marketing campaign for the upcoming product launch.",
+      details: "Focus on social media and influencer outreach.",
+      status: "In Progress",
+      isFavorite: true,
+      isPriority: true,
+      createdAt: "2023-01-05T09:30:00Z"
+    },
+    {
+      id: "6e7f8a9b-c0d1-2e3f-4a5b-6c7d8e9f0a1b",
+      userId: "f8b7e01e-2e6b-4e01-8b02-4d2a1c0d5e1f",
+      title: "Improve Customer Onboarding",
+      description: "Streamline the process for new customer onboarding.",
+      details: "Create new documentation and video tutorials.",
+      status: "Planned",
+      isFavorite: false,
+      isPriority: true,
+      createdAt: "2023-01-06T14:00:00Z"
+    }
+  ])
+  attachment_insertMany(data: [
+    {
+      ideaId: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+      type: "Document",
+      url: "https://example.com/marketing_plan.pdf",
+      fileName: "MarketingPlan.pdf",
+      description: "Detailed marketing plan document.",
+      createdAt: "2023-01-05T10:00:00Z"
+    },
+    {
+      ideaId: "6e7f8a9b-c0d1-2e3f-4a5b-6c7d8e9f0a1b",
+      type: "Video",
+      url: "https://example.com/onboarding_video.mp4",
+      fileName: "OnboardingTutorial.mp4",
+      description: "Video tutorial for customer onboarding.",
+      createdAt: "2023-01-06T15:00:00Z"
+    }
+  ])
+  tag_insertMany(data: [
+    {
+      id: "c1d2e3f4-g5h6-7i8j-9k0l-1m2n3o4p5q6r",
+      userId: "b21c4353-7a91-443b-8589-3d02f5a5c67d",
+      name: "Marketing",
+      createdAt: "2023-01-03T08:00:00Z"
+    },
+    {
+      id: "r7s8t9u0-v1w2-3x4y-5z6a-7b8c9d0e1f2g",
+      userId: "f8b7e01e-2e6b-4e01-8b02-4d2a1c0d5e1f",
+      name: "Customer Experience",
+      createdAt: "2023-01-04T13:00:00Z"
+    }
+  ])
+  ideaTag_insertMany(data: [
+    {
+      ideaId: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+      tagId: "c1d2e3f4-g5h6-7i8j-9k0l-1m2n3o4p5q6r",
+      createdAt: "2023-01-07T11:00:00Z"
+    },
+    {
+      ideaId: "6e7f8a9b-c0d1-2e3f-4a5b-6c7d8e9f0a1b",
+      tagId: "r7s8t9u0-v1w2-3x4y-5z6a-7b8c9d0e1f2g",
+      createdAt: "2023-01-08T12:00:00Z"
+    }
+  ])
+  link_insertMany(data: [
+    {
+      userId: "b21c4353-7a91-443b-8589-3d02f5a5c67d",
+      sourceIdeaId: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+      targetIdeaId: "6e7f8a9b-c0d1-2e3f-4a5b-6c7d8e9f0a1b",
+      description: "Campaign requires improved onboarding.",
+      createdAt: "2023-01-09T10:00:00Z"
+    }
+  ])
+}

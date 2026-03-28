@@ -1,0 +1,465 @@
+/* -----------------------------------------------
+   Predict Component — Glassmorphic Styles
+   ----------------------------------------------- */
+.predict-page {
+    padding-bottom: 1rem;
+}
+
+.page-header {
+    margin-bottom: 1.5rem;
+    animation: fadeInUp 0.5s ease both;
+}
+
+.page-header h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.6rem;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.page-header p {
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* ---- Match List ---- */
+.match-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ---- Glass Match Card ---- */
+.match-card {
+    position: relative;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1.5px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--transition);
+    box-shadow: var(--shadow);
+    animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Stagger entrance animations */
+.match-card:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.match-card:nth-child(2) {
+    animation-delay: 0.08s;
+}
+
+.match-card:nth-child(3) {
+    animation-delay: 0.16s;
+}
+
+.match-card:nth-child(4) {
+    animation-delay: 0.24s;
+}
+
+.match-card:nth-child(5) {
+    animation-delay: 0.32s;
+}
+
+.match-card:nth-child(6) {
+    animation-delay: 0.40s;
+}
+
+.match-card:nth-child(7) {
+    animation-delay: 0.48s;
+}
+
+.match-card:nth-child(8) {
+    animation-delay: 0.56s;
+}
+
+/* Shimmer sweep on hover */
+.match-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+    transition: left 0.5s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.match-card:hover::before {
+    left: 100%;
+}
+
+.match-card:hover {
+    box-shadow: var(--shadow-lg), 0 0 40px rgba(139, 92, 246, 0.15);
+    transform: translateY(-4px);
+    border-color: var(--border-glow);
+}
+
+.match-card.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light), var(--shadow-lg), 0 0 50px rgba(139, 92, 246, 0.2);
+    animation: borderGlow 2.5s ease infinite;
+}
+
+.match-card-inner {
+    padding: 1.25rem;
+    position: relative;
+    z-index: 2;
+}
+
+/* ---- Match Top Row ---- */
+.match-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.match-date {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* ---- Teams Row ---- */
+.teams-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.team {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    animation: slideInLeft 0.6s ease both;
+}
+
+.team-right {
+    flex-direction: row-reverse;
+    animation-name: slideInRight;
+}
+
+.team-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    animation: float 4s ease-in-out infinite;
+    transition: transform var(--transition-bounce);
+}
+
+.team-badge:hover {
+    transform: scale(1.15) rotate(8deg);
+}
+
+.team-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.team-right .team-info {
+    align-items: flex-end;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.team-short {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.team-name {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+/* ---- VS Chip ---- */
+.vs-chip {
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 0.35rem 0.65rem;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+    animation: glowPulse 2.5s ease infinite;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.venue {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+/* ---- Result Row ---- */
+.result-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    padding: 0.6rem;
+    background: rgba(34, 197, 94, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(34, 197, 94, 0.15);
+}
+
+.score-chip {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.winner-label {
+    font-size: 0.78rem;
+    color: var(--success);
+    font-weight: 600;
+}
+
+/* ---- Prediction Summary ---- */
+.my-pred-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--accent-light);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    border: 1px solid rgba(139, 92, 246, 0.12);
+}
+
+.pred-label {
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.pred-winner {
+    color: var(--text-secondary);
+}
+
+.pred-pts {
+    margin-left: auto;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    padding: 0.2rem 0.55rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.72rem;
+    box-shadow: 0 2px 10px rgba(34, 197, 94, 0.35);
+}
+
+/* -----------------------------------------------
+   PREDICTION FORM
+   ----------------------------------------------- */
+.pred-form {
+    padding: 0 1.25rem 1.25rem;
+    animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    cursor: default;
+}
+
+.form-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.no-predict-msg {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    border: 1px solid var(--glass-border);
+}
+
+.success-msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--success-light);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--radius);
+    color: var(--success);
+    font-size: 0.85rem;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    animation: bounceIn 0.5s ease both;
+}
+
+.success-msg span {
+    font-size: 1.5rem;
+}
+
+.success-msg strong {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+    color: var(--success);
+}
+
+.success-msg p {
+    color: var(--success);
+    margin: 0;
+}
+
+/* ---- Score Row ---- */
+.score-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.score-team-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 55px;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.score-input-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.score-num {
+    width: 72px;
+    text-align: center;
+    padding: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ---- Winner Pick ---- */
+.winner-group {
+    margin-bottom: 1.25rem;
+}
+
+.winner-options {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.winner-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.7rem;
+    border: 1.5px solid var(--glass-border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: all var(--transition);
+    user-select: none;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.winner-option input[type="radio"] {
+    display: none;
+}
+
+.winner-option.selected {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.25);
+    transform: scale(1.03);
+}
+
+.winner-option:hover:not(.selected) {
+    border-color: var(--border-glow);
+    background: rgba(139, 92, 246, 0.06);
+    transform: translateY(-2px);
+}
+
+/* ---- Submit Button ---- */
+.submit-btn {
+    width: 100%;
+    margin-top: 0.25rem;
+    padding: 0.85rem 1.5rem;
+    font-size: 1rem;
+    background: var(--accent-gradient-2);
+    box-shadow: 0 4px 25px rgba(139, 92, 246, 0.45);
+}
+
+.submit-btn:hover:not(:disabled) {
+    box-shadow: 0 6px 35px rgba(139, 92, 246, 0.6);
+    transform: translateY(-3px) scale(1.02);
+}
+
+.submit-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none;
+}
+
+.scoring-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 0.75rem;
+}
+
+.did-not-predict-lbl {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--danger);
+    font-weight: 500;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.grid-group {
+    margin-bottom: 1.25rem;
+}

@@ -1,0 +1,46 @@
+type User @table {
+  displayName: String!
+  createdAt: Timestamp!
+  email: String
+  photoUrl: String
+}
+
+type Idea @table {
+  user: User!
+  title: String!
+  createdAt: Timestamp!
+  description: String
+  details: String
+  status: String
+  isFavorite: Boolean
+  isPriority: Boolean
+}
+
+type Tag @table {
+  user: User!
+  name: String!
+  createdAt: Timestamp!
+}
+
+type IdeaTag @table(key: ["idea", "tag"]) {
+  idea: Idea!
+  tag: Tag!
+  createdAt: Timestamp!
+}
+
+type Link @table {
+  user: User!
+  sourceIdeaId: UUID!
+  targetIdeaId: UUID!
+  createdAt: Timestamp!
+  description: String
+}
+
+type Attachment @table {
+  idea: Idea!
+  type: String!
+  url: String!
+  createdAt: Timestamp!
+  fileName: String
+  description: String
+}

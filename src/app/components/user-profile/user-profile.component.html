@@ -1,0 +1,24 @@
+<div class="profile-container" *ngIf="profile">
+    <div class="profile-header">
+        <div class="avatar">{{ profile.displayName.charAt(0) || 'U' }}</div>
+        <h2>{{ profile.displayName }}</h2>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ profile.totalPoints }}</div>
+            <div class="stat-label">Total Points</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ profile.totalPredictions }}</div>
+            <div class="stat-label">Predictions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ profile.correctWinners }}</div>
+            <div class="stat-label">Correct Winners</div>
+        </div>
+    </div>
+</div>
+<div *ngIf="!profile">
+    <p>Loading profile...</p>
+</div>

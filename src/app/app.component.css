@@ -1,0 +1,321 @@
+/* -----------------------------------------------
+   Root App Component — Glassmorphic Shell
+   ----------------------------------------------- */
+.app-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    transition: background 0.5s ease, color 0.3s ease;
+}
+
+/* Animated gradient mesh behind everything */
+.app-container::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(236, 72, 153, 0.10) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+    background-size: 200% 200%;
+    animation: gradientShift 12s ease infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ---- Floating Orbs ---- */
+.bg-orbs {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.35;
+}
+
+.orb-1 {
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.6), transparent 70%);
+    top: -80px;
+    left: -60px;
+    animation: orbFloat 14s ease-in-out infinite;
+}
+
+.orb-2 {
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.5), transparent 70%);
+    top: 40%;
+    right: -80px;
+    animation: orbFloat 18s ease-in-out infinite reverse;
+}
+
+.orb-3 {
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.5), transparent 70%);
+    bottom: 10%;
+    left: 15%;
+    animation: orbFloat 16s ease-in-out infinite 2s;
+}
+
+.orb-4 {
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.4), transparent 70%);
+    top: 25%;
+    left: 55%;
+    animation: orbFloat 20s ease-in-out infinite 4s;
+}
+
+/* ---- Glass Navigation Bar ---- */
+.nav-bar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1.25rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid var(--glass-border);
+    z-index: 100;
+    animation: fadeIn 0.6s ease both;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.brand-icon {
+    font-size: 1.5rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+.brand-text {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.15rem;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: textGlow 3s ease-in-out infinite;
+}
+
+.nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* ---- Mobile Bottom Nav ---- */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0.5rem 0.75rem;
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-top: 1px solid var(--glass-border);
+    z-index: 100;
+}
+
+/* ---- Nav Buttons ---- */
+.nav-button {
+    position: relative;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all var(--transition);
+    overflow: hidden;
+}
+
+.nav-button .label {
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+.nav-button:hover {
+    background: rgba(139, 92, 246, 0.08);
+    color: var(--text-secondary);
+    transform: translateY(-1px);
+}
+
+.nav-button.active {
+    color: var(--accent);
+    background: var(--accent-light);
+    font-weight: 600;
+}
+
+.nav-button.active .icon {
+    animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Active tab glow indicator */
+.nav-glow {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    border-radius: 50px;
+    background: var(--accent-gradient-2);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.6);
+    animation: scaleIn 0.3s ease both;
+}
+
+/* ---- Theme Toggle ---- */
+.theme-toggle {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 0.5rem 0.65rem;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all var(--transition-bounce);
+    line-height: 1;
+}
+
+.theme-toggle:hover {
+    transform: rotate(20deg) scale(1.1);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+    border-color: var(--border-glow);
+}
+
+.theme-toggle:active {
+    transform: rotate(-10deg) scale(0.9);
+}
+
+/* ---- Main Content ---- */
+.content {
+    position: relative;
+    flex: 1;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: 5rem;
+    z-index: 1;
+    animation: fadeInUp 0.6s ease both;
+}
+
+/* ---- Nav Right group ---- */
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+/* ---- User Chip ---- */
+.user-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 50px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.user-avatar {
+    font-size: 1rem;
+}
+
+.user-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ---- Logout button ---- */
+.logout-btn {
+    font-size: 0.78rem !important;
+    padding: 0.4rem 0.85rem !important;
+    border-radius: 50px !important;
+}
+
+.logout-mobile {
+    font-size: 1.1rem;
+    padding: 0.4rem 0.5rem;
+}
+
+/* ---- Mobile Header ---- */
+.mobile-header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-bottom: 1px solid var(--glass-border);
+    z-index: 99;
+}
+
+.mobile-header .user-chip {
+    font-size: 0.78rem;
+    padding: 0.25rem 0.6rem;
+}
+
+/* ---- Light Mode Adaptations ---- */
+body:not(.dark) .orb-1 {
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.3), transparent 70%);
+}
+
+body:not(.dark) .orb-2 {
+    background: radial-gradient(circle, rgba(219, 39, 119, 0.25), transparent 70%);
+}
+
+body:not(.dark) .orb-3 {
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.25), transparent 70%);
+}
+
+body:not(.dark) .orb-4 {
+    background: radial-gradient(circle, rgba(217, 119, 6, 0.2), transparent 70%);
+}
+
+body:not(.dark) .app-container::before {
+    background: radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(219, 39, 119, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 80%, rgba(79, 70, 229, 0.05) 0%, transparent 50%);
+}
