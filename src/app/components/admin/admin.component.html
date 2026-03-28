@@ -5,9 +5,9 @@
             <h2>⚙️ Admin Panel</h2>
             <p>Update match results and user predictions</p>
         </div>
-        <div class="admin-actions">
+        <!-- <div class="admin-actions">
             <button class="btn btn-ghost btn-sm" (click)="resetAll()">🔄 Reset All</button>
-        </div>
+        </div> -->
     </div>
 
     <div class="match-list">
@@ -68,7 +68,8 @@
                 <!-- 2 & 3. Innings Ranges -->
                 <div class="score-grid">
                     <div class="form-group">
-                        <label class="form-label">2. 1st Innings Range</label>
+                        <label class="form-label">2. {{ match.team1.emoji }} {{ match.team1.shortName }} Innings
+                            Range</label>
                         <select class="form-input" [(ngModel)]="formData[match.id].firstInningRange">
                             <option value="">Select Range</option>
                             <option value="<150">&lt;150</option>
@@ -79,7 +80,8 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">3. 2nd Innings Range</label>
+                        <label class="form-label">3. {{ match.team2.emoji }} {{ match.team2.shortName }} Innings
+                            Range</label>
                         <select class="form-input" [(ngModel)]="formData[match.id].secondInningRange">
                             <option value="">Select Range</option>
                             <option value="<150">&lt;150</option>
@@ -185,13 +187,13 @@
                 </button>
 
                 <!-- User Predictions Override -->
-                <div class="divider"></div>
+                <!-- <div class="divider"></div>
                 <h4 style="margin-bottom: 0.75rem; color: var(--accent); font-weight: 600;">User Predictions</h4>
                 @if (getPredictions(match.id).length === 0) {
                 <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">No predictions yet.</p>
-                }
+                } -->
 
-                <div class="predictions-list">
+                <!-- <div class="predictions-list">
                     @for (pred of getPredictions(match.id); track pred.id) {
                     <div class="pred-row">
                         <div class="pred-uname">👤 {{ pred.username }}</div>
@@ -209,7 +211,7 @@
                         </div>
                     </div>
                     }
-                </div>
+                </div> -->
             </div>
             }
         </div>

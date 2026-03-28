@@ -1,24 +1,194 @@
-<div class="profile-container" *ngIf="profile">
-    <div class="profile-header">
-        <div class="avatar">{{ profile.displayName.charAt(0) || 'U' }}</div>
-        <h2>{{ profile.displayName }}</h2>
+<div class="profile-page fade-in">
+
+    <!-- Header -->
+    @if (profile) {
+    <div class="profile-hero">
+        <div class="hero-avatar">{{ profile.displayName.charAt(0) | uppercase }}</div>
+        <div class="hero-info">
+            <h2 class="hero-name">{{ profile.displayName }}</h2>
+            <span class="rank-badge">🏅 Rank #{{ rank }} of {{ totalUsers }}</span>
+        </div>
     </div>
 
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-value">{{ profile.totalPoints }}</div>
-            <div class="stat-label">Total Points</div>
+    <!-- Stats Row -->
+    <div class="stats-row">
+        <div class="stat-pill">
+            <span class="stat-num">{{ profile.totalPoints }}</span>
+            <span class="stat-lbl">Total Pts</span>
         </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ profile.totalPredictions }}</div>
-            <div class="stat-label">Predictions</div>
+        <div class="stat-pill">
+            <span class="stat-num">{{ profile.totalPredictions }}</span>
+            <span class="stat-lbl">Predictions</span>
         </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ profile.correctWinners }}</div>
-            <div class="stat-label">Correct Winners</div>
+        <div class="stat-pill">
+            <span class="stat-num">{{ profile.correctWinners }}</span>
+            <span class="stat-lbl">✅ Winners</span>
+        </div>
+        <div class="stat-pill accent">
+            <span class="stat-num">{{ accuracy }}%</span>
+            <span class="stat-lbl">Win Rate</span>
         </div>
     </div>
-</div>
-<div *ngIf="!profile">
-    <p>Loading profile...</p>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+        <button class="tab-btn" [class.active]="activeTab() === 'upcoming'" (click)="activeTab.set('upcoming')">
+            📅 Upcoming
+            <span class="tab-count">{{ upcomingPredictions.length }}</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'live'" (click)="activeTab.set('live')">
+            ⚡ Live
+            <span class="tab-count live-dot">{{ livePredictions.length }}</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'past'" (click)="activeTab.set('past')">
+            🏆 Past
+            <span class="tab-count">{{ pastPredictions.length }}</span>
+        </button>
+    </div>
+
+    <!-- ── UPCOMING TAB ── -->
+    @if (activeTab() === 'upcoming') {
+    <div class="pred-list">
+        @if (upcomingPredictions.length === 0) {
+        <div class="empty-card">🔮 No upcoming matches found</div>
+        }
+        @for (item of upcomingPredictions; track item.match.id; let i = $index) {
+        <div class="pred-card fade-in-up" [style.animation-delay]="i * 0.05 + 's'">
+            <div class="pred-card-header">
+                <div class="match-teams">
+                    <span>{{ item.match.team1.emoji }} {{ item.match.team1.shortName }}</span>
+                    <span class="vs">vs</span>
+                    <span>{{ item.match.team2.emoji }} {{ item.match.team2.shortName }}</span>
+                </div>
+                <div class="match-meta">{{ formatDate(item.match.date) }} · {{ formatTime(item.match.date) }}</div>
+                <div class="match-venue">📍 {{ item.match.venue }}</div>
+            </div>
+
+            <div class="pred-section">
+                <div class="pred-chip-grid">
+                    <div class="pred-chip winner-chip">
+                        🏆 <span>{{ getTeamName(item.match, item.pred.winner) }}</span>
+                    </div>
+                    <div class="pred-chip">
+                        📊 {{ item.pred.team1Score }}–{{ item.pred.team2Score }}
+                    </div>
+                    @if (item.pred.firstInningRange) {
+                    <div class="pred-chip">1️⃣ {{ item.pred.firstInningRange }}</div>
+                    }
+                    @if (item.pred.secondInningRange) {
+                    <div class="pred-chip">2️⃣ {{ item.pred.secondInningRange }}</div>
+                    }
+                    @if (item.pred.teamMore4s) {
+                    <div class="pred-chip">4️⃣ {{ getTeamName(item.match, item.pred.teamMore4s) }}</div>
+                    }
+                    @if (item.pred.teamMore6s) {
+                    <div class="pred-chip">6️⃣ {{ getTeamName(item.match, item.pred.teamMore6s) }}</div>
+                    }
+                    @if (item.pred.playerMax6s) {
+                    <div class="pred-chip">💥 {{ item.pred.playerMax6s }}</div>
+                    }
+                    @if (item.pred.fantasyPlayer) {
+                    <div class="pred-chip">🌟 {{ item.pred.fantasyPlayer }}</div>
+                    }
+                    @if (item.pred.playerOfMatch) {
+                    <div class="pred-chip pom-chip">⭐ {{ item.pred.playerOfMatch }}</div>
+                    }
+                    @if (item.pred.superStriker) {
+                    <div class="pred-chip">⚡ {{ item.pred.superStriker }}</div>
+                    }
+                    @if (item.pred.mostDotBalls) {
+                    <div class="pred-chip">🎯 {{ item.pred.mostDotBalls }}</div>
+                    }
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+    }
+
+    <!-- ── LIVE TAB ── -->
+    @if (activeTab() === 'live') {
+    <div class="pred-list">
+        @if (livePredictions.length === 0) {
+        <div class="empty-card">⚡ No live matches right now</div>
+        }
+        @for (item of livePredictions; track item.match.id; let i = $index) {
+        <div class="pred-card live-card fade-in-up" [style.animation-delay]="i * 0.05 + 's'">
+            <div class="pred-card-header">
+                <div class="match-teams">
+                    <span>{{ item.match.team1.emoji }} {{ item.match.team1.shortName }}</span>
+                    <span class="vs">vs</span>
+                    <span>{{ item.match.team2.emoji }} {{ item.match.team2.shortName }}</span>
+                </div>
+                <span class="live-badge">⚡ LIVE</span>
+            </div>
+            <div class="pred-section">
+                <div class="pred-chip-grid">
+                    <div class="pred-chip winner-chip">🏆 {{ getTeamName(item.match, item.pred.winner) }}</div>
+                    <div class="pred-chip">📊 {{ item.pred.team1Score }}–{{ item.pred.team2Score }}</div>
+                    @if (item.pred.firstInningRange) {
+                    <div class="pred-chip">1️⃣ {{ item.pred.firstInningRange }}</div>
+                    }
+                    @if (item.pred.secondInningRange) {
+                    <div class="pred-chip">2️⃣ {{ item.pred.secondInningRange }}</div>
+                    }
+                    @if (item.pred.playerOfMatch) {
+                    <div class="pred-chip pom-chip">⭐ {{ item.pred.playerOfMatch }}</div>
+                    }
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+    }
+
+    <!-- ── PAST TAB ── -->
+    @if (activeTab() === 'past') {
+    <div class="pred-list">
+        @if (pastPredictions.length === 0) {
+        <div class="empty-card">🏏 No completed predictions yet</div>
+        }
+        @for (item of pastPredictions; track item.match.id; let i = $index) {
+        <div class="pred-card fade-in-up" [style.animation-delay]="i * 0.05 + 's'">
+            <div class="pred-card-header">
+                <div class="match-teams">
+                    <span>{{ item.match.team1.emoji }} {{ item.match.team1.shortName }}</span>
+                    <span class="vs">vs</span>
+                    <span>{{ item.match.team2.emoji }} {{ item.match.team2.shortName }}</span>
+                </div>
+                <span class="pts-badge" [class.high-pts]="item.points >= 15">+{{ item.points }} Pts</span>
+            </div>
+            <div class="match-meta">{{ formatDate(item.match.date) }}</div>
+
+            @if (item.match.result) {
+            <div class="result-bar">
+                🏆 Winner: <strong>{{ getTeamName(item.match, item.match.result.winner) }}</strong>
+                &nbsp;·&nbsp; Score: {{ item.match.result.team1Score }}–{{ item.match.result.team2Score }}
+            </div>
+            }
+
+            <!-- Point breakdown -->
+            <div class="breakdown-grid">
+                @for (pt of getDetailedPoints(item.pred, item.match); track pt.label) {
+                <div class="bd-pill" [class.earned]="pt.earned">
+                    <span class="bd-label">{{ pt.label }}</span>
+                    <span class="bd-my">🔮 {{ pt.myValue }}</span>
+                    @if (!pt.earned) {
+                    <span class="bd-actual">✅ {{ pt.actualValue }}</span>
+                    }
+                    <span class="bd-pts">{{ pt.earned ? '+' + pt.pts : '0' }}</span>
+                </div>
+                }
+            </div>
+        </div>
+        }
+    </div>
+    }
+
+    } @else {
+    <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading profile…</p>
+    </div>
+    }
 </div>
