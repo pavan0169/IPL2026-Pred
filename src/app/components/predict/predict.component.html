@@ -8,7 +8,7 @@
 
     <!-- Match List -->
     <div class="match-list">
-        @for (match of matches(); track match.id) {
+        @for (match of visibleMatches(); track match.id) {
         <div class="match-card" [class.active]="selectedMatchId() === match.id">
             <div class="match-card-inner" (click)="selectMatch(match)">
                 <!-- Status Badge -->
@@ -56,7 +56,7 @@
                 }
 
                 <!-- Existing Prediction Summary -->
-                @if (iplService.getPredictionForMatch(match.id); as pred) {
+                @if (predFor(match.id); as pred) {
                 <div class="my-pred-summary">
                     <span class="pred-label">Your prediction:</span>
                     <span>{{ pred.team1Score }} – {{ pred.team2Score }}</span>
@@ -64,7 +64,7 @@
                         ({{ pred.winner === match.team1.id ? match.team1.shortName : match.team2.shortName }} wins)
                     </span>
                     @if (match.status === 'completed' && match.result) {
-                    <span class="pred-pts">+{{ getPredictionPoints(match.id) }} pts</span>
+                    <span class="pred-pts">+{{ ptsFor(match.id) }} pts</span>
                     }
                 </div>
                 }
@@ -86,7 +86,7 @@
                     <span>🔒 Match starting soon — predictions locked</span>
                     }
 
-                    @if (!iplService.getPredictionForMatch(match.id)) {
+                    @if (!predFor(match.id)) {
                     <p class="did-not-predict-lbl">You did not predict this match.</p>
                     }
                 </div>
@@ -119,10 +119,11 @@
                     </div>
                 </div>
 
-                <!-- 2 & 3. Innings Ranges -->
+                <!-- 2 & 3. Innings Ranges with team names -->
                 <div class="score-row">
                     <div class="form-group" style="flex:1;">
-                        <span class="form-label" style="font-weight:700;">2. 1st Innings Range (3 pts)</span>
+                        <span class="form-label" style="font-weight:700;">2. {{ match.team1.emoji }} {{
+                            match.team1.shortName }} Score Range (3 pts)</span>
                         <select class="form-input w-full" [ngModel]="firstInningRange()"
                             (ngModelChange)="firstInningRange.set($event)">
                             <option value="">Select Range</option>
@@ -134,7 +135,8 @@
                         </select>
                     </div>
                     <div class="form-group" style="flex:1;">
-                        <span class="form-label" style="font-weight:700;">3. 2nd Innings Range (3 pts)</span>
+                        <span class="form-label" style="font-weight:700;">3. {{ match.team2.emoji }} {{
+                            match.team2.shortName }} Score Range (3 pts)</span>
                         <select class="form-input w-full" [ngModel]="secondInningRange()"
                             (ngModelChange)="secondInningRange.set($event)">
                             <option value="">Select Range</option>

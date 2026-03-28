@@ -12,8 +12,25 @@ import { Match, Prediction, getMatchPlayers } from '../../models/ipl.models';
     styleUrl: './predict.component.css'
 })
 export class PredictComponent {
-    matches() { return this.iplService.matches(); }
+    allMatches() { return this.iplService.matches(); }
     selectedMatchId = signal<string | null>(null);
+
+    // Rolling window: 2 days before today → 6 days ahead
+    visibleMatches = computed(() => {
+        const now = new Date();
+        const start = new Date(now);
+        start.setDate(start.getDate() - 2);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(now);
+        end.setDate(end.getDate() + 7);
+        end.setHours(23, 59, 59, 999);
+
+        return this.allMatches().filter(m => {
+            const t = new Date(m.date).getTime();
+            return t >= start.getTime() && t <= end.getTime();
+        });
+    });
 
     team1Score = signal(150);
     team2Score = signal(150);
@@ -42,7 +59,7 @@ export class PredictComponent {
 
     selectedMatch = computed(() => {
         const id = this.selectedMatchId();
-        return id ? this.matches().find(m => m.id === id) ?? null : null;
+        return id ? this.allMatches().find(m => m.id === id) ?? null : null;
     });
 
     matchPlayers = computed(() => {
@@ -55,6 +72,24 @@ export class PredictComponent {
         const id = this.selectedMatchId();
         return id ? this.iplService.getPredictionForMatch(id) : undefined;
     });
+
+    // Pre-compute per-match prediction summaries once instead of calling
+    // getPredictionForMatch() inside the @for loop on every change-detection cycle.
+    matchSummaries = computed(() => {
+        const preds = this.iplService.predictions();
+        const matches = this.visibleMatches();
+        const result: Record<string, { pred: any; points: number }> = {};
+
+        for (const match of matches) {
+            const pred = this.iplService.getPredictionForMatch(match.id);
+            const points = pred && match.result ? this.iplService.calcPoints(pred, match.result) : 0;
+            result[match.id] = { pred, points };
+        }
+        return result;
+    });
+
+    predFor(matchId: string) { return this.matchSummaries()[matchId]?.pred; }
+    ptsFor(matchId: string) { return this.matchSummaries()[matchId]?.points ?? 0; }
 
     selectMatch(match: Match) {
         if (this.selectedMatchId() === match.id) {
@@ -126,7 +161,7 @@ export class PredictComponent {
 
     getPredictionPoints(matchId: string): number {
         const pred = this.iplService.getPredictionForMatch(matchId);
-        const match = this.matches().find(m => m.id === matchId);
+        const match = this.allMatches().find(m => m.id === matchId);
         if (!pred || !match?.result) return 0;
         return this.iplService.calcPoints(pred, match.result);
     }

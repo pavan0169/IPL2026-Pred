@@ -22,28 +22,26 @@ export class StandingsComponent {
         const matches = this.matches();
         const now = Date.now();
 
-        const getMatchTime = (m: any): number => {
-            // date field is already a full ISO timestamp e.g. '2026-03-28T19:30:00+05:30'
-            return new Date(m.date).getTime();
-        };
+        const getMatchTime = (m: any): number => new Date(m.date).getTime();
 
-        // 1. Match currently in progress: started up to 5 hours ago
-        const liveMatch = matches.find(m => {
-            const start = getMatchTime(m);
-            return start <= now && now <= start + 5 * 60 * 60 * 1000;
-        });
-        if (liveMatch) return liveMatch;
+        // Sort ascending by start time
+        const sorted = [...matches].sort((a, b) => getMatchTime(a) - getMatchTime(b));
 
-        // 2. Next upcoming match (earliest start in the future)
-        const upcoming = matches
-            .filter(m => getMatchTime(m) > now)
-            .sort((a, b) => getMatchTime(a) - getMatchTime(b));
-        if (upcoming.length) return upcoming[0];
+        // Find the match window: started but next one hasn't started yet
+        for (let i = 0; i < sorted.length; i++) {
+            const start = getMatchTime(sorted[i]);
+            const nextStart = i + 1 < sorted.length ? getMatchTime(sorted[i + 1]) : Infinity;
+            if (start <= now && now < nextStart) {
+                return sorted[i];
+            }
+        }
 
-        // 3. Fallback: most recent past match
-        return matches
-            .filter(m => getMatchTime(m) <= now)
-            .sort((a, b) => getMatchTime(b) - getMatchTime(a))[0] || matches[matches.length - 1];
+        // No match has started yet → show the most recently completed past match
+        const past = sorted.filter(m => getMatchTime(m) <= now);
+        if (past.length) return past[past.length - 1];
+
+        // Season hasn't begun at all → return null so the section hides
+        return null;
     }
 
     completedMatches() {

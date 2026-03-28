@@ -1,8 +1,9 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BreakpointObserver, Breakpoints, LayoutModule } from '@angular/cdk/layout';
 import { ThemeService } from './services/theme.service';
 import { AuthService } from './services/auth.service';
+import { SessionService } from './services/session.service';
 import { PredictComponent } from './components/predict/predict.component';
 import { StandingsComponent } from './components/standings/standings.component';
 import { AdminComponent } from './components/admin/admin.component';
@@ -27,7 +28,7 @@ export class AppComponent implements OnInit {
     { id: 'predict', label: 'Predict', icon: '🏏' },
     { id: 'standings', label: 'Standings', icon: '🏆' },
     { id: 'admin', label: 'Admin', icon: '⚙️' },
-    { id: 'leagues', label: 'Leagues', icon: '👥' },
+    // { id: 'leagues', label: 'Leagues', icon: '👥' },
     { id: 'profile', label: 'Profile', icon: '👤' },
   ];
 
@@ -39,8 +40,18 @@ export class AppComponent implements OnInit {
   constructor(
     public themeService: ThemeService,
     public authService: AuthService,
+    private sessionService: SessionService,
     private breakpointObserver: BreakpointObserver
-  ) { }
+  ) {
+    // Reactively start/stop the inactivity timer based on login state
+    effect(() => {
+      if (this.authService.isLoggedIn()) {
+        this.sessionService.start();
+      } else {
+        this.sessionService.stop();
+      }
+    });
+  }
 
   ngOnInit() {
     this.breakpointObserver
@@ -52,5 +63,8 @@ export class AppComponent implements OnInit {
 
   setTab(tab: Tab) { this.activeTab.set(tab); }
 
-  logout() { this.authService.logout(); }
+  logout() {
+    this.sessionService.stop();
+    this.authService.logout();
+  }
 }

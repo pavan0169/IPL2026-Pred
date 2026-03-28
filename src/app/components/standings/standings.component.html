@@ -90,8 +90,8 @@
     <div class="section-title" style="display:flex; align-items:center; gap:0.5rem;">
         🔥 Active Match Insights
         <span class="match-status-chip" [class.live-chip]="match.status === 'live'"
-            [class.upcoming-chip]="match.status !== 'live'">
-            {{ match.status === 'live' ? '⚡ LIVE' : '🔜 UPCOMING' }}
+            [class.upcoming-chip]="match.status === 'completed'">
+            {{ match.status === 'live' ? '⚡ LIVE' : '✅ COMPLETED' }}
         </span>
     </div>
 
