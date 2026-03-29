@@ -31,6 +31,8 @@ export interface MatchResult {
     playerOfMatch?: string;
     superStriker?: string;
     mostDotBalls?: string;
+    lastEditedAt?: string; // ISO timestamp
+    lastEditedBy?: string; // username or email
 }
 
 export interface Prediction {

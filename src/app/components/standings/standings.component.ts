@@ -1,11 +1,13 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IplService } from '../../services/ipl.service';
+import { AuthService } from '../../services/auth.service';
+import { CricketLoaderComponent } from '../cricket-loader/cricket-loader.component';
 
 @Component({
     selector: 'app-standings',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, CricketLoaderComponent],
     templateUrl: './standings.component.html',
     styleUrl: './standings.component.css'
 })
@@ -13,35 +15,51 @@ export class StandingsComponent {
     userStats() { return this.iplService.userStats(); }
     matches() { return this.iplService.matches(); }
     predictions() { return this.iplService.predictions(); }
+    dataLoaded() { return this.matches().length > 0; }
 
     selectedUserId = signal<string | null>(null);
 
-    constructor(public iplService: IplService) { }
+    constructor(
+        public iplService: IplService,
+        public authService: AuthService
+    ) { }
 
-    activeMatch() {
+    private sortedMatches() {
         const matches = this.matches();
-        const now = Date.now();
+        const getMatchTime = (m: any): number => new Date(m.date).getTime();
+        return [...matches].sort((a, b) => getMatchTime(a) - getMatchTime(b));
+    }
 
+    activeMatchInfo() {
+        const sorted = this.sortedMatches();
+        const now = Date.now();
         const getMatchTime = (m: any): number => new Date(m.date).getTime();
 
-        // Sort ascending by start time
-        const sorted = [...matches].sort((a, b) => getMatchTime(a) - getMatchTime(b));
-
-        // Find the match window: started but next one hasn't started yet
         for (let i = 0; i < sorted.length; i++) {
             const start = getMatchTime(sorted[i]);
             const nextStart = i + 1 < sorted.length ? getMatchTime(sorted[i + 1]) : Infinity;
             if (start <= now && now < nextStart) {
-                return sorted[i];
+                return { match: sorted[i], index: i, all: sorted };
             }
         }
 
-        // No match has started yet → show the most recently completed past match
         const past = sorted.filter(m => getMatchTime(m) <= now);
-        if (past.length) return past[past.length - 1];
-
-        // Season hasn't begun at all → return null so the section hides
+        if (past.length) {
+            const lastPast = past[past.length - 1];
+            return { match: lastPast, index: sorted.indexOf(lastPast), all: sorted };
+        }
         return null;
+    }
+
+    activeMatch() {
+        return this.activeMatchInfo()?.match || null;
+    }
+
+    nextMatch() {
+        const info = this.activeMatchInfo();
+        if (!info) return null;
+        const { index, all } = info;
+        return (index + 1 < all.length) ? all[index + 1] : null;
     }
 
     completedMatches() {
@@ -51,8 +69,17 @@ export class StandingsComponent {
     getActiveMatchPredictions() {
         const match = this.activeMatch();
         if (!match) return [];
-        const preds = this.predictions().filter(p => p.matchId === match.id);
+        return this.getPredictionsForMatchId(match.id);
+    }
 
+    getNextMatchPredictions() {
+        const match = this.nextMatch();
+        if (!match) return [];
+        return this.getPredictionsForMatchId(match.id);
+    }
+
+    private getPredictionsForMatchId(matchId: string) {
+        const preds = this.predictions().filter(p => p.matchId === matchId);
         return this.userStats().map(user => ({
             user,
             pred: preds.find(p => p.userId === user.userId)
@@ -175,5 +202,68 @@ export class StandingsComponent {
         }
 
         return details;
+    }
+
+    // ---- Weekly Winners ----
+    private getWeekKey(date: Date): string {
+        // Get Monday of the week
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
+        const monday = new Date(d.setDate(diff));
+        monday.setHours(0, 0, 0, 0);
+        return monday.toISOString().split('T')[0];
+    }
+
+    weeklyWinners() {
+        const completed = this.completedMatches();
+        const preds = this.predictions();
+        if (completed.length === 0) return [];
+
+        // Group matches by week
+        const weekMap = new Map<string, { matches: any[], monday: Date }>();
+        for (const match of completed) {
+            const key = this.getWeekKey(new Date(match.date));
+            if (!weekMap.has(key)) {
+                weekMap.set(key, { matches: [], monday: new Date(key) });
+            }
+            weekMap.get(key)!.matches.push(match);
+        }
+
+        // For each week, calculate user points
+        const weeks: any[] = [];
+        weekMap.forEach((data, key) => {
+            const userPoints = new Map<string, { username: string, points: number }>();
+
+            for (const match of data.matches) {
+                const matchPreds = preds.filter(p => p.matchId === match.id);
+                for (const pred of matchPreds) {
+                    if (!match.result) continue;
+                    const pts = this.iplService.calcPoints(pred, match.result);
+                    if (!userPoints.has(pred.userId)) {
+                        userPoints.set(pred.userId, { username: pred.username || 'User', points: 0 });
+                    }
+                    userPoints.get(pred.userId)!.points += pts;
+                }
+            }
+
+            const sorted = Array.from(userPoints.values()).sort((a, b) => b.points - a.points);
+            if (sorted.length === 0) return;
+
+            const sunday = new Date(data.monday);
+            sunday.setDate(sunday.getDate() + 6);
+
+            weeks.push({
+                key,
+                monday: data.monday,
+                sunday,
+                weekLabel: `${data.monday.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} – ${sunday.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`,
+                matchCount: data.matches.length,
+                winner: sorted[0],
+                runnerUp: sorted.length > 1 ? sorted[1] : null
+            });
+        });
+
+        return weeks.sort((a, b) => b.monday.getTime() - a.monday.getTime());
     }
 }

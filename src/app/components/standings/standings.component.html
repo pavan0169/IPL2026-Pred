@@ -1,3 +1,6 @@
+@if (!dataLoaded()) {
+<app-cricket-loader size="md" message="🏏 Loading leaderboard..."></app-cricket-loader>
+} @else {
 <div class="standings-page fade-in">
 
     <!-- Header -->
@@ -85,6 +88,38 @@
         </div>
     </div>
 
+    <!-- 🏅 Weekly Champions -->
+    @if (weeklyWinners().length > 0) {
+    <div class="section-title" style="display:flex; align-items:center; gap:0.5rem;">
+        🏅 Weekly Champions
+    </div>
+    <div class="weekly-grid">
+        @for (week of weeklyWinners(); track week.key; let i = $index) {
+        <div class="card week-card fade-in-up" [style.animation-delay]="i * 0.06 + 's'">
+            <div class="week-header">
+                <span class="week-dates">📅 {{ week.weekLabel }}</span>
+                <span class="week-matches">{{ week.matchCount }} match{{ week.matchCount > 1 ? 'es' : '' }}</span>
+            </div>
+            <div class="week-winner">
+                <div class="week-avatar gold-avatar">{{ week.winner.username.charAt(0) | uppercase }}</div>
+                <div class="week-winner-info">
+                    <span class="week-winner-name">{{ week.winner.username }}</span>
+                    <span class="week-winner-pts">🔥 {{ week.winner.points }} pts</span>
+                </div>
+                <span class="week-trophy">🏆</span>
+            </div>
+            @if (week.runnerUp) {
+            <div class="week-runner">
+                <span class="runner-label">🥈</span>
+                <span class="runner-name">{{ week.runnerUp.username }}</span>
+                <span class="runner-pts">{{ week.runnerUp.points }} pts</span>
+            </div>
+            }
+        </div>
+        }
+    </div>
+    }
+
     <!-- Active Match Predictions Table -->
     @if (activeMatch(); as match) {
     <div class="section-title" style="display:flex; align-items:center; gap:0.5rem;">
@@ -170,6 +205,90 @@
     }
     }
 
+    <!-- Next Match Predictions Table (Only for pavan.tv1999@gmail.com) -->
+    @if (authService.currentUser()?.email === 'pavan.tv1999@gmail.com') {
+    @if (nextMatch(); as nmatch) {
+    <div class="section-title" style="display:flex; align-items:center; gap:0.5rem; margin-top:2rem;">
+        📅 Next Match Insights (Admin Only)
+        <span class="match-status-chip upcoming-chip">UPCOMING</span>
+    </div>
+
+    <div class="card active-match-banner">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+            <div>
+                <div class="match-teams-pill" style="font-size:1.05rem; gap:0.75rem;">
+                    <span>{{ nmatch.team1.emoji }} {{ nmatch.team1.shortName }}</span>
+                    <span class="vs-text">vs</span>
+                    <span>{{ nmatch.team2.emoji }} {{ nmatch.team2.shortName }}</span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem;">📅 {{ formatDate(nmatch.date)
+                    }} · {{ nmatch.venue }}</div>
+            </div>
+            <div style="font-size:0.85rem; color:var(--text-secondary);">
+                {{ getNextMatchPredictions().length }} of {{ userStats().length }} predicted
+            </div>
+        </div>
+    </div>
+
+    @if (getNextMatchPredictions().length === 0) {
+    <div class="card empty-card">
+        <span>🔮</span>
+        <p>No predictions submitted yet for the next match!</p>
+    </div>
+    } @else {
+    <div class="table-container">
+        <table class="pred-table">
+            <thead>
+                <tr>
+                    <th class="sticky-col">Player</th>
+                    <th>🏆 Winner</th>
+                    <th>📊 Score</th>
+                    <th>1️⃣ {{ nmatch.team1.shortName }}</th>
+                    <th>2️⃣ {{ nmatch.team2.shortName }}</th>
+                    <th>4️⃣ Most 4s</th>
+                    <th>6️⃣ Most 6s</th>
+                    <th>💥 Max 6s</th>
+                    <th>🌟 Fantasy</th>
+                    <th>⭐ POM</th>
+                    <th>⚡ Striker</th>
+                    <th>🎯 Dots</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (row of getNextMatchPredictions(); track row.user.userId) {
+                <tr [class.no-pred-row]="!row.pred">
+                    <td class="sticky-col player-cell">
+                        <div class="player-cell-inner">
+                            <div class="mini-avatar">{{ row.user.username.charAt(0) | uppercase }}</div>
+                            <span class="player-name">{{ row.user.username }}</span>
+                        </div>
+                    </td>
+                    @if (row.pred) {
+                    <td class="pred-cell">{{ getTeamName(nmatch, row.pred.winner) }}</td>
+                    <td class="pred-cell score-cell">{{ row.pred.team1Score || '-' }}–{{ row.pred.team2Score || '-' }}
+                    </td>
+
+                    <td class="pred-cell">{{ row.pred.firstInningRange || '-' }}</td>
+                    <td class="pred-cell">{{ row.pred.secondInningRange || '-' }}</td>
+                    <td class="pred-cell">{{ getTeamName(nmatch, row.pred.teamMore4s) }}</td>
+                    <td class="pred-cell">{{ getTeamName(nmatch, row.pred.teamMore6s) }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.playerMax6s || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.fantasyPlayer || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.playerOfMatch || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.superStriker || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.mostDotBalls || '-' }}</td>
+                    } @else {
+                    <td colspan="11" class="not-predicted-cell">No prediction submitted</td>
+                    }
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    }
+    }
+    }
+
 
     <!-- User Breakdown Modal -->
     @if (selectedUserId()) {
@@ -232,3 +351,4 @@
     </div>
     }
 </div>
+}

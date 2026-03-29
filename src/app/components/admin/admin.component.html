@@ -34,6 +34,12 @@
                 match.team2.shortName }}
                 · Winner: {{ match.result.winner === match.team1.id ? match.team1.shortName : match.team2.shortName }}
             </div>
+            @if (match.result.lastEditedAt) {
+            <div class="last-edit-info">
+                <span>🕒 Last edited by <b>{{ match.result.lastEditedBy }}</b> at {{ match.result.lastEditedAt |
+                    date:'MMM d, h:mm a' }}</span>
+            </div>
+            }
             }
 
             @if (expandedMatchId() === match.id && formData[match.id]) {

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { IplService } from '../../services/ipl.service';
 import { AuthService } from '../../services/auth.service';
 import { Match, Prediction } from '../../models/ipl.models';
+import { CricketLoaderComponent } from '../cricket-loader/cricket-loader.component';
 
 @Component({
     selector: 'app-user-profile',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, CricketLoaderComponent],
     templateUrl: './user-profile.component.html',
     styleUrls: ['./user-profile.component.css']
 })
@@ -15,6 +16,10 @@ export class UserProfileComponent {
     activeTab = signal<'past' | 'live' | 'upcoming'>('upcoming');
 
     constructor(private iplService: IplService, private authService: AuthService) { }
+
+    get dataLoaded() {
+        return this.iplService.matches().length > 0;
+    }
 
     get currentUser() {
         return this.authService.currentUser();

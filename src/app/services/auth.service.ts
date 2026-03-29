@@ -15,7 +15,7 @@ export class AuthService {
     private _user = signal<User | null>(null);
     isLoggedIn = () => this._user() !== null;
     currentUser = () => this._user();
-    isAdmin = () => this._user()?.email === 'pavan.tv1999@gmail.com';
+    isAdmin = () => ['pavan.tv1999@gmail.com', 'tvskalyan2008@gmail.com'].includes(this._user()?.email || '');
 
     private recaptchaVerifier!: RecaptchaVerifier;
     private confirmationResult!: ConfirmationResult | null;

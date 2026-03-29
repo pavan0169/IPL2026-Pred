@@ -1,3 +1,6 @@
+@if (!dataLoaded) {
+<app-cricket-loader size="md" message="🏏 Loading your profile..."></app-cricket-loader>
+} @else {
 <div class="profile-page fade-in">
 
     <!-- Header -->
@@ -187,8 +190,8 @@
 
     } @else {
     <div class="loading-state">
-        <div class="spinner"></div>
-        <p>Loading profile…</p>
+        <app-cricket-loader size="sm" message="Loading profile…"></app-cricket-loader>
     </div>
     }
 </div>
+}

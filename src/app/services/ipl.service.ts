@@ -213,9 +213,16 @@ export class IplService {
     }
 
     updateMatchResult(matchId: string, result: MatchResult) {
+        const currentUser = this.authService.currentUser();
+        const updatedResult: MatchResult = {
+            ...result,
+            lastEditedAt: new Date().toISOString(),
+            lastEditedBy: currentUser?.username || currentUser?.email || 'Admin'
+        };
+
         updateDoc(doc(db, 'appData', 'matchStates'), {
             [`${matchId}.status`]: 'completed',
-            [`${matchId}.result`]: result
+            [`${matchId}.result`]: updatedResult
         });
     }
 

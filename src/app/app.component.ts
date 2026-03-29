@@ -10,19 +10,22 @@ import { AdminComponent } from './components/admin/admin.component';
 import { LandingComponent } from './components/landing/landing.component';
 import { LeagueListComponent } from './components/league-list/league-list.component';
 import { UserProfileComponent } from './components/user-profile/user-profile.component';
+import { CricketLoaderComponent } from './components/cricket-loader/cricket-loader.component';
 
 type Tab = 'predict' | 'standings' | 'admin' | 'leagues' | 'profile';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, LayoutModule, PredictComponent, StandingsComponent, AdminComponent, LandingComponent, LeagueListComponent, UserProfileComponent],
+  imports: [CommonModule, LayoutModule, PredictComponent, StandingsComponent, AdminComponent, LandingComponent, LeagueListComponent, UserProfileComponent, CricketLoaderComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
   activeTab = signal<Tab>('predict');
   isMobile = signal(false);
+  authLoading = signal(true);
+  tabSwitching = signal(false);
 
   tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'predict', label: 'Predict', icon: '🏏' },
@@ -45,7 +48,10 @@ export class AppComponent implements OnInit {
   ) {
     // Reactively start/stop the inactivity timer based on login state
     effect(() => {
-      if (this.authService.isLoggedIn()) {
+      const loggedIn = this.authService.isLoggedIn();
+      // Once we detect any auth state (logged in or not), loading is done
+      this.authLoading.set(false);
+      if (loggedIn) {
         this.sessionService.start();
       } else {
         this.sessionService.stop();
@@ -61,7 +67,13 @@ export class AppComponent implements OnInit {
       });
   }
 
-  setTab(tab: Tab) { this.activeTab.set(tab); }
+  setTab(tab: Tab) {
+    if (this.activeTab() === tab) return;
+    this.tabSwitching.set(true);
+    this.activeTab.set(tab);
+    // Brief flash so content feels like a transition
+    setTimeout(() => this.tabSwitching.set(false), 200);
+  }
 
   logout() {
     this.sessionService.stop();

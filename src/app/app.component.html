@@ -1,12 +1,19 @@
 <!-- Root App Component Template -->
 
+<!-- ===== Initial Auth Loading ===== -->
+@if (authLoading()) {
+<div class="app-container" style="display:flex; align-items:center; justify-content:center; min-height:100vh;">
+  <app-cricket-loader size="lg" message="🏏 Getting you to the crease..."></app-cricket-loader>
+</div>
+}
+
 <!-- ===== LANDING / AUTH (not logged in) ===== -->
-@if (!authService.isLoggedIn()) {
+@if (!authLoading() && !authService.isLoggedIn()) {
 <app-landing></app-landing>
 }
 
 <!-- ===== MAIN APP (logged in) ===== -->
-@if (authService.isLoggedIn()) {
+@if (!authLoading() && authService.isLoggedIn()) {
 <div class="app-container">
   <!-- Animated Background Orbs -->
   <div class="bg-orbs" aria-hidden="true">
@@ -69,11 +76,15 @@
 
   <!-- Main Content -->
   <main class="content">
+    @if (tabSwitching()) {
+    <app-cricket-loader size="sm"></app-cricket-loader>
+    } @else {
     <app-predict *ngIf="activeTab() === 'predict'"></app-predict>
     <app-standings *ngIf="activeTab() === 'standings'"></app-standings>
     <app-admin *ngIf="activeTab() === 'admin' && authService.isAdmin()"></app-admin>
     <app-league-list *ngIf="activeTab() === 'leagues'"></app-league-list>
     <app-user-profile *ngIf="activeTab() === 'profile'"></app-user-profile>
+    }
   </main>
 </div>
 }
