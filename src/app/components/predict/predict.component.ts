@@ -43,14 +43,14 @@ export class PredictComponent {
     playerMax6s = signal('');
     fantasyPlayer = signal('');
     playerOfMatch = signal('');
-    superStriker = signal('');
-    mostDotBalls = signal('');
+    playerMost4s = signal('');
+    bestEconomy = signal('');
 
     canSubmit = computed(() => {
         return !!(this.winner() && this.firstInningRange() && this.secondInningRange() &&
             this.teamMore4s() && this.teamMore6s() && this.playerMax6s() &&
-            this.fantasyPlayer() && this.playerOfMatch() && this.superStriker() &&
-            this.mostDotBalls());
+            this.fantasyPlayer() && this.playerOfMatch() && this.playerMost4s() &&
+            this.bestEconomy());
     });
 
     submitted = signal(false);
@@ -76,12 +76,12 @@ export class PredictComponent {
     // Pre-compute per-match prediction summaries once instead of calling
     // getPredictionForMatch() inside the @for loop on every change-detection cycle.
     matchSummaries = computed(() => {
-        const preds = this.iplService.predictions();
+        const myPreds = this.iplService.myPredictions();
         const matches = this.visibleMatches();
         const result: Record<string, { pred: any; points: number }> = {};
 
         for (const match of matches) {
-            const pred = this.iplService.getPredictionForMatch(match.id);
+            const pred = myPreds.get(match.id);
             const points = pred && match.result ? this.iplService.calcPoints(pred, match.result) : 0;
             result[match.id] = { pred, points };
         }
@@ -110,8 +110,8 @@ export class PredictComponent {
             this.playerMax6s.set(existing.playerMax6s || '');
             this.fantasyPlayer.set(existing.fantasyPlayer || '');
             this.playerOfMatch.set(existing.playerOfMatch || '');
-            this.superStriker.set(existing.superStriker || '');
-            this.mostDotBalls.set(existing.mostDotBalls || '');
+            this.playerMost4s.set(existing.playerMost4s || '');
+            this.bestEconomy.set(existing.bestEconomy || '');
         } else {
             this.team1Score.set(150);
             this.team2Score.set(150);
@@ -123,8 +123,8 @@ export class PredictComponent {
             this.playerMax6s.set('');
             this.fantasyPlayer.set('');
             this.playerOfMatch.set('');
-            this.superStriker.set('');
-            this.mostDotBalls.set('');
+            this.playerMost4s.set('');
+            this.bestEconomy.set('');
         }
     }
 
@@ -153,8 +153,8 @@ export class PredictComponent {
             playerMax6s: this.playerMax6s(),
             fantasyPlayer: this.fantasyPlayer(),
             playerOfMatch: this.playerOfMatch(),
-            superStriker: this.superStriker(),
-            mostDotBalls: this.mostDotBalls()
+            playerMost4s: this.playerMost4s(),
+            bestEconomy: this.bestEconomy()
         });
         this.submitted.set(true);
     }

@@ -19,7 +19,7 @@ export class AdminComponent {
     formData: Record<string, {
         team1Score: number; team2Score: number; winner: string; status: string;
         firstInningRange?: string; secondInningRange?: string; teamMore4s?: string; teamMore6s?: string;
-        playerMax6s?: string; fantasyPlayer?: string; playerOfMatch?: string; superStriker?: string; mostDotBalls?: string;
+        playerMax6s?: string; fantasyPlayer?: string; playerOfMatch?: string; playerMost4s?: string; bestEconomy?: string;
     }> = {};
 
     getMatchPlayers(team1Id: string, team2Id: string) {
@@ -46,8 +46,8 @@ export class AdminComponent {
                 playerMax6s: m.result?.playerMax6s ?? '',
                 fantasyPlayer: m.result?.fantasyPlayer ?? '',
                 playerOfMatch: m.result?.playerOfMatch ?? '',
-                superStriker: m.result?.superStriker ?? '',
-                mostDotBalls: m.result?.mostDotBalls ?? ''
+                playerMost4s: m.result?.playerMost4s ?? '',
+                bestEconomy: m.result?.bestEconomy ?? ''
             };
         });
     }
@@ -76,8 +76,8 @@ export class AdminComponent {
             playerMax6s: fd.playerMax6s,
             fantasyPlayer: fd.fantasyPlayer,
             playerOfMatch: fd.playerOfMatch,
-            superStriker: fd.superStriker,
-            mostDotBalls: fd.mostDotBalls
+            playerMost4s: fd.playerMost4s,
+            bestEconomy: fd.bestEconomy
         };
         this.iplService.updateMatchResult(matchId, result);
         this.expandedMatchId.set(null);

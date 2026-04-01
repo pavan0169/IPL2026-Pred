@@ -10,7 +10,7 @@ import { CricketLoaderComponent } from '../cricket-loader/cricket-loader.compone
     standalone: true,
     imports: [CommonModule, CricketLoaderComponent],
     templateUrl: './user-profile.component.html',
-    styleUrls: ['./user-profile.component.css']
+    styleUrl: './user-profile.component.css'
 })
 export class UserProfileComponent {
     activeTab = signal<'past' | 'live' | 'upcoming'>('upcoming');
@@ -144,10 +144,10 @@ export class UserProfileComponent {
         addDtl('Most 4s', teamName(pred.teamMore4s), teamName(result.teamMore4s), 2);
         addDtl('Most 6s', teamName(pred.teamMore6s), teamName(result.teamMore6s), 2);
         addDtl('Player Max 6s', pred.playerMax6s, result.playerMax6s, 3);
-        addDtl('Fantasy Player', pred.fantasyPlayer, result.fantasyPlayer, 4);
+        addDtl('Most 4s', pred.playerMost4s, result.playerMost4s, 4);
         addDtl('Player of Match', pred.playerOfMatch, result.playerOfMatch, 5);
-        addDtl('Super Striker', pred.superStriker, result.superStriker, 4);
-        addDtl('Most Dot Balls', pred.mostDotBalls, result.mostDotBalls, 4);
+        addDtl('Super Striker', pred.fantasyPlayer, result.fantasyPlayer, 4);
+        addDtl('Best Economy', pred.bestEconomy, result.bestEconomy, 4);
 
         return details;
     }

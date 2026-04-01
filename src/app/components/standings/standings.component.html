@@ -75,7 +75,7 @@
             </div>
             <div class="rule-item">
                 <span class="rule-pts">+4</span>
-                <span>Fantasy Player / Super Striker / Most Dot Balls</span>
+                <span>Super Striker / Most 4s / Best Economy</span>
             </div>
             <div class="rule-item">
                 <span class="rule-pts">+3</span>
@@ -165,10 +165,10 @@
                     <th>4️⃣ Most 4s</th>
                     <th>6️⃣ Most 6s</th>
                     <th>💥 Max 6s</th>
-                    <th>🌟 Fantasy</th>
+                    <th>⚡ Most 4s</th>
                     <th>⭐ POM</th>
-                    <th>⚡ Striker</th>
-                    <th>🎯 Dots</th>
+                    <th>🚀 Striker</th>
+                    <th>🎯 Best Economy</th>
                 </tr>
             </thead>
             <tbody>
@@ -190,10 +190,10 @@
                     <td class="pred-cell">{{ getTeamName(match, row.pred.teamMore4s) }}</td>
                     <td class="pred-cell">{{ getTeamName(match, row.pred.teamMore6s) }}</td>
                     <td class="pred-cell player-col">{{ row.pred.playerMax6s || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.fantasyPlayer || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.playerMost4s || '-' }}</td>
                     <td class="pred-cell player-col">{{ row.pred.playerOfMatch || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.superStriker || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.mostDotBalls || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.fantasyPlayer || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.bestEconomy || '-' }}</td>
                     } @else {
                     <td colspan="11" class="not-predicted-cell">No prediction submitted</td>
                     }
@@ -248,10 +248,10 @@
                     <th>4️⃣ Most 4s</th>
                     <th>6️⃣ Most 6s</th>
                     <th>💥 Max 6s</th>
-                    <th>🌟 Fantasy</th>
+                    <th>⚡ Most 4s</th>
                     <th>⭐ POM</th>
-                    <th>⚡ Striker</th>
-                    <th>🎯 Dots</th>
+                    <th>🚀 Striker</th>
+                    <th>🎯 Best Economy</th>
                 </tr>
             </thead>
             <tbody>
@@ -273,10 +273,10 @@
                     <td class="pred-cell">{{ getTeamName(nmatch, row.pred.teamMore4s) }}</td>
                     <td class="pred-cell">{{ getTeamName(nmatch, row.pred.teamMore6s) }}</td>
                     <td class="pred-cell player-col">{{ row.pred.playerMax6s || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.fantasyPlayer || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.playerMost4s || '-' }}</td>
                     <td class="pred-cell player-col">{{ row.pred.playerOfMatch || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.superStriker || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.mostDotBalls || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.fantasyPlayer || '-' }}</td>
+                    <td class="pred-cell player-col">{{ row.pred.bestEconomy || '-' }}</td>
                     } @else {
                     <td colspan="11" class="not-predicted-cell">No prediction submitted</td>
                     }

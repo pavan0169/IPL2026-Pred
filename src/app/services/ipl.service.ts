@@ -138,13 +138,45 @@ export class IplService {
         });
     }
 
+    // Index matches by ID for faster lookups
+    private _matchMap = computed(() => {
+        const map = new Map<string, Match>();
+        this._matches().forEach(m => map.set(m.id, m));
+        return map;
+    });
+
+    // Index all predictions by Match ID for the current user
+    myPredictions = computed(() => {
+        const uid = this.authService.currentUser()?.uid;
+        const map = new Map<string, Prediction>();
+        if (!uid) return map;
+
+        this._predictions().forEach(p => {
+            if (p.userId === uid) {
+                map.set(p.matchId, p);
+            }
+        });
+        return map;
+    });
+
+    // Index all predictions by Match ID for all users
+    allPredictionsByMatch = computed(() => {
+        const preds = this._predictions();
+        const map = new Map<string, Prediction[]>();
+        preds.forEach(p => {
+            if (!map.has(p.matchId)) map.set(p.matchId, []);
+            map.get(p.matchId)!.push(p);
+        });
+        return map;
+    });
+
     userStats = computed<UserStats[]>(() => {
         const preds = this._predictions();
-        const matches = this._matches();
+        const matchesMap = this._matchMap();
         const userMap = new Map<string, UserStats>();
 
         preds.forEach(p => {
-            const match = matches.find(m => m.id === p.matchId);
+            const match = matchesMap.get(p.matchId);
             if (!userMap.has(p.userId)) {
                 userMap.set(p.userId, { userId: p.userId, username: p.username || 'User', totalPredictions: 0, correctWinners: 0, totalPoints: 0, rank: 0 });
             }
@@ -182,15 +214,13 @@ export class IplService {
             submittedAt: new Date().toISOString()
         };
 
-        const updatePayload = {
-            userId: currentUser.uid,
+        const payload = {
+            [`predictions.${pred.matchId}`]: newPred,
             username: currentUser.username,
-            predictions: {
-                [pred.matchId]: newPred
-            }
+            userId: currentUser.uid
         };
 
-        setDoc(doc(db, 'user_predictions', currentUser.uid), updatePayload, { merge: true });
+        updateDoc(doc(db, 'user_predictions', currentUser.uid), payload);
     }
 
     adminUpdatePrediction(predictionId: string, updates: Partial<Prediction>) {
@@ -207,9 +237,7 @@ export class IplService {
     }
 
     getPredictionForMatch(matchId: string): Prediction | undefined {
-        const currentUser = this.authService.currentUser();
-        if (!currentUser || !currentUser.uid) return undefined;
-        return this._predictions().find(p => p.matchId === matchId && p.userId === currentUser.uid);
+        return this.myPredictions().get(matchId);
     }
 
     updateMatchResult(matchId: string, result: MatchResult) {
@@ -258,17 +286,17 @@ export class IplService {
         // 6. Max 6s Player (3 pts)
         if (isStringMatch(pred.playerMax6s, result.playerMax6s)) { pts += 3; correctCategories++; }
 
-        // 7. Fantasy Player (4 pts)
-        if (isStringMatch(pred.fantasyPlayer, result.fantasyPlayer)) { pts += 4; correctCategories++; }
+        // 7. Most 4s (4 pts)
+        if (isStringMatch(pred.playerMost4s, result.playerMost4s)) { pts += 4; correctCategories++; }
 
         // 8. Player of Match (5 pts)
         if (isStringMatch(pred.playerOfMatch, result.playerOfMatch)) { pts += 5; correctCategories++; }
 
-        // 9. Super Striker (4 pts)
-        if (isStringMatch(pred.superStriker, result.superStriker)) { pts += 4; correctCategories++; }
+        // 9. Fantasy Player (4 pts)
+        if (isStringMatch(pred.fantasyPlayer, result.fantasyPlayer)) { pts += 4; correctCategories++; }
 
-        // 10. Most Dot Balls (4 pts)
-        if (isStringMatch(pred.mostDotBalls, result.mostDotBalls)) { pts += 4; correctCategories++; }
+        // 10. Best Economy (4 pts)
+        if (isStringMatch(pred.bestEconomy, result.bestEconomy)) { pts += 4; correctCategories++; }
 
         // Bonus: Exact score prediction (+10 pts)
         if (pred.team1Score !== undefined && result.team1Score !== undefined &&

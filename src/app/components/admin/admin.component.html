@@ -132,8 +132,8 @@
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">7. Fantasy Player of Match</label>
-                    <select class="form-input" [(ngModel)]="formData[match.id].fantasyPlayer">
+                    <label class="form-label">7. Player with Most 4s</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].playerMost4s">
                         <option value="">Select Player</option>
                         @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
                         <option [value]="player">{{ player }}</option>
@@ -150,8 +150,8 @@
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">9. Super Striker</label>
-                    <select class="form-input" [(ngModel)]="formData[match.id].superStriker">
+                    <label class="form-label">9. Super Striker of Match</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].fantasyPlayer">
                         <option value="">Select Player</option>
                         @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
                         <option [value]="player">{{ player }}</option>
@@ -159,8 +159,8 @@
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">10. Most Dot Balls</label>
-                    <select class="form-input" [(ngModel)]="formData[match.id].mostDotBalls">
+                    <label class="form-label">10. Bowler with Best Economy</label>
+                    <select class="form-input" [(ngModel)]="formData[match.id].bestEconomy">
                         <option value="">Select Bowler</option>
                         @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
                         <option [value]="player">{{ player }}</option>

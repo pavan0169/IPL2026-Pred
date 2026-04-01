@@ -9,7 +9,7 @@ import { League } from '../../models/ipl.models';
     standalone: true,
     imports: [CommonModule, FormsModule],
     templateUrl: './league-list.component.html',
-    styleUrls: ['./league-list.component.css']
+    styleUrl: './league-list.component.css'
 })
 export class LeagueListComponent {
     newLeagueName: string = '';

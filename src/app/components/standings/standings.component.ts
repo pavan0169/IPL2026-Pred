@@ -79,7 +79,7 @@ export class StandingsComponent {
     }
 
     private getPredictionsForMatchId(matchId: string) {
-        const preds = this.predictions().filter(p => p.matchId === matchId);
+        const preds = this.iplService.allPredictionsByMatch().get(matchId) || [];
         return this.userStats().map(user => ({
             user,
             pred: preds.find(p => p.userId === user.userId)
@@ -185,17 +185,17 @@ export class StandingsComponent {
         addDtl('Most 6s', teamName(pred.teamMore6s), teamName(result.teamMore6s), 2);
 
         const max6s = addDtl('Player Max 6s', pred.playerMax6s, result.playerMax6s, 3);
-        const fantasy = addDtl('Fantasy Player', pred.fantasyPlayer, result.fantasyPlayer, 4);
+        const most4s = addDtl('Most 4s', pred.playerMost4s, result.playerMost4s, 4);
         const pom = addDtl('Player of Match', pred.playerOfMatch, result.playerOfMatch, 5);
-        const striker = addDtl('Super Striker', pred.superStriker, result.superStriker, 4);
-        const dotBalls = addDtl('Most Dot Balls', pred.mostDotBalls, result.mostDotBalls, 4);
+        const fantasy = addDtl('Super Striker', pred.fantasyPlayer, result.fantasyPlayer, 4);
+        const bestEconomy = addDtl('Best Economy', pred.bestEconomy, result.bestEconomy, 4);
 
         const allCorrect = pred.winner === result.winner &&
             pred.firstInningRange === result.firstInningRange &&
             pred.secondInningRange === result.secondInningRange &&
             pred.teamMore4s === result.teamMore4s &&
             pred.teamMore6s === result.teamMore6s &&
-            max6s && fantasy && pom && striker && dotBalls;
+            max6s && fantasy && pom && most4s && bestEconomy;
 
         if (allCorrect) {
             details.push({ label: 'Perfect Predictor', pts: 25, earned: true, myValue: '100%', actualValue: '100%' });
@@ -234,9 +234,10 @@ export class StandingsComponent {
         const weeks: any[] = [];
         weekMap.forEach((data, key) => {
             const userPoints = new Map<string, { username: string, points: number }>();
+            const allMatchPreds = this.iplService.allPredictionsByMatch();
 
             for (const match of data.matches) {
-                const matchPreds = preds.filter(p => p.matchId === match.id);
+                const matchPreds = allMatchPreds.get(match.id) || [];
                 for (const pred of matchPreds) {
                     if (!match.result) continue;
                     const pts = this.iplService.calcPoints(pred, match.result);

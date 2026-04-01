@@ -29,8 +29,8 @@ export interface MatchResult {
     playerMax6s?: string;
     fantasyPlayer?: string;
     playerOfMatch?: string;
-    superStriker?: string;
-    mostDotBalls?: string;
+    playerMost4s?: string;
+    bestEconomy?: string;
     lastEditedAt?: string; // ISO timestamp
     lastEditedBy?: string; // username or email
 }
@@ -50,8 +50,8 @@ export interface Prediction {
     playerMax6s?: string;
     fantasyPlayer?: string;
     playerOfMatch?: string;
-    superStriker?: string;
-    mostDotBalls?: string;
+    playerMost4s?: string;
+    bestEconomy?: string;
     submittedAt: Date | string;
     points?: number;
     scored?: boolean;
