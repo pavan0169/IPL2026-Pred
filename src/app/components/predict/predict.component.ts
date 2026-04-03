@@ -32,6 +32,25 @@ export class PredictComponent {
         });
     });
 
+    matchGroups = computed(() => {
+        const matches = this.visibleMatches();
+        const now = new Date().getTime();
+
+        const upcoming = matches.filter(m =>
+            (m.status === 'upcoming' && new Date(m.date).getTime() > now) ||
+            m.status === 'live'
+        );
+
+        const completed = matches
+            .filter(m => !!m.result || (m.status === 'upcoming' && new Date(m.date).getTime() <= now))
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        return [
+            { title: 'Upcoming Matches', icon: '⏳', matches: upcoming },
+            { title: 'Completed Matches', icon: '✅', matches: completed }
+        ];
+    });
+
     team1Score = signal(150);
     team2Score = signal(150);
     winner = signal('');

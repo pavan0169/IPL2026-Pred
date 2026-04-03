@@ -15,7 +15,7 @@ export class AuthService {
     private _user = signal<User | null>(null);
     isLoggedIn = () => this._user() !== null;
     currentUser = () => this._user();
-    isAdmin = () => this._user()?.email === 'pavan.tv1999@gmail.com';
+    isAdmin = () => this._user()?.email === 'tvskalyan2008@gmail.com';
 
     private recaptchaVerifier!: RecaptchaVerifier;
     private confirmationResult!: ConfirmationResult | null;
@@ -25,7 +25,8 @@ export class AuthService {
             onAuthStateChanged(auth, async (u) => {
                 if (u) {
                     const emailOrPhone = u.email || u.phoneNumber || '';
-                    const username = u.displayName || emailOrPhone.split('@')[0] || 'User';
+                    const rawName = u.displayName || emailOrPhone.split('@')[0] || 'User';
+                    const username = AuthService.formatUsername(rawName);
                     this._user.set({ username, email: emailOrPhone, uid: u.uid, phone: u.phoneNumber || undefined });
 
                     try {
@@ -65,19 +66,34 @@ export class AuthService {
             const res = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(res.user, { displayName: username });
 
+            const formattedName = AuthService.formatUsername(username);
+
             // Register detailed info in Firestore using the user's UID
             await setDoc(doc(db, 'users', res.user.uid), {
-                username,
+                username: formattedName,
                 email,
                 uid: res.user.uid,
                 joinedAt: new Date().toISOString()
             });
 
-            this._user.set({ username, email, uid: res.user.uid });
+            this._user.set({ username: formattedName, email, uid: res.user.uid });
             return { success: true };
         } catch (e: any) {
             return { success: false, error: e.message };
         }
+    }
+
+    static formatUsername(name: string): string {
+        if (!name) return 'User';
+        const map: Record<string, string> = {
+            'Kalyan Tangirala': 'Kalyan',
+            'Jagadesh Jn': 'Jagadesh',
+            'sumanth007': 'Sumanth',
+            'Annamalai Kasi': 'Annamalai',
+            'Valliappan S': 'Valliappan',
+            'Ethan Hunt': 'Ethan'
+        };
+        return map[name] || name;
     }
 
     async loginWithGoogle(): Promise<{ success: boolean; error?: string }> {

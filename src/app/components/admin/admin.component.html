@@ -5,16 +5,74 @@
             <h2>⚙️ Admin Panel</h2>
             <p>Update match results and user predictions</p>
         </div>
-        <div class="admin-actions">
-            <button class="btn btn-ghost btn-sm" (click)="resetAll()">🔄 Reset All</button>
+        <div class="admin-actions" style="display: flex; align-items: center; gap: 1rem;">
+            <div class="sync-indicator" style="font-size: 0.75rem; color: var(--accent); display: flex; align-items: center; gap: 0.4rem; background: rgba(139, 92, 246, 0.1); padding: 0.3rem 0.6rem; border-radius: 20px; border: 1px solid rgba(139, 92, 246, 0.2);">
+                <span class="dot-pulse"></span> Live Firestore Sync
+            </div>
+            <div class="admin-actions">
+                <button class="btn btn-danger" (click)="resetAll()">Wipe Data</button>
+                <button class="btn btn-secondary" (click)="showBackupPanel.set(!showBackupPanel())" 
+                    [style.background]="showBackupPanel() ? 'var(--accent-gradient)' : 'var(--secondary-gradient)'"
+                    style="color: white; border: none;">
+                    🔄 History & Backups
+                </button>
+            </div>
         </div>
     </div>
 
+    <!-- History & Backup Management Panel -->
+    @if (showBackupPanel()) {
+    <div class="card backup-panel fade-in-up" style="margin-bottom: 1.5rem; background: rgba(139, 92, 246, 0.05); border: 2px dashed var(--accent);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <div>
+                <h4 style="color: var(--accent); margin-bottom: 0.25rem;">Recovery & Seed Utility</h4>
+                <p style="font-size: 0.85rem; color: var(--text-muted);" *ngIf="!hasAnyHistory()">
+                    ⚠️ No backups found. Use the seeding tool below to restore your past matches.
+                </p>
+                <p style="font-size: 0.85rem; color: var(--text-muted);" *ngIf="hasAnyHistory()">
+                    ✅ Historical results for {{ Object.keys(iplService.resultsReference()).length }} matches are safely stored.
+                </p>
+            </div>
+            @if (hasAnyHistory()) {
+                <button class="btn btn-primary btn-sm" (click)="restoreAll()">
+                    <span class="premium-rocket">🚀</span> Restore All Results
+                </button>
+            }
+        </div>
+
+        <div class="divider" style="margin: 1rem 0;"></div>
+
+        <h5 style="margin-bottom: 0.5rem; font-size: 0.9rem;">Manual Seeding (Add results from past matches)</h5>
+        <textarea #seedArea class="form-input" [value]="manualSeedInput()" (input)="manualSeedInput.set(seedArea.value)"
+                 placeholder='{"m1": {"status": "completed", "result": {...}}}'
+                 style="font-family: monospace; font-size: 0.75rem; height: 120px; background: rgba(0,0,0,0.1); border-color: var(--accent);"></textarea>
+        
+        <div style="display: flex; gap: 0.75rem; margin-top: 1rem; align-items: center;">
+            <button class="btn btn-secondary btn-sm" (click)="onManualSeed()" [disabled]="!manualSeedInput()">
+                📥 Seed from JSON
+            </button>
+            @if (hasAnyHistory() || hasAnyCompletedMatches()) {
+                <button class="btn btn-ghost btn-sm" (click)="downloadResultsJson()"
+                        style="border: 1px solid var(--accent); color: var(--accent); background: rgba(139, 92, 246, 0.05); cursor: pointer;">
+                    📤 Export Results to JSON
+                </button>
+            }
+            <p style="font-size: 0.7rem; color: var(--text-muted); align-self: center;">
+                Need help with the JSON format? Ask the AI assistant for a recovery snippet.
+            </p>
+        </div>
+    </div>
+    }
+
     <div class="match-list">
-        @for (match of matches(); track match.id) {
+        @for (group of matchGroups(); track group.title) {
+        @if (group.matches.length > 0) {
+        <div class="section-title" style="margin: 1.5rem 0 1rem; font-size: 1.15rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 0.6rem;">{{ group.icon }} {{ group.title }}</div>
+        @for (match of group.matches; track match.id) {
         <div class="admin-card" [class.expanded]="expandedMatchId() === match.id">
             <div class="admin-card-header" (click)="toggleExpand(match.id)">
                 <div class="teams-summary">
+                    <span style="font-size: 0.75rem; font-weight: 800; opacity: 0.6; background: rgba(0,0,0,0.05); padding: 0.15rem 0.45rem; border-radius: 4px; margin-right: 0.3rem;">Match {{ match.id.substring(1) }}</span>
                     <span class="team-emoji">{{ match.team1.emoji }}</span>
                     <span class="match-vs">{{ match.team1.shortName }} vs {{ match.team2.shortName }}</span>
                     <span class="team-emoji">{{ match.team2.emoji }}</span>
@@ -58,17 +116,17 @@
 
                 <!-- 1. Winner -->
                 <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">1. Winner</label>
+                    <label class="form-label">1. Winner 🏆</label>
                     <select class="form-input" [(ngModel)]="formData[match.id].winner">
                         <option [value]="match.team1.id">{{ match.team1.shortName }}</option>
                         <option [value]="match.team2.id">{{ match.team2.shortName }}</option>
                     </select>
                 </div>
 
-                <!-- 2 & 3. Innings Ranges -->
+                <!-- 2 & 3. Team Score Ranges -->
                 <div class="score-grid">
                     <div class="form-group">
-                        <label class="form-label">2. 1st Innings Range</label>
+                        <label class="form-label">2. {{ match.team1.shortName }} Score Range 🏟️</label>
                         <select class="form-input" [(ngModel)]="formData[match.id].firstInningRange">
                             <option value="">Select Range</option>
                             <option value="<150">&lt;150</option>
@@ -79,7 +137,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">3. 2nd Innings Range</label>
+                        <label class="form-label">3. {{ match.team2.shortName }} Score Range 🏟️</label>
                         <select class="form-input" [(ngModel)]="formData[match.id].secondInningRange">
                             <option value="">Select Range</option>
                             <option value="<150">&lt;150</option>
@@ -94,7 +152,7 @@
                 <!-- 4 & 5. More Boundaries -->
                 <div class="score-grid">
                     <div class="form-group">
-                        <label class="form-label">4. Most 4s</label>
+                        <label class="form-label">4. Most <span class="premium-4-icon">4</span>s team</label>
                         <select class="form-input" [(ngModel)]="formData[match.id].teamMore4s">
                             <option value="">Select Team</option>
                             <option [value]="match.team1.id">{{ match.team1.shortName }}</option>
@@ -103,7 +161,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">5. Most 6s</label>
+                        <label class="form-label">5. Most <span class="premium-6-icon">6</span>s team</label>
                         <select class="form-input" [(ngModel)]="formData[match.id].teamMore6s">
                             <option value="">Select Team</option>
                             <option [value]="match.team1.id">{{ match.team1.shortName }}</option>
@@ -114,44 +172,55 @@
                 </div>
 
                 <!-- Players (6, 7, 8, 9, 10) -->
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">6. Max 6s Player</label>
-                    <select class="form-input" [(ngModel)]="formData[match.id].playerMax6s">
-                        <option value="">Select Player</option>
-                        @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
-                        <option [value]="player">{{ player }}</option>
-                        }
-                    </select>
+                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <!-- 6. Max 6s Player -->
+                    <div class="form-group">
+                        <label class="form-label">6. Max <span class="premium-6-icon">6</span>s Player 🔥</label>
+                        <select class="form-input" [(ngModel)]="formData[match.id].playerMax6s">
+                            <option value="">Select Player</option>
+                            @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
+                            <option [value]="player">{{ player }}</option>
+                            }
+                        </select>
+                    </div>
+                    <!-- 7. Max 4s Player -->
+                    <div class="form-group">
+                        <label class="form-label">7. Player with Maximum <span class="premium-4-icon">4</span>s 🔥</label>
+                        <select class="form-input" [(ngModel)]="formData[match.id].fantasyPlayer">
+                            <option value="">Select Player</option>
+                            @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
+                            <option [value]="player">{{ player }}</option>
+                            }
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">7. Fantasy Player of Match</label>
-                    <select class="form-input" [(ngModel)]="formData[match.id].fantasyPlayer">
-                        <option value="">Select Player</option>
-                        @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
-                        <option [value]="player">{{ player }}</option>
-                        }
-                    </select>
+
+                <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <!-- 8. Player of Match -->
+                    <div class="form-group">
+                        <label class="form-label">8. Player of Match 🎖️</label>
+                        <select class="form-input" [(ngModel)]="formData[match.id].playerOfMatch">
+                            <option value="">Select Player</option>
+                            @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
+                            <option [value]="player">{{ player }}</option>
+                            }
+                        </select>
+                    </div>
+                    <!-- 9. Bowler (Less Economy) -->
+                    <div class="form-group">
+                        <label class="form-label">9. Bowler (Less Economy) 🧤</label>
+                        <select class="form-input" [(ngModel)]="formData[match.id].superStriker">
+                            <option value="">Select Player</option>
+                            @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
+                            <option [value]="player">{{ player }}</option>
+                            }
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">8. Player of the Match ⭐</label>
-                    <select class="form-input" [(ngModel)]="formData[match.id].playerOfMatch">
-                        <option value="">Select Player</option>
-                        @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
-                        <option [value]="player">{{ player }}</option>
-                        }
-                    </select>
-                </div>
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">9. Super Striker</label>
-                    <select class="form-input" [(ngModel)]="formData[match.id].superStriker">
-                        <option value="">Select Player</option>
-                        @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
-                        <option [value]="player">{{ player }}</option>
-                        }
-                    </select>
-                </div>
-                <div class="form-group" style="margin-bottom:0.75rem;">
-                    <label class="form-label">10. Most Dot Balls</label>
+
+                <!-- 10. Super Striker -->
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label class="form-label">10. Super Striker of the match 🌪️</label>
                     <select class="form-input" [(ngModel)]="formData[match.id].mostDotBalls">
                         <option value="">Select Bowler</option>
                         @for (player of getMatchPlayers(match.team1.id, match.team2.id); track player) {
@@ -176,43 +245,176 @@
                     </div>
                 </div>
 
-                <button class="btn btn-primary" style="width:100%; margin-top:0.5rem" (click)="saveResult(match.id)">
-                    ✅ Save Result
-                </button>
-                <button class="btn btn-ghost btn-sm" style="width:100%; margin-top:0.5rem; color: var(--danger)"
-                    (click)="resetMatch(match.id)">
-                    🔄 Reset Match Result
-                </button>
+                        <div class="match-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="btn btn-primary" (click)="saveResult(match.id)">✅ Save Result</button>
+                            <button class="btn btn-ghost" (click)="sendMatchEmail(match.id)" [disabled]="sendingEmail()[match.id]">
+                                {{ sendingEmail()[match.id] ? '⏳ Sending...' : '📧 Email Results' }}
+                            </button>
+                            @if (hasHistory(match.id) && !match.result) {
+                                <button class="btn btn-secondary" (click)="restoreMatch(match.id)" 
+                                    style="background: #34d399; color: white; border: none;">
+                                    ⚡ Restore History
+                                </button>
+                            }
+                            <button class="btn btn-danger btn-sm" (click)="resetMatch(match.id)" *ngIf="match.result">
+                                🔄 Reset Match
+                            </button>
+                        </div>
 
-                <!-- User Predictions Override -->
+                <!-- User Predictions Section -->
                 <div class="divider"></div>
-                <h4 style="margin-bottom: 0.75rem; color: var(--accent); font-weight: 600;">User Predictions</h4>
-                @if (getPredictions(match.id).length === 0) {
-                <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">No predictions yet.</p>
-                }
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem;">
+                    <h4 style="margin:0; color: var(--accent); font-weight: 600;">Player Predictions</h4>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ getPredictions(match.id).length }} submitted</span>
+                </div>
 
                 <div class="predictions-list">
-                    @for (pred of getPredictions(match.id); track pred.id) {
-                    <div class="pred-row">
-                        <div class="pred-uname">👤 {{ pred.username }}</div>
-                        <div class="pred-inputs">
-                            <input type="number" class="form-input btn-sm" [(ngModel)]="pred.team1Score"
-                                title="{{ match.team1.shortName }}">
-                            <input type="number" class="form-input btn-sm" [(ngModel)]="pred.team2Score"
-                                title="{{ match.team2.shortName }}">
-                            <select class="form-input btn-sm" [(ngModel)]="pred.winner">
-                                <option [value]="match.team1.id">{{ match.team1.shortName }}</option>
-                                <option [value]="match.team2.id">{{ match.team2.shortName }}</option>
-                            </select>
-                            <button class="btn btn-ghost btn-sm"
-                                (click)="updateUserPrediction(pred.id, pred.team1Score, pred.team2Score, pred.winner)">💾</button>
+                    @for (user of getAllUsers(); track user.uid) {
+                    <div class="pred-row" [class.no-pred]="!getUserPrediction(user.uid!, match.id)">
+                        <div class="pred-user-info">
+                            <span class="pred-status-dot" [class.is-done]="getUserPrediction(user.uid!, match.id)"></span>
+                            <span class="pred-uname">{{ user.username }}</span>
+                        </div>
+                        <div class="pred-actions">
+                            <button class="btn btn-ghost btn-sm" (click)="openUserPredEditor(user, match.id)">
+                                {{ getUserPrediction(user.uid!, match.id) ? '📝 Full Edit' : '➕ Create' }}
+                            </button>
                         </div>
                     </div>
                     }
                 </div>
+
+                <!-- Detailed User Prediction Editor (Modal) -->
+                @if (editingUserPred()?.matchId === match.id) {
+                <div class="modal-overlay fade-in" (click)="editingUserPred.set(null)">
+                    <div class="modal-content bounce-in" (click)="$event.stopPropagation()" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <div>
+                                <h3 style="margin:0;">Edit Prediction</h3>
+                                <p style="margin:0; font-size:0.8rem; opacity:0.8;">{{ userPredForm.username }} · {{ match.team1.shortName }} vs {{ match.team2.shortName }}</p>
+                            </div>
+                            <button class="btn-close" (click)="editingUserPred.set(null)">✕</button>
+                        </div>
+                        
+                        <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1rem;">
+                             <div class="form-group">
+                                <label class="form-label">🏆 1. Winner</label>
+                                <select class="form-input" [(ngModel)]="userPredForm.winner">
+                                    <option [value]="match.team1.id">{{ match.team1.name }}</option>
+                                    <option [value]="match.team2.id">{{ match.team2.name }}</option>
+                                </select>
+                            </div>
+
+                            <div class="score-grid">
+                                <div class="form-group">
+                                    <label class="form-label">📊 2. {{ match.team1.shortName }} Range</label>
+                                    <select class="form-input" [(ngModel)]="userPredForm.firstInningRange">
+                                        <option value="<150">&lt;150</option>
+                                        <option value="150-174">150-174</option>
+                                        <option value="175-199">175-199</option>
+                                        <option value="200-224">200-224</option>
+                                        <option value="225+">225+</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">📊 3. {{ match.team2.shortName }} Range</label>
+                                    <select class="form-input" [(ngModel)]="userPredForm.secondInningRange">
+                                        <option value="<150">&lt;150</option>
+                                        <option value="150-174">150-174</option>
+                                        <option value="175-199">175-199</option>
+                                        <option value="200-224">200-224</option>
+                                        <option value="225+">225+</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">4. Most <span class="premium-4-icon">4</span>s Team</label>
+                                <select class="form-input" [(ngModel)]="userPredForm.teamMore4s">
+                                    <option [value]="match.team1.id">{{ match.team1.name }}</option>
+                                    <option [value]="match.team2.id">{{ match.team2.name }}</option>
+                                    <option value="tie">Tie</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">💥 5. Most <span class="premium-6-icon">6</span>s Team</label>
+                                <select class="form-input" [(ngModel)]="userPredForm.teamMore6s">
+                                    <option [value]="match.team1.id">{{ match.team1.name }}</option>
+                                    <option [value]="match.team2.id">{{ match.team2.name }}</option>
+                                    <option value="tie">Tie</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">💥 6. Max <span class="premium-6-icon">6</span>s Player</label>
+                                <select class="form-input" [(ngModel)]="userPredForm.playerMax6s">
+                                    @for (p of getMatchPlayers(match.team1.id, match.team2.id); track p) {
+                                        <option [value]="p">{{ p }}</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">🔥 7. Player with Maximum <span class="premium-4-icon">4</span>s</label>
+                                <select class="form-input" [(ngModel)]="userPredForm.fantasyPlayer">
+                                    @for (p of getMatchPlayers(match.team1.id, match.team2.id); track p) {
+                                        <option [value]="p">{{ p }}</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">⭐ 8. Player of Match</label>
+                                <select class="form-input" [(ngModel)]="userPredForm.playerOfMatch">
+                                    @for (p of getMatchPlayers(match.team1.id, match.team2.id); track p) {
+                                        <option [value]="p">{{ p }}</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">🎯 9. Bowler (Economy)</label>
+                                <select class="form-input" [(ngModel)]="userPredForm.superStriker">
+                                    @for (p of getMatchPlayers(match.team1.id, match.team2.id); track p) {
+                                        <option [value]="p">{{ p }}</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">⚡ 10. Super Striker</label>
+                                <select class="form-input" [(ngModel)]="userPredForm.mostDotBalls">
+                                    @for (p of getMatchPlayers(match.team1.id, match.team2.id); track p) {
+                                        <option [value]="p">{{ p }}</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="score-grid" style="border-top:1px solid var(--glass-border); padding-top:1rem; margin-top:1rem;">
+                                <div class="form-group">
+                                    <label class="form-label">{{ match.team1.shortName }} Score</label>
+                                    <input type="number" class="form-input" [(ngModel)]="userPredForm.team1Score">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">{{ match.team2.shortName }} Score</label>
+                                    <input type="number" class="form-input" [(ngModel)]="userPredForm.team2Score">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="padding: 1rem; border-top: 1px solid var(--glass-border); display:flex; gap:0.5rem;">
+                            <button class="btn btn-primary" style="flex:1;" (click)="saveUserPredictionOverride()">💾 Save Prediction</button>
+                            <button class="btn btn-ghost" (click)="editingUserPred.set(null)">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+                }
             </div>
             }
         </div>
+        }
+        }
         }
     </div>
 </div>

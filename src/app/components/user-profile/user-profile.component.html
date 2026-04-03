@@ -1,12 +1,20 @@
-<div class="profile-container" *ngIf="profile">
-    <div class="profile-header">
-        <div class="avatar">{{ profile.displayName.charAt(0) || 'U' }}</div>
-        <h2>{{ profile.displayName }}</h2>
+<div class="profile-page fade-in" *ngIf="profile; else loading">
+
+    <!-- ── Header ── -->
+    <div class="profile-hero">
+        <div class="avatar-ring">
+            <div class="avatar">{{ profile.displayName.charAt(0) | uppercase }}</div>
+        </div>
+        <h2 class="profile-name">{{ profile.displayName }}</h2>
+        <div class="rank-badge" *ngIf="rank > 0">
+            {{ rankEmoji(rank) }} Rank #{{ rank }}
+        </div>
     </div>
 
-    <div class="stats-grid">
+    <!-- ── Stats Row ── -->
+    <div class="stats-row">
         <div class="stat-card">
-            <div class="stat-value">{{ profile.totalPoints }}</div>
+            <div class="stat-value accent">{{ profile.totalPoints }}</div>
             <div class="stat-label">Total Points</div>
         </div>
         <div class="stat-card">
@@ -14,11 +22,170 @@
             <div class="stat-label">Predictions</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value">{{ profile.correctWinners }}</div>
+            <div class="stat-value success">{{ profile.correctWinners }}</div>
             <div class="stat-label">Correct Winners</div>
         </div>
+        <div class="stat-card">
+            <div class="stat-value info">{{ accuracy }}%</div>
+            <div class="stat-label">Win Accuracy</div>
+        </div>
     </div>
+
+    <div class="tab-bar">
+        <button class="tab-btn" [class.active]="activeTab() === 'upcoming'" (click)="activeTab.set('upcoming')">
+            🔮 Upcoming <span class="tab-count">{{ upcomingPredictions.length }}</span>
+        </button>
+        <button class="tab-btn" [class.active]="activeTab() === 'past'" (click)="activeTab.set('past')">
+            🎬 Past <span class="tab-count">{{ pastPredictions.length }}</span>
+        </button>
+    </div>
+
+    <!-- ══════════ UPCOMING TAB ══════════ -->
+    @if (activeTab() === 'upcoming') {
+    @if (upcomingPredictions.length === 0) {
+    <div class="empty-state">
+        <span class="empty-icon">🔮</span>
+        <p>No upcoming matches yet. Head to Predictions to place a prediction!</p>
+    </div>
+    }
+    @for (item of upcomingPredictions; track item.match.id; let i = $index) {
+    <div class="match-card fade-in-up" [style.animation-delay]="i * 0.06 + 's'">
+        <!-- Match header -->
+        <div class="teams-header">
+            <span style="opacity: 0.8; font-weight: 800; background: rgba(0,0,0,0.05); padding: 0.2rem 0.6rem; border-radius: 6px; margin-right: 0.4rem; font-size: 0.85rem;">Match {{ item.match.id.substring(1) }}</span>
+            <span class="team-name-lg">{{ item.match.team1.emoji }} {{ item.match.team1.shortName }}</span>
+            <span class="vs-text">vs</span>
+            <span class="team-name-lg">{{ item.match.team2.emoji }} {{ item.match.team2.shortName }}</span>
+        </div>
+        <div class="match-meta-line">{{ formatDate(item.match.date) }} · {{ formatTime(item.match.date) }}</div>
+        <div class="match-meta-line venue-line">📍 {{ item.match.venue }}</div>
+
+        @if (item.prediction; as pred) {
+        <!-- Row 1: team/score chips -->
+        <div class="pred-flow">
+            <span class="flow-pill winner-pill">🏆 {{ getTeamName(item.match, pred.winner) }}</span>
+            <span class="flow-pill">🎯 {{ pred.team1Score || '-' }}–{{ pred.team2Score || '-' }}</span>
+            <span class="flow-pill">🏟️ {{ pred.firstInningRange || '-' }}</span>
+            <span class="flow-pill">🏟️ {{ pred.secondInningRange || '-' }}</span>
+            <span class="flow-pill"><span class="premium-4-icon">4</span> {{ getTeamName(item.match, pred.teamMore4s) }}</span>
+            <span class="flow-pill"><span class="premium-6-icon">6</span> {{ getTeamName(item.match, pred.teamMore6s) }}</span>
+        </div>
+        <!-- Row 2: player chips -->
+        <div class="pred-flow">
+            <span class="flow-pill">🔥 <span class="premium-6-icon">6</span> {{ pred.playerMax6s || '-' }}</span>
+            <span class="flow-pill">✨ {{ pred.fantasyPlayer || '-' }}</span>
+            <span class="flow-pill pom-pill">🎖️ {{ pred.playerOfMatch || '-' }}</span>
+            <span class="flow-pill">🌪️ {{ pred.superStriker || '-' }}</span>
+        </div>
+        <!-- Row 3: dot balls -->
+        <div class="pred-flow">
+            <span class="flow-pill">🧤 {{ pred.mostDotBalls || '-' }}</span>
+        </div>
+        } @else {
+        <div class="no-pred">🔮 No prediction submitted for this match</div>
+        }
+    </div>
+    }
+    }
+
+    <!-- ══════════ PAST TAB ══════════ -->
+    @if (activeTab() === 'past') {
+    @if (pastPredictions.length === 0) {
+    <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <p>No completed matches with predictions yet.</p>
+    </div>
+    } @else {
+    <div class="past-summary-banner">
+        <div>
+            🏆 Total points from {{ pastPredictions.length }} match{{ pastPredictions.length !== 1 ? 'es' : '' }}:
+        </div>
+        <strong>{{ totalPastPoints() }} pts</strong>
+    </div>
+    }
+
+    @for (item of pastPredictions; track item.match.id; let i = $index) {
+    <div class="match-card fade-in-up clickable-card" 
+         [class.expanded]="expandedMatchId() === item.match.id"
+         [style.animation-delay]="i * 0.06 + 's'"
+         (click)="toggleMatch(item.match.id)">
+        <!-- Match header -->
+        <div class="match-header">
+            <div class="teams-pill">
+                <span style="opacity: 0.8; font-weight: 800; background: rgba(0,0,0,0.05); padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid rgba(0,0,0,0.05); margin-right: 0.3rem; font-size: 0.8rem;">Match {{ item.match.id.substring(1) }}</span>
+                <span>{{ item.match.team1.emoji }} {{ item.match.team1.shortName }}</span>
+                <span class="vs">vs</span>
+                <span>{{ item.match.team2.emoji }} {{ item.match.team2.shortName }}</span>
+            </div>
+
+            @if (item.match.result) {
+            <div class="header-winner">
+                🏆 {{ item.match.result.winner === item.match.team1.id ? item.match.team1.shortName :
+                    item.match.team2.shortName }}
+            </div>
+            }
+            
+            <div class="header-right">
+                @if (item.match.result) {
+                <div class="header-score">
+                    <span class="score-label">🎯 Score</span> 
+                    {{ item.match.result.team1Score }} – {{ item.match.result.team2Score }}
+                </div>
+                }
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    @if (!item.match.result) {
+                        <span class="pts-badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">
+                            Pending
+                        </span>
+                    } @else {
+                        <span class="pts-badge" [class.high]="item.pointsEarned >= 15">
+                            +{{ item.pointsEarned }} Pts
+                        </span>
+                    }
+                    <span class="expand-icon">{{ expandedMatchId() === item.match.id ? '▼' : '▶' }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="match-meta">
+            🗓️ {{ formatDate(item.match.date) }}&nbsp;&nbsp;📍 {{ item.match.venue }}
+        </div>
+
+
+        @if (expandedMatchId() === item.match.id) {
+            <div class="expandable-content fade-in">
+                @if (!item.prediction) {
+                    <div class="no-prediction-state">
+                        🔮 You didn't submit a prediction for this match.
+                    </div>
+                } @else if (!item.match.result) {
+                    <div class="no-prediction-state" style="padding: 1.5rem; text-align: center; color: #f59e0b; background: rgba(245, 158, 11, 0.05); border-radius: 12px; font-weight: 500; font-size: 0.9rem;">
+                        ⏳ Awaiting Match Result to calculate your points.
+                    </div>
+                } @else {
+                    <!-- Breakdown pills -->
+                    <div class="breakdown-grid">
+                        @for (pt of getDetailedPoints(item.prediction, item.match); track pt.label) {
+                        <div class="bd-pill" [class.earned]="pt.earned">
+                            <span class="bd-label">{{ pt.label }}</span>
+                            <div class="bd-values">
+                                <span class="my-val">🔮 {{ pt.myValue }}</span>
+                                @if (!pt.earned && pt.myValue !== '100%') {
+                                <span class="actual-val">🎯 {{ pt.actualValue }}</span>
+                                }
+                            </div>
+                            <span class="bd-pts">{{ pt.earned ? '+' + pt.pts : '0' }}</span>
+                        </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+    }
+    }
+
 </div>
-<div *ngIf="!profile">
-    <p>Loading profile...</p>
-</div>
+
+<ng-template #loading>
+    <div class="loading-state">Loading profile…</div>
+</ng-template>

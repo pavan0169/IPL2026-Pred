@@ -1,17 +1,19 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 export const firebaseConfig = {
-    apiKey: "AIzaSyDNTv8mag6NH-rj2Q4a3U9qrtkx6NT9DBw",
-    authDomain: "ipl2026-pred.firebaseapp.com",
-    projectId: "ipl2026-pred",
-    storageBucket: "ipl2026-pred.firebasestorage.app",
-    messagingSenderId: "764166626245",
-    appId: "1:764166626245:web:82303b9aced181889189ac",
-    measurementId: "G-NB2M8S12WT"
+    apiKey: "AIzaSyArmMeU94mWjWA_1a9dMZOFpI3JtS-7L_Q",
+    authDomain: "iplpred2026.firebaseapp.com",
+    projectId: "iplpred2026",
+    storageBucket: "iplpred2026.firebasestorage.app",
+    messagingSenderId: "179782583695",
+    appId: "1:179782583695:web:abcb7cd192f1656555b7fa",
+    measurementId: "G-5FSYHWHYXG"
 };
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);

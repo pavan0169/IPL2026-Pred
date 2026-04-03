@@ -20,12 +20,12 @@
   <nav class="nav-bar" *ngIf="!isMobile()">
     <div class="nav-brand">
       <span class="brand-icon">🏏</span>
-      <span class="brand-text">IPL Predict</span>
+      <span class="brand-text">IPL 2026 Predict</span>
     </div>
     <div class="nav-tabs">
       <button *ngFor="let tab of visibleTabs" class="nav-button" [class.active]="activeTab() === tab.id"
         (click)="setTab(tab.id)">
-        <span class="icon">{{ tab.icon }}</span>
+        <span class="icon" [innerHTML]="tab.icon"></span>
         <span class="label">{{ tab.label }}</span>
         <span class="nav-glow" *ngIf="activeTab() === tab.id"></span>
       </button>
@@ -35,10 +35,13 @@
         <span class="user-avatar">👤</span>
         <span class="user-name">{{ authService.currentUser()?.username }}</span>
       </div>
-      <button class="theme-toggle" (click)="themeService.toggle()">
-        {{ themeService.isDark() ? '🌙' : '☀️' }}
+      <button class="theme-toggle" (click)="themeService.toggle()" [title]="themeService.isDark() ? 'Switch to light' : 'Switch to dark'">
+        <span [innerHTML]="themeService.isDark() ? '🌙' : '☀️'"></span>
       </button>
-      <button class="btn btn-ghost btn-sm logout-btn" (click)="logout()">🚪 Logout</button>
+      <button class="btn btn-ghost btn-sm logout-btn" (click)="logout()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.3rem"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Logout
+      </button>
     </div>
   </nav>
 
@@ -46,7 +49,7 @@
   <nav class="bottom-nav" *ngIf="isMobile()">
     <button *ngFor="let tab of visibleTabs" class="nav-button" [class.active]="activeTab() === tab.id"
       (click)="setTab(tab.id)">
-      <span class="icon">{{ tab.icon }}</span>
+      <span class="icon" [innerHTML]="tab.icon"></span>
       <span class="nav-glow" *ngIf="activeTab() === tab.id"></span>
     </button>
     <button class="theme-toggle" (click)="themeService.toggle()">
@@ -59,7 +62,7 @@
   <header class="mobile-header" *ngIf="isMobile()">
     <div class="nav-brand">
       <span class="brand-icon">🏏</span>
-      <span class="brand-text">IPL Predict</span>
+      <span class="brand-text">IPL 2026 Predict</span>
     </div>
     <div class="user-chip">
       <span class="user-avatar">👤</span>
@@ -71,6 +74,8 @@
   <main class="content">
     <app-predict *ngIf="activeTab() === 'predict'"></app-predict>
     <app-standings *ngIf="activeTab() === 'standings'"></app-standings>
+    <app-locked-predictions *ngIf="activeTab() === 'locked'"></app-locked-predictions>
+    <app-past-predictions *ngIf="activeTab() === 'history'"></app-past-predictions>
     <app-admin *ngIf="activeTab() === 'admin' && authService.isAdmin()"></app-admin>
     <app-league-list *ngIf="activeTab() === 'leagues'"></app-league-list>
     <app-user-profile *ngIf="activeTab() === 'profile'"></app-user-profile>

@@ -1,8 +1,13 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Match, Team, Prediction, UserStats, MatchResult } from '../models/ipl.models';
 import { db } from '../firebase.config';
-import { collection, onSnapshot, doc, setDoc, updateDoc, writeBatch, deleteField } from 'firebase/firestore';
-import { AuthService } from './auth.service';
+import { collection, onSnapshot, doc, setDoc, updateDoc, writeBatch, deleteField, getDocs, addDoc, query } from 'firebase/firestore';
+import { AuthService, User } from './auth.service';
+
+interface MatchState {
+    status: 'upcoming' | 'live' | 'completed';
+    result?: MatchResult;
+}
 
 const IPL_TEAMS: Team[] = [
     { id: 'csk', name: 'Chennai Super Kings', shortName: 'CSK', color: '#F9CD1B', emoji: '🦁' },
@@ -94,9 +99,13 @@ const SEED_MATCHES: Match[] = [
 export class IplService {
     private _matches = signal<Match[]>([]);
     private _predictions = signal<Prediction[]>([]);
+    private _users = signal<User[]>([]);
+    private _resultsReference = signal<Record<string, MatchState>>({});
 
     matches = this._matches.asReadonly();
     predictions = this._predictions.asReadonly();
+    users = this._users.asReadonly();
+    resultsReference = this._resultsReference.asReadonly();
     teams = IPL_TEAMS;
 
     constructor(private authService: AuthService) {
@@ -106,22 +115,23 @@ export class IplService {
     }
 
     private initFirestore() {
-        const matchStatesRef = doc(db, 'appData', 'matchStates');
-        onSnapshot(matchStatesRef, async (snapshot) => {
-            if (!snapshot.exists()) {
-                await setDoc(matchStatesRef, {});
-                this._matches.set([...SEED_MATCHES]);
-            } else {
-                const states: any = snapshot.data() || {};
-                const updatedMatches = SEED_MATCHES.map(m => {
-                    const extra = states[m.id];
-                    if (extra) {
-                        return { ...m, ...extra };
-                    }
-                    return m;
-                });
-                this._matches.set(updatedMatches);
-            }
+        // Listen for matches (active state)
+        onSnapshot(doc(db, 'appData', 'matchStates'), (docSnap) => {
+            const data = docSnap.data() || {};
+            const updated = SEED_MATCHES.map(m => {
+                const state = data[m.id];
+                if (state) {
+                    return { ...m, status: state.status, result: state.result };
+                }
+                return m;
+            });
+            this._matches.set(updated);
+        });
+
+        // Listen for match results reference (backup state)
+        onSnapshot(doc(db, 'appData', 'matchResultsReference'), (docSnap) => {
+            const data = docSnap.data() || {};
+            this._resultsReference.set(data);
         });
 
         onSnapshot(collection(db, 'user_predictions'), (snapshot) => {
@@ -136,6 +146,16 @@ export class IplService {
             });
             this._predictions.set(allPreds);
         });
+
+        onSnapshot(collection(db, 'users'), (snapshot) => {
+            const allUsers: User[] = [];
+            snapshot.docs.forEach(d => {
+                const data = d.data() as User;
+                data.username = AuthService.formatUsername(data.username);
+                allUsers.push(data);
+            });
+            this._users.set(allUsers);
+        });
     }
 
     userStats = computed<UserStats[]>(() => {
@@ -145,16 +165,24 @@ export class IplService {
 
         preds.forEach(p => {
             const match = matches.find(m => m.id === p.matchId);
+            if (!match) return; // Skip predictions for non-existent matches
+
+            const formattedName = AuthService.formatUsername(p.username || 'User');
             if (!userMap.has(p.userId)) {
-                userMap.set(p.userId, { userId: p.userId, username: p.username || 'User', totalPredictions: 0, correctWinners: 0, totalPoints: 0, rank: 0 });
+                userMap.set(p.userId, { userId: p.userId, username: formattedName, totalPredictions: 0, correctWinners: 0, totalPoints: 0, rank: 0 });
             }
             const stats = userMap.get(p.userId)!;
+            stats.username = formattedName; // Ensure we use updated name
             stats.totalPredictions++;
 
-            if (match?.result) {
+            if (match.result) {
                 const pts = this.calcPoints(p, match.result);
                 stats.totalPoints += pts;
-                if (p.winner === match.result.winner) stats.correctWinners++;
+                
+                // Specifically count winner for the "wins" label
+                if (this.isStringMatch(p.winner, match.result.winner)) {
+                    stats.correctWinners++;
+                }
             }
         });
 
@@ -163,7 +191,8 @@ export class IplService {
 
         const currentUser = this.authService.currentUser();
         if (currentUser && !userMap.has(currentUser.uid!)) {
-            statsArr.push({ userId: currentUser.uid!, username: currentUser.username, totalPredictions: 0, correctWinners: 0, totalPoints: 0, rank: statsArr.length + 1 });
+            const formattedName = AuthService.formatUsername(currentUser.username);
+            statsArr.push({ userId: currentUser.uid!, username: formattedName, totalPredictions: 0, correctWinners: 0, totalPoints: 0, rank: statsArr.length + 1 });
         }
 
         return statsArr;
@@ -199,11 +228,12 @@ export class IplService {
         const matchId = parts[0];
         const uid = parts[1];
 
-        const payload: Record<string, any> = {};
-        for (const key of Object.keys(updates)) {
-            payload[`predictions.${matchId}.${key}`] = (updates as any)[key];
-        }
-        updateDoc(doc(db, 'user_predictions', uid), payload);
+        const payload = {
+            predictions: {
+                [matchId]: updates
+            }
+        };
+        setDoc(doc(db, 'user_predictions', uid), payload, { merge: true });
     }
 
     getPredictionForMatch(matchId: string): Prediction | undefined {
@@ -212,10 +242,42 @@ export class IplService {
         return this._predictions().find(p => p.matchId === matchId && p.userId === currentUser.uid);
     }
 
-    updateMatchResult(matchId: string, result: MatchResult) {
-        updateDoc(doc(db, 'appData', 'matchStates'), {
+    async updateMatchResult(matchId: string, result: MatchResult) {
+        // Save to active state
+        await updateDoc(doc(db, 'appData', 'matchStates'), {
             [`${matchId}.status`]: 'completed',
             [`${matchId}.result`]: result
+        });
+        
+        // Also save to permanent reference
+        await updateDoc(doc(db, 'appData', 'matchResultsReference'), {
+            [`${matchId}`]: {
+                status: 'completed',
+                result: result
+            }
+        });
+    }
+
+    async seedResultsReference(data: Record<string, MatchState>) {
+        await setDoc(doc(db, 'appData', 'matchResultsReference'), data, { merge: true });
+        alert('Historical reference successfully seeded with match results!');
+    }
+
+    async restoreAllFromReference() {
+        const reference = this._resultsReference();
+        if (Object.keys(reference).length === 0) return;
+        
+        await setDoc(doc(db, 'appData', 'matchStates'), reference, { merge: true });
+        alert('All match results successfully restored from historical reference!');
+    }
+
+    async restoreMatchFromReference(matchId: string) {
+        const reference = this._resultsReference();
+        const historical = reference[matchId];
+        if (!historical || !historical.result) return;
+
+        await updateDoc(doc(db, 'appData', 'matchStates'), {
+            [`${matchId}`]: historical
         });
     }
 
@@ -225,50 +287,63 @@ export class IplService {
         });
     }
 
+    isStringMatch(p?: string | number, r?: string | number): boolean {
+        if (p === undefined || r === undefined || p === null || r === null) return false;
+        
+        // Coerce to string and normalize
+        const ps = String(p).toLowerCase().trim();
+        const rs = String(r).toLowerCase().trim();
+        
+        if (!ps || !rs) return false;
+        return ps === rs;
+    }
+
     calcPoints(pred: Prediction, result: MatchResult): number {
+        if (!pred || !result) return 0;
         let pts = 0;
         let correctCategories = 0;
 
-        const isStringMatch = (p?: string, r?: string) => {
-            return p && r && p.toLowerCase().trim() === r.toLowerCase().trim();
-        };
-
         // 1. Winning team (3 pts)
-        if (isStringMatch(pred.winner, result.winner)) { pts += 3; correctCategories++; }
+        if (this.isStringMatch(pred.winner, result.winner)) { pts += 3; correctCategories++; }
 
         // 2. First Innings range (3 pts)
-        if (isStringMatch(pred.firstInningRange, result.firstInningRange)) { pts += 3; correctCategories++; }
+        if (this.isStringMatch(pred.firstInningRange, result.firstInningRange)) { pts += 3; correctCategories++; }
 
         // 3. Second Innings range (3 pts)
-        if (isStringMatch(pred.secondInningRange, result.secondInningRange)) { pts += 3; correctCategories++; }
+        if (this.isStringMatch(pred.secondInningRange, result.secondInningRange)) { pts += 3; correctCategories++; }
 
         // 4. More 4s (2 pts)
-        if (isStringMatch(pred.teamMore4s, result.teamMore4s)) { pts += 2; correctCategories++; }
+        if (this.isStringMatch(pred.teamMore4s, result.teamMore4s)) { pts += 2; correctCategories++; }
 
         // 5. More 6s (2 pts)
-        if (isStringMatch(pred.teamMore6s, result.teamMore6s)) { pts += 2; correctCategories++; }
+        if (this.isStringMatch(pred.teamMore6s, result.teamMore6s)) { pts += 2; correctCategories++; }
 
         // 6. Max 6s Player (3 pts)
-        if (isStringMatch(pred.playerMax6s, result.playerMax6s)) { pts += 3; correctCategories++; }
+        if (this.isStringMatch(pred.playerMax6s, result.playerMax6s)) { pts += 3; correctCategories++; }
 
-        // 7. Fantasy Player (4 pts)
-        if (isStringMatch(pred.fantasyPlayer, result.fantasyPlayer)) { pts += 4; correctCategories++; }
+        // 7. Max 4s Player (4 pts)
+        if (this.isStringMatch(pred.fantasyPlayer, result.fantasyPlayer)) { pts += 4; correctCategories++; }
 
         // 8. Player of Match (5 pts)
-        if (isStringMatch(pred.playerOfMatch, result.playerOfMatch)) { pts += 5; correctCategories++; }
+        if (this.isStringMatch(pred.playerOfMatch, result.playerOfMatch)) { pts += 5; correctCategories++; }
 
-        // 9. Super Striker (4 pts)
-        if (isStringMatch(pred.superStriker, result.superStriker)) { pts += 4; correctCategories++; }
+        // 9. Bowler (Less Economy) (4 pts)
+        if (this.isStringMatch(pred.superStriker, result.superStriker)) { pts += 4; correctCategories++; }
 
-        // 10. Most Dot Balls (4 pts)
-        if (isStringMatch(pred.mostDotBalls, result.mostDotBalls)) { pts += 4; correctCategories++; }
+        // 10. Super Striker of the match (4 pts)
+        if (this.isStringMatch(pred.mostDotBalls, result.mostDotBalls)) { pts += 4; correctCategories++; }
 
         // Bonus: Exact score prediction (+10 pts)
-        if (pred.team1Score !== undefined && result.team1Score !== undefined &&
-            pred.team2Score !== undefined && result.team2Score !== undefined) {
-            if (pred.team1Score === result.team1Score && pred.team2Score === result.team2Score) {
-                pts += 10;
-            }
+        const p1 = pred.team1Score;
+        const p2 = pred.team2Score;
+        const r1 = result.team1Score;
+        const r2 = result.team2Score;
+
+        if (p1 !== undefined && p2 !== undefined && r1 !== undefined && r2 !== undefined) {
+             // Explicit number comparison with unary plus to handle potential string types
+             if (+p1 === +r1 && +p2 === +r2) {
+                 pts += 10;
+             }
         }
 
         // Bonus: All correct answers (+25 pts)
@@ -277,6 +352,88 @@ export class IplService {
         }
 
         return pts;
+    }
+
+    async adminSendMatchEmail(matchId: string) {
+        if (!this.authService.isAdmin()) return;
+
+        const match = this._matches().find(m => m.id === matchId);
+        if (!match || !match.result) {
+            alert('Cannot send email for match without result');
+            return;
+        }
+
+        try {
+            // Fetch all users to build bcc list
+            const usersSnapshot = await getDocs(collection(db, 'users'));
+            const bccList: string[] = [];
+            usersSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data && data['email']) bccList.push(data['email']);
+            });
+
+            if (bccList.length === 0) {
+                alert('No users found in database to send email to.');
+                return;
+            }
+
+            // Get Top 3 Leaderboard
+            const stats = [...this.userStats()].sort((a, b) => b.totalPoints - a.totalPoints).slice(0, 3);
+            const top3Html = stats.map((s, i) => `<li style="margin-bottom: 8px;"><strong>#${i + 1} ${s.username}</strong> &mdash; ${s.totalPoints} pts</li>`).join('');
+
+            const getTeamName = (teamId?: string) => {
+                if (!teamId) return 'Unknown';
+                const team = this.teams.find(t => t.id === teamId);
+                return team ? team.name : teamId;
+            };
+
+            const winnerName = getTeamName(match.result.winner);
+
+            const html = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #111827;">
+                    <h2 style="color: #4f46e5; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Match Results are In! 🏏</h2>
+                    <p style="font-size: 16px; line-height: 1.5;">The results for <strong>${match.team1.name} vs ${match.team2.name}</strong> have been evaluated and points have been allocated!</p>
+                    
+                    <div style="background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #e5e7eb;">
+                        <h3 style="margin-top: 0; color: #1f2937; margin-bottom: 15px;">Match Summary</h3>
+                        <ul style="list-style: none; padding-left: 0; margin: 0; font-size: 15px; line-height: 1.8;">
+                            <li>🏆 <strong>Winner:</strong> ${winnerName}</li>
+                            <li>📊 <strong>Score:</strong> ${match.result.team1Score} - ${match.result.team2Score}</li>
+                            <li>💥 <strong>Max 6s Player:</strong> ${match.result.playerMax6s || '-'}</li>
+                            <li>⭐ <strong>Player of the Match:</strong> ${match.result.playerOfMatch || '-'}</li>
+                        </ul>
+                    </div>
+                    
+                    <h3 style="color: #fb923c; margin-top: 30px;">Current Top 3 Leaderboard 🎖️</h3>
+                    <ul style="font-size: 16px; list-style-type: none; padding-left: 0; background: #fffcf2; padding: 15px; border-radius: 8px; border-left: 4px solid #fb923c;">
+                        ${top3Html}
+                    </ul>
+                    
+                    <div style="text-align: center; margin: 40px 0;">
+                        <a href="https://iplpred2026.web.app/standings" style="background: #4f46e5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">Check Detailed Standings</a>
+                    </div>
+                    
+                    <p style="font-size: 12px; color: #6b7280; margin-top: 40px; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                        This is an automated message from the IPL Prediction League system.<br>
+                        May the best predictor win!
+                    </p>
+                </div>
+            `;
+
+            await addDoc(collection(db, 'mail'), {
+                to: ['tvskalyan2008@gmail.com'], // Sent to admin, bcc to everyone else
+                bcc: bccList,
+                message: {
+                    subject: `🏏 Match Results: ${match.team1.shortName} vs ${match.team2.shortName}!`,
+                    html: html
+                }
+            });
+
+            alert('Email successfully queued for sending relative to Firebase Extension!');
+        } catch (error) {
+            console.error('Error sending email:', error);
+            alert('Failed to send email. Check console.');
+        }
     }
 
     resetMatchResult(matchId: string) {

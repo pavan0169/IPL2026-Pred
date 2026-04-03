@@ -1,8 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, computed, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IplService } from '../../services/ipl.service';
 import { MatchResult, Prediction, getMatchPlayers } from '../../models/ipl.models';
+import { User } from '../../services/auth.service';
 
 @Component({
     selector: 'app-admin',
@@ -12,44 +13,87 @@ import { MatchResult, Prediction, getMatchPlayers } from '../../models/ipl.model
     styleUrl: './admin.component.css'
 })
 export class AdminComponent {
+    Object = Object;
     matches() { return this.iplService.matches(); }
+    hasAnyHistory = computed(() => Object.keys(this.iplService.resultsReference()).length > 0);
+    hasAnyCompletedMatches = computed(() => this.matches().some(m => !!m.result));
+    showBackupPanel = signal<boolean>(false);
+    manualSeedInput = signal<string>('');
     expandedMatchId = signal<string | null>(null);
+    sendingEmail = signal<Record<string, boolean>>({});
 
-    // Per-match form values
+    matchGroups = computed(() => {
+        const _matches = this.matches();
+        const nowMs = new Date().getTime();
+
+        const pendingResults = _matches
+            .filter(m => !m.result && (new Date(m.date).getTime() < nowMs || m.status === 'completed'))
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const upcoming = _matches
+            .filter(m => !m.result && new Date(m.date).getTime() >= nowMs && m.status !== 'completed')
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const completed = _matches
+            .filter(m => !!m.result)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        const groups = [
+            { title: 'Pending Results', icon: '⚠️', matches: pendingResults },
+            { title: 'Upcoming Matches', icon: '⏳', matches: upcoming },
+            { title: 'Completed Matches', icon: '✅', matches: completed }
+        ];
+
+        // Filter out empty groups so the UI isn't cluttered
+        return groups.filter(g => g.matches.length > 0);
+    });
+
+    // Per-match result form values
     formData: Record<string, {
         team1Score: number; team2Score: number; winner: string; status: string;
         firstInningRange?: string; secondInningRange?: string; teamMore4s?: string; teamMore6s?: string;
         playerMax6s?: string; fantasyPlayer?: string; playerOfMatch?: string; superStriker?: string; mostDotBalls?: string;
     }> = {};
 
+    // User prediction override form
+    editingUserPred = signal<{ userId: string; matchId: string } | null>(null);
+    userPredForm: Partial<Prediction> = { winner: '', firstInningRange: '', secondInningRange: '', teamMore4s: '', teamMore6s: '', playerMax6s: '', fantasyPlayer: '', playerOfMatch: '', superStriker: '', mostDotBalls: '', team1Score: 0, team2Score: 0 };
+
     getMatchPlayers(team1Id: string, team2Id: string) {
         return getMatchPlayers(team1Id, team2Id);
     }
 
     constructor(public iplService: IplService) {
-        this.initForms();
+        // Automatically sync formData when matches() updates
+        effect(() => {
+            const currentMatches = this.matches();
+            untracked(() => {
+                currentMatches.forEach(m => {
+                    // Only update if not currently expanded to avoid overwriting unsaved user edits
+                    if (this.expandedMatchId() !== m.id) {
+                        this.syncMatchToForm(m);
+                    }
+                });
+            });
+        });
     }
 
-    // Removes login and logout methods since it is now protected by routing
-
-    initForms() {
-        this.matches().forEach(m => {
-            this.formData[m.id] = {
-                team1Score: m.result?.team1Score ?? 150,
-                team2Score: m.result?.team2Score ?? 150,
-                winner: m.result?.winner ?? m.team1.id,
-                status: m.status,
-                firstInningRange: m.result?.firstInningRange ?? '',
-                secondInningRange: m.result?.secondInningRange ?? '',
-                teamMore4s: m.result?.teamMore4s ?? '',
-                teamMore6s: m.result?.teamMore6s ?? '',
-                playerMax6s: m.result?.playerMax6s ?? '',
-                fantasyPlayer: m.result?.fantasyPlayer ?? '',
-                playerOfMatch: m.result?.playerOfMatch ?? '',
-                superStriker: m.result?.superStriker ?? '',
-                mostDotBalls: m.result?.mostDotBalls ?? ''
-            };
-        });
+    private syncMatchToForm(m: any) {
+        this.formData[m.id] = {
+            team1Score: m.result?.team1Score ?? 150,
+            team2Score: m.result?.team2Score ?? 150,
+            winner: m.result?.winner ?? m.team1.id,
+            status: m.status,
+            firstInningRange: m.result?.firstInningRange ?? '',
+            secondInningRange: m.result?.secondInningRange ?? '',
+            teamMore4s: m.result?.teamMore4s ?? '',
+            teamMore6s: m.result?.teamMore6s ?? '',
+            playerMax6s: m.result?.playerMax6s ?? '',
+            fantasyPlayer: m.result?.fantasyPlayer ?? '',
+            playerOfMatch: m.result?.playerOfMatch ?? '',
+            superStriker: m.result?.superStriker ?? '',
+            mostDotBalls: m.result?.mostDotBalls ?? ''
+        };
     }
 
     toggleExpand(matchId: string) {
@@ -65,6 +109,9 @@ export class AdminComponent {
     saveResult(matchId: string) {
         const fd = this.formData[matchId];
         if (!fd) return;
+        
+        if (!confirm('Are you sure you want to save this result? This will update standings for all users.')) return;
+
         const result: MatchResult = {
             team1Score: +fd.team1Score,
             team2Score: +fd.team2Score,
@@ -83,6 +130,17 @@ export class AdminComponent {
         this.expandedMatchId.set(null);
     }
 
+    async sendMatchEmail(matchId: string) {
+        if (!confirm('Are you sure you want to blast emails to ALL players for this match?')) return;
+        
+        this.sendingEmail.update(st => ({ ...st, [matchId]: true }));
+        try {
+            await this.iplService.adminSendMatchEmail(matchId);
+        } finally {
+            this.sendingEmail.update(st => ({ ...st, [matchId]: false }));
+        }
+    }
+
     resetMatch(matchId: string) {
         if (confirm('Reset this match result back to upcoming?')) {
             this.iplService.resetMatchResult(matchId);
@@ -91,10 +149,69 @@ export class AdminComponent {
     }
 
     resetAll() {
-        if (confirm('Reset all match data and predictions?')) {
-            this.iplService.resetData();
-            this.initForms();
+        this.iplService.resetData();
+    }
+
+    restoreAll() {
+        if (confirm('Are you sure you want to restore all match results from the historical reference backup? This will overwrite current statuses.')) {
+            this.iplService.restoreAllFromReference();
         }
+    }
+
+    hasHistory(matchId: string): boolean {
+        return !!this.iplService.resultsReference()[matchId];
+    }
+
+    restoreMatch(matchId: string) {
+        if (confirm('Restore this match result from the historical reference?')) {
+            this.iplService.restoreMatchFromReference(matchId);
+            this.expandedMatchId.set(null);
+        }
+    }
+
+    onManualSeed() {
+        try {
+            const data = JSON.parse(this.manualSeedInput());
+            if (confirm('Are you sure you want to seed the historical reference with this data? Existing references for these matches will be overwritten.')) {
+                this.iplService.seedResultsReference(data);
+                this.manualSeedInput.set('');
+                this.showBackupPanel.set(false);
+            }
+        } catch (e) {
+            alert('Invalid JSON format. Please ensure the data matches the MatchState record structure.');
+        }
+    }
+
+    downloadResultsJson() {
+        // Collect currently active completed results from the matches signal
+        const activeMatches = this.matches();
+        const activeResults: Record<string, any> = {};
+        
+        activeMatches.forEach(m => {
+            if (m.result) {
+                activeResults[m.id] = {
+                    status: 'completed',
+                    result: m.result
+                };
+            }
+        });
+
+        // Also merge with background reference (backup) if any
+        const backupRef = this.iplService.resultsReference();
+        const combinedData = { ...backupRef, ...activeResults };
+
+        if (Object.keys(combinedData).length === 0) {
+            alert('No completed matches found to export.');
+            return;
+        }
+        
+        const blob = new Blob([JSON.stringify(combinedData, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ipl_match_results_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        window.URL.revokeObjectURL(url);
     }
 
     formatDate(dateStr: string): string {
@@ -107,6 +224,57 @@ export class AdminComponent {
 
     getPredictions(matchId: string): Prediction[] {
         return this.iplService.predictions().filter(p => p.matchId === matchId);
+    }
+
+    getAllUsers(): User[] {
+        return this.iplService.users();
+    }
+
+    getUserPrediction(userId: string, matchId: string): Prediction | undefined {
+        return this.iplService.predictions().find(p => p.userId === userId && p.matchId === matchId);
+    }
+
+    openUserPredEditor(user: User, matchId: string) {
+        if (!user.uid) return;
+        const existing = this.getUserPrediction(user.uid, matchId);
+        
+        this.userPredForm = existing ? { ...existing } : {
+            matchId: matchId,
+            userId: user.uid,
+            username: user.username,
+            winner: '',
+            firstInningRange: '',
+            secondInningRange: '',
+            teamMore4s: '',
+            teamMore6s: '',
+            playerMax6s: '',
+            fantasyPlayer: '',
+            playerOfMatch: '',
+            superStriker: '',
+            mostDotBalls: '',
+            team1Score: 160,
+            team2Score: 160
+        };
+
+        this.editingUserPred.set({ userId: user.uid, matchId });
+    }
+
+    saveUserPredictionOverride() {
+        const state = this.editingUserPred();
+        if (!state) return;
+
+        const predictionId = `${state.matchId}_${state.userId}`;
+        
+        // Use a simpler approach to ensure all fields are sent
+        const updates = { ...this.userPredForm };
+        delete (updates as any).id; // Ensure consistent ID handling if needed
+
+        // We use adminUpdatePrediction but it needs to handle a full object or multiple fields.
+        // Actually the current adminUpdatePrediction takes updates: Partial<Prediction>.
+        this.iplService.adminUpdatePrediction(predictionId, updates);
+        
+        alert('User prediction updated successfully!');
+        this.editingUserPred.set(null);
     }
 
     updateUserPrediction(predictionId: string, team1Score: number, team2Score: number, winner: string) {

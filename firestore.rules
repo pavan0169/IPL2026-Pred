@@ -7,14 +7,14 @@ service cloud.firestore {
     match /appData/matchStates {
       allow read: if true;
       // Only Admin can update match states
-      allow write: if request.auth != null && request.auth.token.email == 'pavan.tv1999@gmail.com';
+      allow write: if request.auth != null && request.auth.token.email == 'tvskalyan2008@gmail.com';
     }
 
     // User Predictions collection (One document per user)
     match /user_predictions/{userId} {
       allow read: if true;
       // Users can only write their own document, admins can write to any
-      allow write: if request.auth != null && (userId == request.auth.uid || request.auth.token.email == 'pavan.tv1999@gmail.com');
+      allow write: if request.auth != null && (userId == request.auth.uid || request.auth.token.email == 'tvskalyan2008@gmail.com');
     }
 
     // Users collection

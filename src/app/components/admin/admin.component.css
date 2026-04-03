@@ -289,37 +289,77 @@
 
 .pred-row {
     display: flex;
-    flex-direction: column;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 0.75rem;
-    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--radius-md);
     border: 1px solid var(--glass-border);
-    gap: 0.65rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.pred-row.no-pred {
+    opacity: 0.7;
+    background: transparent;
+    border-style: dashed;
+}
+
+.pred-user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.pred-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.pred-status-dot.is-done {
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
 .pred-uname {
     font-weight: 600;
     font-size: 0.85rem;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.pred-inputs {
+.pred-actions {
     display: flex;
     gap: 0.5rem;
-    align-items: center;
+    flex-shrink: 0;
 }
 
-@media (min-width: 640px) {
-    .pred-row {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-    }
+/* Modal Enhancements for Admin */
+.admin-page .modal-content {
+    background: #0f111a;
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 0 60px rgba(139, 92, 246, 0.25);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
 
-    .pred-uname {
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+.admin-page .modal-header {
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.admin-page .modal-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.admin-page .modal-body::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 10px;
 }
