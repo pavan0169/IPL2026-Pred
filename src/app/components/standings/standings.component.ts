@@ -1,28 +1,142 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IplService } from '../../services/ipl.service';
 import { AuthService } from '../../services/auth.service';
 import { CricketLoaderComponent } from '../cricket-loader/cricket-loader.component';
+import { StatTileComponent } from '../shared/stat-tile/stat-tile.component';
+import { ProgressBarComponent } from '../shared/progress-bar/progress-bar.component';
+
+type SubTab = 'dashboard' | 'leaderboards' | 'stats';
 
 @Component({
     selector: 'app-standings',
     standalone: true,
-    imports: [CommonModule, CricketLoaderComponent],
+    imports: [CommonModule, CricketLoaderComponent, StatTileComponent, ProgressBarComponent],
     templateUrl: './standings.component.html',
     styleUrl: './standings.component.css'
 })
 export class StandingsComponent {
-    userStats() { return this.iplService.userStats(); }
-    matches() { return this.iplService.matches(); }
-    predictions() { return this.iplService.predictions(); }
-    dataLoaded() { return this.matches().length > 0; }
+    private iplService = inject(IplService);
+    public authService = inject(AuthService);
+    Math = Math;
+
+    activeSubTab = signal<SubTab>('dashboard');
+    userStats = this.iplService.userStats;
+    matches = this.iplService.matches;
+    predictions = this.iplService.predictions;
+
+    dataLoaded = computed(() => this.matches().length > 0);
+
+    currentUserStats = computed(() => {
+        const uid = this.authService.currentUser()?.uid;
+        return this.userStats().find(s => s.userId === uid) || null;
+    });
 
     selectedUserId = signal<string | null>(null);
 
-    constructor(
-        public iplService: IplService,
-        public authService: AuthService
-    ) { }
+    // EXTENDED STATS FOR PLAYER CARDS
+    allUserStatsExtended = computed(() => {
+        const users = this.userStats();
+        const predsMap = this.iplService.allPredictionsByMatch();
+        const matches = this.iplService.matches().filter(m => m.status === 'completed');
+
+        return users.map(user => {
+            let bestMatch = 0;
+            let exactScores = 0;
+            let perfects = 0;
+
+            matches.forEach(m => {
+                const matchPreds = predsMap.get(m.id) || [];
+                const p = matchPreds.find(pred => pred.userId === user.userId);
+                if (p && m.result) {
+                    const pts = this.iplService.calcPoints(p, m.result);
+                    if (pts > bestMatch) bestMatch = pts;
+
+                    // Exact Score Logic
+                    if (p.team1Score !== undefined && m.result.team1Score !== undefined &&
+                        p.team2Score !== undefined && m.result.team2Score !== undefined) {
+                        if (p.team1Score === m.result.team1Score && p.team2Score === m.result.team2Score) {
+                            exactScores++;
+                        }
+                    }
+
+                    // Perfect Predictor Logic (All 10 categories correct)
+                    // Simplified: check if bonus pts for all correct categories were awarded
+                    // Based on IplService.calcPoints returning +25 for 10/10
+                    // We can re-check categories here
+                    let correctCategories = 0;
+                    const isM = (a?: string, b?: string) => a && b && a.toLowerCase().trim() === b.toLowerCase().trim();
+                    if (isM(p.winner, m.result.winner)) correctCategories++;
+                    if (isM(p.firstInningRange, m.result.firstInningRange)) correctCategories++;
+                    if (isM(p.secondInningRange, m.result.secondInningRange)) correctCategories++;
+                    if (isM(p.teamMore4s, m.result.teamMore4s)) correctCategories++;
+                    if (isM(p.teamMore6s, m.result.teamMore6s)) correctCategories++;
+                    if (isM(p.playerMax6s, m.result.playerMax6s)) correctCategories++;
+                    if (isM(p.playerMost4s, m.result.playerMost4s)) correctCategories++;
+                    if (isM(p.playerOfMatch, m.result.playerOfMatch)) correctCategories++;
+                    if (isM(p.fantasyPlayer, m.result.fantasyPlayer)) correctCategories++;
+                    if (isM(p.bestEconomy, m.result.bestEconomy)) correctCategories++;
+                    if (correctCategories === 10) perfects++;
+                }
+            });
+
+            return {
+                ...user,
+                avgPts: user.totalPredictions > 0 ? (user.totalPoints / user.totalPredictions).toFixed(1) : '0.0',
+                accuracy: user.totalPredictions > 0 ? Math.round((user.correctWinners / user.totalPredictions) * 100) : 0,
+                bestMatch,
+                exactScores,
+                perfects
+            };
+        });
+    });
+
+    // HIGHLIGHTS LOGIC
+    latestWeeklyWinner = computed(() => {
+        const weeks = this.weeklyWinners();
+        return weeks.length > 0 ? weeks[0] : null;
+    });
+
+    dailyWinner = computed(() => {
+        // Most recent match winner (if completed)
+        const completed = this.completedMatches();
+        if (completed.length === 0) return null;
+
+        const lastMatch = completed[completed.length - 1];
+        const preds = this.iplService.allPredictionsByMatch().get(lastMatch.id) || [];
+        if (preds.length === 0) return null;
+
+        const scored = preds.map(p => ({
+            userId: p.userId,
+            username: p.username || 'User',
+            points: lastMatch.result ? this.iplService.calcPoints(p, lastMatch.result) : 0
+        })).sort((a, b) => b.points - a.points);
+
+        return scored[0].points > 0 ? scored[0] : null;
+    });
+
+    mostWinsUser = computed(() => {
+        const sorted = [...this.userStats()].sort((a, b) => b.correctWinners - a.correctWinners);
+        return sorted.length > 0 ? sorted[0] : null;
+    });
+
+    mostAccurateUser = computed(() => {
+        const sorted = [...this.userStats()].sort((a, b) => {
+            const accA = a.totalPredictions > 0 ? (a.correctWinners / a.totalPredictions) : 0;
+            const accB = b.totalPredictions > 0 ? (b.correctWinners / b.totalPredictions) : 0;
+            return accB - accA;
+        });
+        return sorted.length > 0 ? sorted[0] : null;
+    });
+
+    setSubTab(tab: SubTab) {
+        this.activeSubTab.set(tab);
+    }
+
+    getBarColor(index: number): string {
+        const colors = ['#8b5cf6', '#ef4444', '#10b981', '#f59e0b', '#06b6d4', '#6366f1'];
+        return colors[index % colors.length];
+    }
 
     private sortedMatches() {
         const matches = this.matches();

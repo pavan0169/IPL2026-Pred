@@ -1,0 +1,87 @@
+.predictions-page {
+    padding: 1.5rem;
+    background: var(--bg);
+    min-height: 100vh;
+}
+
+.predictions-header {
+    background: var(--accent-gradient);
+    padding: 1.25rem 2rem;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #ffffff;
+    margin-bottom: 1.5rem;
+}
+
+.header-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.header-center {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.match-pill {
+    background: rgba(0, 0, 0, 0.15);
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.m-id {
+    opacity: 0.7;
+}
+
+.m-teams {
+    color: #fff;
+}
+
+.m-venue {
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.status-badge {
+    background: #f97316;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
+}
+
+.locked-status {
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #f59e0b;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem;
+    color: var(--text-muted);
+}
+
+.empty-state span {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+}

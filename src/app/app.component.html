@@ -80,9 +80,10 @@
     <app-cricket-loader size="sm"></app-cricket-loader>
     } @else {
     <app-predict *ngIf="activeTab() === 'predict'"></app-predict>
+    <app-predictions *ngIf="activeTab() === 'predictions'"></app-predictions>
     <app-standings *ngIf="activeTab() === 'standings'"></app-standings>
+    <app-history *ngIf="activeTab() === 'history'"></app-history>
     <app-admin *ngIf="activeTab() === 'admin' && authService.isAdmin()"></app-admin>
-    <app-league-list *ngIf="activeTab() === 'leagues'"></app-league-list>
     <app-user-profile *ngIf="activeTab() === 'profile'"></app-user-profile>
     }
   </main>

@@ -6,11 +6,13 @@
 
 /* ---- CSS Tokens — Default: LIGHT MODE ---- */
 :root {
-  /* Light mode base (ThemeService adds 'dark' class for dark, no class = light) */
-  --bg: #ede8f5;
-  --bg-alt: #e2daf0;
-  --surface: rgba(255, 255, 255, 0.55);
-  --surface-2: rgba(255, 255, 255, 0.30);
+  /* Light mode base */
+  --bg: #f3f0ff;
+  /* Light lavender/purple as in image */
+  --bg-alt: #e9e5f8;
+  --surface: #ffffff;
+  /* Solid white for cards in the image */
+  --surface-2: rgba(0, 0, 0, 0.03);
   --surface-solid: #f5f0fa;
   --border: rgba(139, 92, 246, 0.12);
   --border-glow: rgba(139, 92, 246, 0.35);
@@ -26,8 +28,10 @@
   --accent-2: #db2777;
   --accent-light: rgba(124, 58, 237, 0.12);
   --accent-hover: #6d28d9;
-  --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #db2777 50%, #f59e0b 100%);
+  --accent-gradient: linear-gradient(90deg, #8b5cf6, #f97316);
+  /* Purple to Orange as in image */
   --accent-gradient-2: linear-gradient(135deg, #6366f1, #7c3aed, #a855f7);
+  --accent-gradient-orange: linear-gradient(90deg, #f97316, #f59e0b);
   --success: #16a34a;
   --success-light: rgba(22, 163, 74, 0.12);
   --warning: #d97706;

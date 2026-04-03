@@ -1,0 +1,58 @@
+<div class="prediction-table-wrapper card no-padding">
+    <div class="table-scroll">
+        <table class="prediction-table">
+            <thead>
+                <tr>
+                    <th class="col-category sticky-col">CATEGORY</th>
+                    @if (match.result) {
+                    <th class="col-result">
+                        <div class="result-header">
+                            <span class="icon">🏆</span>
+                            <span>RESULT</span>
+                        </div>
+                    </th>
+                    }
+                    @for (user of users; track user.userId) {
+                    <th class="col-player">
+                        <div class="player-stack">
+                            <div class="avatar-sm" [style.background]="getBarColor(users.indexOf(user))">
+                                {{ user.username.charAt(0) | uppercase }}
+                            </div>
+                            <span class="p-name">{{ user.username | uppercase }}</span>
+                        </div>
+                    </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @for (cat of categories; track cat.key) {
+                <tr class="pred-row">
+                    <td class="col-category sticky-col">
+                        <div class="cat-pill">
+                            <span class="cat-icon">{{ cat.icon }}</span>
+                            <span class="cat-label">{{ cat.label }}</span>
+                        </div>
+                    </td>
+
+                    @if (match.result) {
+                    <td class="col-result orange-bg">
+                        <span class="res-val">{{ getResultValue(cat.key) | uppercase }}</span>
+                    </td>
+                    }
+
+                    @for (user of users; track user.userId) {
+                    <td class="col-pred" [class.is-correct]="isCorrect(user.userId, cat.key)">
+                        <div class="pred-inner">
+                            <span class="pred-label">{{ getPredictionValue(user.userId, cat.key) | uppercase }}</span>
+                            @if (isCorrect(user.userId, cat.key)) {
+                            <span class="pts-badge">+{{ cat.pts }}</span>
+                            }
+                        </div>
+                    </td>
+                    }
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

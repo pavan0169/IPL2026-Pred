@@ -1,0 +1,38 @@
+<div class="predictions-page fade-in">
+    <!-- Header with Gradient (Matched to Image) -->
+    <div class="predictions-header card">
+        <div class="header-left">
+            <h2 class="header-title">Today's 🔏 IPL 2026 Predictions</h2>
+        </div>
+
+        <div class="header-center">
+            @if (activeMatch(); as match) {
+            <div class="match-pill">
+                <span class="m-id">Match {{ match.id.replace('m', '') }}</span>
+                <span class="m-teams">{{ match.team1.shortName | uppercase }} vs {{ match.team2.shortName | uppercase
+                    }}</span>
+            </div>
+            <span class="m-venue">📍 {{ match.venue }}</span>
+            }
+        </div>
+
+        <div class="header-right">
+            <div class="status-badge">6/6 ✅</div>
+        </div>
+    </div>
+
+    <!-- Locked Status -->
+    <div class="locked-status">
+        <span class="lock-icon">🔒</span> Locked at {{ lockedAtDisplay() }}
+    </div>
+
+    @if (activeMatch(); as match) {
+    <app-prediction-table [match]="match" [users]="userStats()" [predictions]="allPredictions()">
+    </app-prediction-table>
+    } @else {
+    <div class="empty-state card">
+        <span>🏏</span>
+        <p>No active match at the moment.</p>
+    </div>
+    }
+</div>

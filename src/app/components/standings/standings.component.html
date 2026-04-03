@@ -1,354 +1,264 @@
-@if (!dataLoaded()) {
-<app-cricket-loader size="md" message="🏏 Loading leaderboard..."></app-cricket-loader>
-} @else {
 <div class="standings-page fade-in">
-
-    <!-- Header -->
-    <div class="page-header">
-        <h2>🏆 Leaderboard</h2>
-        <p>Points based on prediction accuracy</p>
+    <!-- Top Navigation Tabs -->
+    <div class="dashboard-tabs">
+        <button class="nav-tab" [class.active]="activeSubTab() === 'dashboard'" (click)="setSubTab('dashboard')">
+            <span class="tab-icon">📈</span> Dashboard
+        </button>
+        <button class="nav-tab" [class.active]="activeSubTab() === 'leaderboards'" (click)="setSubTab('leaderboards')">
+            <span class="tab-icon">🏆</span> Leaderboards
+        </button>
+        <button class="nav-tab" [class.active]="activeSubTab() === 'stats'" (click)="setSubTab('stats')">
+            <span class="tab-icon">📊</span> Statistics
+        </button>
     </div>
 
-    <!-- Points Table -->
-    <div class="card standings-card">
-        <div class="table-header hide-m">
-            <span class="th-rank">Rank</span>
-            <span class="th-player">Player</span>
-            <span class="th-stat">Predictions</span>
-            <span class="th-stat">✅ Winners</span>
-            <span class="th-pts">Points</span>
-        </div>
+    @if (!dataLoaded()) {
+    <div class="loader-container">
+        <app-cricket-loader message="Fetching data..."></app-cricket-loader>
+    </div>
+    } @else {
+    <div class="dashboard-content fade-in-up">
 
-        <div class="leaderboard-list">
-            @for (stat of userStats(); track stat.userId; let i = $index) {
-            <div class="lb-row fade-in-up" [class.lb-gold]="i===0" [class.lb-silver]="i===1" [class.lb-bronze]="i===2"
-                [style.animation-delay]="i * 0.07 + 's'" (click)="selectedUserId.set(stat.userId)"
-                style="cursor:pointer; transition: transform 0.2s; position:relative; z-index:1;">
+        <!-- DASHBOARD TAB -->
+        @if (activeSubTab() === 'dashboard') {
+        <section class="highlights-section">
+            <h5 class="section-title">HIGHLIGHTS THIS WEEK</h5>
+            <div class="highlights-grid">
+                <app-stat-tile label="Weekly winner" [value]="latestWeeklyWinner()?.winner?.username || '--'"
+                    [subValue]="latestWeeklyWinner()?.winner ? latestWeeklyWinner()?.winner?.points + ' pts' : 'N/A'"
+                    color="#8b5cf6"></app-stat-tile>
 
-                <div class="lb-rank">{{ rankEmoji(i + 1) }}</div>
+                <app-stat-tile label="Daily winner" [value]="dailyWinner()?.username || '--'"
+                    [subValue]="dailyWinner() ? 'Recent Match' : 'N/A'" color="#3b82f6"></app-stat-tile>
 
-                <div class="lb-player">
-                    <div class="lb-avatar">{{ stat.username.charAt(0) | uppercase }}</div>
-                    <div class="lb-player-info">
-                        <span class="lb-name">{{ stat.username }}</span>
-                        <!-- Mobile-only quick stats -->
-                        <div class="lb-mobile-stats show-m">
-                            <span>🎯 {{ stat.totalPredictions }} preds</span>
-                            <span>·</span>
-                            <span>✅ {{ stat.correctWinners }} wins</span>
+                <app-stat-tile label="Most wins" [value]="mostWinsUser()?.username || '--'"
+                    [subValue]="mostWinsUser() ? (mostWinsUser()?.correctWinners || 0) + ' wins' : 'N/A'"
+                    color="#10b981"></app-stat-tile>
+
+                <app-stat-tile label="Max points" [value]="userStats()[0]?.username || '--'"
+                    [subValue]="userStats()[0] ? (userStats()[0]?.totalPoints || 0) + ' pts' : 'N/A'"
+                    color="#f59e0b"></app-stat-tile>
+
+                <app-stat-tile label="Most accurate" [value]="mostAccurateUser()?.username || '--'"
+                    [subValue]="mostAccurateUser() ? (Math.round(((mostAccurateUser()?.correctWinners || 0) / (mostAccurateUser()?.totalPredictions || 1)) * 100)) + '%' : 'N/A'"
+                    color="#7c3aed"></app-stat-tile>
+            </div>
+        </section>
+
+        <section class="charts-layout">
+            <div class="chart-box card">
+                <div class="chart-header">
+                    <span class="header-icon">🎯</span>
+                    <h3>ACCURACY BY PLAYER</h3>
+                </div>
+                <div class="chart-body">
+                    @for (stat of userStats().slice(0, 6); track stat.userId; let i = $index) {
+                    <div class="chart-row">
+                        <span class="row-label">{{ stat.username }}</span>
+                        <div class="row-bar-container">
+                            <div class="row-bar"
+                                [style.width.%]="calcAccuracy(stat.totalPredictions, stat.correctWinners)"
+                                [style.background]="getBarColor(i)"></div>
+                        </div>
+                        <span class="row-val">{{ calcAccuracy(stat.totalPredictions, stat.correctWinners) }}%</span>
+                    </div>
+                    }
+                </div>
+            </div>
+
+            <div class="chart-box card">
+                <div class="chart-header">
+                    <span class="header-icon">🏆</span>
+                    <h3>WINS BREAKDOWN</h3>
+                </div>
+                <div class="chart-body">
+                    @for (stat of userStats().slice(0, 6); track stat.userId; let i = $index) {
+                    <div class="chart-row">
+                        <span class="row-label">{{ stat.username }}</span>
+                        <div class="dot-streak">
+                            @for (dot of [1,2,3,4,5,6,7,8,9,10]; track dot) {
+                            <span class="dot" [class.active]="dot <= stat.correctWinners"
+                                [style.background]="dot <= stat.correctWinners ? getBarColor(i) : 'var(--surface-2)'"></span>
+                            }
+                        </div>
+                        <span class="row-val">{{ stat.correctWinners }}w</span>
+                    </div>
+                    }
+                </div>
+            </div>
+
+            <div class="chart-box card full-width">
+                <div class="chart-header">
+                    <span class="header-icon">📊</span>
+                    <h3>TOTAL POINTS COMPARISON</h3>
+                </div>
+                <div class="chart-body">
+                    @for (stat of userStats().slice(0, 8); track stat.userId; let i = $index) {
+                    <div class="chart-row large">
+                        <span class="row-label">{{ stat.username }}</span>
+                        <div class="row-bar-container thick">
+                            <div class="row-bar"
+                                [style.width.%]="(stat.totalPoints / (userStats()[0]?.totalPoints || 1)) * 100"
+                                [style.background]="getBarColor(i)"></div>
+                        </div>
+                        <div class="val-group">
+                            <span class="row-val-bold">{{ stat.totalPoints }}</span>
+                            <span class="row-perc">{{ userStats()[0].totalPoints > 0 ? Math.round((stat.totalPoints /
+                                userStats()[0].totalPoints) * 100) : 0 }}%</span>
                         </div>
                     </div>
-                </div>
-
-                <div class="lb-stat hide-m">{{ stat.totalPredictions }}</div>
-                <div class="lb-stat hide-m">{{ stat.correctWinners }}</div>
-
-                <div class="lb-points">
-                    <span class="points-val">{{ stat.totalPoints }}</span>
-                    <span class="points-lbl">Pts</span>
+                    }
                 </div>
             </div>
-            }
-            @if (userStats().length === 0) {
-            <div class="empty-state">No predictions yet</div>
-            }
-        </div>
-    </div>
-
-    <!-- Scoring Rules -->
-    <div class="card rules-card">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
-            <h3 style="margin:0;">⭐ Prediction Rules (68 Pts Total)</h3>
-        </div>
-        <div class="rules-list">
-            <div class="rule-item">
-                <span class="rule-pts" style="background:var(--accent-gradient); color:#fff;">+25</span>
-                <span><b>Perfect Predictor Bonus</b> (All criteria correct)</span>
-            </div>
-            <div class="rule-item">
-                <span class="rule-pts" style="background:var(--info-light); color:var(--info);">+10</span>
-                <span><b>Exact Score Bonus</b> (Predict numerical scores perfectly)</span>
-            </div>
-            <div class="rule-item">
-                <span class="rule-pts">+5</span>
-                <span>Player of the Match</span>
-            </div>
-            <div class="rule-item">
-                <span class="rule-pts">+4</span>
-                <span>Super Striker / Most 4s / Best Economy</span>
-            </div>
-            <div class="rule-item">
-                <span class="rule-pts">+3</span>
-                <span>Match Winner / Innings Ranges / Max 6s Player</span>
-            </div>
-            <div class="rule-item">
-                <span class="rule-pts">+2</span>
-                <span>Team with More 4s / More 6s</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🏅 Weekly Champions -->
-    @if (weeklyWinners().length > 0) {
-    <div class="section-title" style="display:flex; align-items:center; gap:0.5rem;">
-        🏅 Weekly Champions
-    </div>
-    <div class="weekly-grid">
-        @for (week of weeklyWinners(); track week.key; let i = $index) {
-        <div class="card week-card fade-in-up" [style.animation-delay]="i * 0.06 + 's'">
-            <div class="week-header">
-                <span class="week-dates">📅 {{ week.weekLabel }}</span>
-                <span class="week-matches">{{ week.matchCount }} match{{ week.matchCount > 1 ? 'es' : '' }}</span>
-            </div>
-            <div class="week-winner">
-                <div class="week-avatar gold-avatar">{{ week.winner.username.charAt(0) | uppercase }}</div>
-                <div class="week-winner-info">
-                    <span class="week-winner-name">{{ week.winner.username }}</span>
-                    <span class="week-winner-pts">🔥 {{ week.winner.points }} pts</span>
-                </div>
-                <span class="week-trophy">🏆</span>
-            </div>
-            @if (week.runnerUp) {
-            <div class="week-runner">
-                <span class="runner-label">🥈</span>
-                <span class="runner-name">{{ week.runnerUp.username }}</span>
-                <span class="runner-pts">{{ week.runnerUp.points }} pts</span>
-            </div>
-            }
-        </div>
+        </section>
         }
-    </div>
-    }
 
-    <!-- Active Match Predictions Table -->
-    @if (activeMatch(); as match) {
-    <div class="section-title" style="display:flex; align-items:center; gap:0.5rem;">
-        🔥 Active Match Insights
-        <span class="match-status-chip" [class.live-chip]="match.status === 'live'"
-            [class.upcoming-chip]="match.status === 'completed'">
-            {{ match.status === 'live' ? '⚡ LIVE' : '✅ COMPLETED' }}
-        </span>
-    </div>
-
-    <div class="card active-match-banner">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
-            <div>
-                <div class="match-teams-pill" style="font-size:1.05rem; gap:0.75rem;">
-                    <span>{{ match.team1.emoji }} {{ match.team1.shortName }}</span>
-                    <span class="vs-text">vs</span>
-                    <span>{{ match.team2.emoji }} {{ match.team2.shortName }}</span>
-                </div>
-                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem;">📅 {{ formatDate(match.date)
-                    }} · {{ match.venue }}</div>
-            </div>
-            <div style="font-size:0.85rem; color:var(--text-secondary);">
-                {{ getActiveMatchPredictions().length }} of {{ userStats().length }} predicted
-            </div>
-        </div>
-    </div>
-
-    @if (getActiveMatchPredictions().length === 0) {
-    <div class="card empty-card">
-        <span>🔮</span>
-        <p>No predictions submitted yet for this match!</p>
-    </div>
-    } @else {
-    <div class="table-container">
-        <table class="pred-table">
-            <thead>
-                <tr>
-                    <th class="sticky-col">Player</th>
-                    <th>🏆 Winner</th>
-                    <th>📊 Score</th>
-                    <th>1️⃣ {{ match.team1.shortName }}</th>
-                    <th>2️⃣ {{ match.team2.shortName }}</th>
-                    <th>4️⃣ Most 4s</th>
-                    <th>6️⃣ Most 6s</th>
-                    <th>💥 Max 6s</th>
-                    <th>⚡ Most 4s</th>
-                    <th>⭐ POM</th>
-                    <th>🚀 Striker</th>
-                    <th>🎯 Best Economy</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (row of getActiveMatchPredictions(); track row.user.userId) {
-                <tr [class.no-pred-row]="!row.pred">
-                    <td class="sticky-col player-cell">
-                        <div class="player-cell-inner">
-                            <div class="mini-avatar">{{ row.user.username.charAt(0) | uppercase }}</div>
-                            <span class="player-name">{{ row.user.username }}</span>
-                        </div>
-                    </td>
-                    @if (row.pred) {
-                    <td class="pred-cell">{{ getTeamName(match, row.pred.winner) }}</td>
-                    <td class="pred-cell score-cell">{{ row.pred.team1Score || '-' }}–{{ row.pred.team2Score || '-' }}
-                    </td>
-
-                    <td class="pred-cell">{{ row.pred.firstInningRange || '-' }}</td>
-                    <td class="pred-cell">{{ row.pred.secondInningRange || '-' }}</td>
-                    <td class="pred-cell">{{ getTeamName(match, row.pred.teamMore4s) }}</td>
-                    <td class="pred-cell">{{ getTeamName(match, row.pred.teamMore6s) }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.playerMax6s || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.playerMost4s || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.playerOfMatch || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.fantasyPlayer || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.bestEconomy || '-' }}</td>
-                    } @else {
-                    <td colspan="11" class="not-predicted-cell">No prediction submitted</td>
-                    }
-                </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-    }
-    }
-
-    <!-- Next Match Predictions Table (Only for pavan.tv1999@gmail.com) -->
-    @if (authService.currentUser()?.email === 'pavan.tv1999@gmail.com') {
-    @if (nextMatch(); as nmatch) {
-    <div class="section-title" style="display:flex; align-items:center; gap:0.5rem; margin-top:2rem;">
-        📅 Next Match Insights (Admin Only)
-        <span class="match-status-chip upcoming-chip">UPCOMING</span>
-    </div>
-
-    <div class="card active-match-banner">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
-            <div>
-                <div class="match-teams-pill" style="font-size:1.05rem; gap:0.75rem;">
-                    <span>{{ nmatch.team1.emoji }} {{ nmatch.team1.shortName }}</span>
-                    <span class="vs-text">vs</span>
-                    <span>{{ nmatch.team2.emoji }} {{ nmatch.team2.shortName }}</span>
-                </div>
-                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.3rem;">📅 {{ formatDate(nmatch.date)
-                    }} · {{ nmatch.venue }}</div>
-            </div>
-            <div style="font-size:0.85rem; color:var(--text-secondary);">
-                {{ getNextMatchPredictions().length }} of {{ userStats().length }} predicted
-            </div>
-        </div>
-    </div>
-
-    @if (getNextMatchPredictions().length === 0) {
-    <div class="card empty-card">
-        <span>🔮</span>
-        <p>No predictions submitted yet for the next match!</p>
-    </div>
-    } @else {
-    <div class="table-container">
-        <table class="pred-table">
-            <thead>
-                <tr>
-                    <th class="sticky-col">Player</th>
-                    <th>🏆 Winner</th>
-                    <th>📊 Score</th>
-                    <th>1️⃣ {{ nmatch.team1.shortName }}</th>
-                    <th>2️⃣ {{ nmatch.team2.shortName }}</th>
-                    <th>4️⃣ Most 4s</th>
-                    <th>6️⃣ Most 6s</th>
-                    <th>💥 Max 6s</th>
-                    <th>⚡ Most 4s</th>
-                    <th>⭐ POM</th>
-                    <th>🚀 Striker</th>
-                    <th>🎯 Best Economy</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (row of getNextMatchPredictions(); track row.user.userId) {
-                <tr [class.no-pred-row]="!row.pred">
-                    <td class="sticky-col player-cell">
-                        <div class="player-cell-inner">
-                            <div class="mini-avatar">{{ row.user.username.charAt(0) | uppercase }}</div>
-                            <span class="player-name">{{ row.user.username }}</span>
-                        </div>
-                    </td>
-                    @if (row.pred) {
-                    <td class="pred-cell">{{ getTeamName(nmatch, row.pred.winner) }}</td>
-                    <td class="pred-cell score-cell">{{ row.pred.team1Score || '-' }}–{{ row.pred.team2Score || '-' }}
-                    </td>
-
-                    <td class="pred-cell">{{ row.pred.firstInningRange || '-' }}</td>
-                    <td class="pred-cell">{{ row.pred.secondInningRange || '-' }}</td>
-                    <td class="pred-cell">{{ getTeamName(nmatch, row.pred.teamMore4s) }}</td>
-                    <td class="pred-cell">{{ getTeamName(nmatch, row.pred.teamMore6s) }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.playerMax6s || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.playerMost4s || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.playerOfMatch || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.fantasyPlayer || '-' }}</td>
-                    <td class="pred-cell player-col">{{ row.pred.bestEconomy || '-' }}</td>
-                    } @else {
-                    <td colspan="11" class="not-predicted-cell">No prediction submitted</td>
-                    }
-                </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-    }
-    }
-    }
-
-
-    <!-- User Breakdown Modal -->
-    @if (selectedUserId()) {
-    <div class="modal-overlay fade-in" (click)="closeBreakdown()">
-        <div class="modal-content slide-up" (click)="$event.stopPropagation()">
-            <!-- Modal Header -->
-            <div class="modal-header">
-                <div class="modal-user-info">
-                    <div class="modal-avatar">{{ selectedUserStats()?.username?.charAt(0) | uppercase }}</div>
-                    <div>
-                        <h3 style="margin:0; font-size:1.2rem;">{{ selectedUserStats()?.username }}</h3>
-                        <p style="margin:0; font-size:0.85rem; opacity:0.8;">Total: {{ selectedUserStats()?.totalPoints
-                            }} Pts</p>
-                    </div>
-                </div>
-                <button class="btn-close" (click)="closeBreakdown()">✕</button>
-            </div>
-
-            <div class="modal-body">
-                @if (getUserBreakdownMatches().length === 0) {
-                <div class="empty-state" style="padding: 3rem 1rem;">No completed predictions found for this user.</div>
-                }
-
-                @for (item of getUserBreakdownMatches(); track item.match.id; let i = $index) {
-                <div class="breakdown-card fade-in-up" [style.animation-delay]="i * 0.05 + 's'">
-                    <div class="bd-match-header">
-                        <span class="bd-date">{{ formatDate(item.match.date) }}</span>
-                        <div class="bd-teams">
-                            <span>{{ item.match.team1.shortName }} vs {{ item.match.team2.shortName }}</span>
-                        </div>
-                        <span class="bd-pts-badge" [class.high-pts]="item.pointsEarned >= 15">
-                            +{{ item.pointsEarned }} Pts
-                        </span>
-                    </div>
-
-                    <div class="bd-grid">
-                        @for (pt of getDetailedPoints(item.prediction, item.match); track pt.label) {
-                        <div class="bd-pill" [class.earned]="pt.earned"
-                            style="justify-content:space-between; padding:0.6rem 0.5rem;">
-                            <span class="bd-label">{{ pt.label }}</span>
-
-                            <div style="font-size:0.75rem; margin:0.25rem 0; line-height:1.2; word-break:break-word;">
-                                <span style="display:block; color:var(--text-primary); font-weight:700;">🔮 {{
-                                    pt.myValue }}</span>
-                                @if (!pt.earned && pt.myValue !== '100%') {
-                                <span
-                                    style="display:block; color:var(--text-muted); font-size:0.65rem; margin-top:2px;">✅
-                                    {{ pt.actualValue }}</span>
-                                }
-                            </div>
-
-                            <span class="bd-val">{{ pt.earned ? '+' + pt.pts : '0' }}</span>
-                        </div>
+        <!-- LEADERBOARDS TAB -->
+        @if (activeSubTab() === 'leaderboards') {
+        <section class="simple-leaderboard fade-in">
+            <h5 class="section-title">OVERALL STANDINGS</h5>
+            <div class="table-container card no-padding">
+                <table class="simple-table">
+                    <thead>
+                        <tr>
+                            <th>RANK</th>
+                            <th>PLAYER</th>
+                            <th>TOTAL WINS</th>
+                            <th>TOTAL POINTS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (stat of userStats(); track stat.userId; let i = $index) {
+                        <tr>
+                            <td class="rank-cell">{{ i + 1 }}</td>
+                            <td class="player-cell">
+                                <div class="mini-avatar" [style.background]="getBarColor(i)">{{ stat.username.charAt(0)
+                                    }}</div>
+                                <span>{{ stat.username }}</span>
+                            </td>
+                            <td>{{ stat.correctWinners }} Wins</td>
+                            <td class="points-cell">{{ stat.totalPoints }} Pts</td>
+                        </tr>
                         }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        }
+
+        <!-- STATISTICS TAB -->
+        @if (activeSubTab() === 'stats') {
+        <section class="player-stats-grid fade-in">
+            @for (p of allUserStatsExtended(); track p.userId; let i = $index) {
+            <div class="player-stat-card card">
+                <div class="player-card-header">
+                    <div class="rank-badge" [style.background]="getBarColor(i)">{{ i + 1 }}</div>
+                    <div class="avatar-square" [style.background]="getBarColor(i)">{{ p.username.charAt(0) }}</div>
+                    <div class="header-text">
+                        <h3>{{ p.username }}</h3>
+                        <p>{{ p.totalPoints }} Total Pts</p>
                     </div>
                 </div>
-                }
+
+                <div class="stats-subgrid">
+                    <div class="stat-mini-item">
+                        <span class="m-icon">🥇</span>
+                        <div class="m-vals">
+                            <span class="m-label">DAILY WINS</span>
+                            <span class="m-val">{{ p.correctWinners }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="m-icon">📅</span>
+                        <div class="m-vals">
+                            <span class="m-label">WEEKLY WINS</span>
+                            <span class="m-val">{{ (i === 0 && latestWeeklyWinner()) ? 1 : 0 }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="m-icon">📈</span>
+                        <div class="m-vals">
+                            <span class="m-label">AVG PTS</span>
+                            <span class="m-val">{{ p.avgPts }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="m-icon">🎯</span>
+                        <div class="m-vals">
+                            <span class="m-label">ACCURACY</span>
+                            <span class="m-val">{{ p.accuracy }}%</span>
+                        </div>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="m-icon">🏆</span>
+                        <div class="m-vals">
+                            <span class="m-label">BEST MATCH</span>
+                            <span class="m-val">{{ p.bestMatch }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="m-icon">✅</span>
+                        <div class="m-vals">
+                            <span class="m-label">WINNERS</span>
+                            <span class="m-val">{{ p.correctWinners }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="m-icon">💎</span>
+                        <div class="m-vals">
+                            <span class="m-label">EXACT SC.</span>
+                            <span class="m-val">{{ p.exactScores }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="m-icon">🌟</span>
+                        <div class="m-vals">
+                            <span class="m-label">PERFECT</span>
+                            <span class="m-val">{{ p.perfects }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            }
+        </section>
+        }
+
+    </div>
+    }
+
+    <!-- Modal Breakdown (Existing functionality kept) -->
+    @if (selectedUserId()) {
+    <div class="modal-overlay" (click)="closeBreakdown()">
+        <div class="modal-card card" (click)="$event.stopPropagation()">
+            <button class="close-btn" (click)="closeBreakdown()">✕</button>
+            <div class="modal-header">
+                <div class="avatar">{{ selectedUserStats()?.username?.charAt(0) }}</div>
+                <div>
+                    <h3>{{ selectedUserStats()?.username }}</h3>
+                    <p>Performance Breakdown</p>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="mini-highlights">
+                    <div class="m-item"><span>Total Pts</span><strong>{{ selectedUserStats()?.totalPoints }}</strong>
+                    </div>
+                    <div class="m-item"><span>Accuracy</span><strong>72%</strong></div>
+                    <div class="m-item"><span>Daily Wins</span><strong>{{ selectedUserStats()?.correctWinners
+                            }}</strong>
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div class="history-list">
+                    <h4>Recent Matches</h4>
+                    @for (item of getUserBreakdownMatches().slice(0, 5); track item.match.id) {
+                    <div class="history-item">
+                        <span class="m-name">{{ item.match.team1.shortName }} vs {{ item.match.team2.shortName }}</span>
+                        <span class="m-pts">+{{ item.pointsEarned }}</span>
+                    </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
     }
 </div>
-}

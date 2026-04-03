@@ -8,16 +8,17 @@ import { PredictComponent } from './components/predict/predict.component';
 import { StandingsComponent } from './components/standings/standings.component';
 import { AdminComponent } from './components/admin/admin.component';
 import { LandingComponent } from './components/landing/landing.component';
-import { LeagueListComponent } from './components/league-list/league-list.component';
 import { UserProfileComponent } from './components/user-profile/user-profile.component';
+import { PredictionsComponent } from './components/predictions/predictions.component';
+import { HistoryComponent } from './components/history/history.component';
 import { CricketLoaderComponent } from './components/cricket-loader/cricket-loader.component';
 
-type Tab = 'predict' | 'standings' | 'admin' | 'leagues' | 'profile';
+type Tab = 'predict' | 'predictions' | 'standings' | 'history' | 'admin' | 'profile';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, LayoutModule, PredictComponent, StandingsComponent, AdminComponent, LandingComponent, LeagueListComponent, UserProfileComponent, CricketLoaderComponent],
+  imports: [CommonModule, LayoutModule, PredictComponent, StandingsComponent, AdminComponent, LandingComponent, UserProfileComponent, CricketLoaderComponent, PredictionsComponent, HistoryComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -29,9 +30,10 @@ export class AppComponent implements OnInit {
 
   tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'predict', label: 'Predict', icon: '🏏' },
+    { id: 'predictions', label: 'Predictions', icon: '🔮' },
     { id: 'standings', label: 'Standings', icon: '🏆' },
+    { id: 'history', label: 'History', icon: '📅' },
     { id: 'admin', label: 'Admin', icon: '⚙️' },
-    // { id: 'leagues', label: 'Leagues', icon: '👥' },
     { id: 'profile', label: 'Profile', icon: '👤' },
   ];
 
