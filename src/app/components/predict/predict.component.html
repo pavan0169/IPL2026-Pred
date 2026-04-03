@@ -1,26 +1,24 @@
 <div class="predict-page fade-in">
 
     <!-- Page Header -->
-    <div class="page-header">
-        <h2>🏏 Predictions</h2>
-        <p>Select a match and predict the scores</p>
+    <div class="page-header" style="margin-bottom: 1.25rem;">
+        <div class="section-title" style="margin: 0 0 0.25rem 0;">🏏 IPL 2026 Predictions</div>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Select a match and predict the scores</p>
     </div>
 
-    <!-- Match List -->
-    <div class="match-list">
-        @for (match of visibleMatches(); track match.id) {
+    <!-- Match Groups -->
+    @for (group of matchGroups(); track group.title) {
+    @if (group.matches.length > 0) {
+    <div class="section-title" style="margin: 1.25rem 0 0.6rem; font-size: 0.95rem;">{{ group.icon }} {{ group.title }}
+    </div>
+    <div class="match-list" style="margin-bottom: 1.75rem;">
+        @for (match of group.matches; track match.id) {
         <div class="match-card" [class.active]="selectedMatchId() === match.id">
-            <div class="match-card-inner" (click)="selectMatch(match)">
-                <!-- Status Badge -->
-                <div class="match-top-row">
-                    <span class="badge" [class.badge-upcoming]="match.status==='upcoming'"
-                        [class.badge-live]="match.status==='live'" [class.badge-completed]="match.status==='completed'">
-                        {{ statusLabel(match.status) }}
-                    </span>
-                    <span class="match-date">{{ formatDate(match.date) }} · {{ formatTime(match.date) }}</span>
-                </div>
 
-                <!-- Teams Row -->
+            <!-- Card Summary Row -->
+            <div class="match-card-inner" (click)="selectMatch(match)">
+
+                <!-- Teams -->
                 <div class="teams-row">
                     <div class="team">
                         <div class="team-badge" [style.background]="match.team1.color + '22'">{{ match.team1.emoji }}
@@ -30,7 +28,17 @@
                             <span class="team-name">{{ match.team1.name }}</span>
                         </div>
                     </div>
-                    <div class="vs-chip">VS</div>
+                    <div class="match-meta-center">
+                        <div class="match-label">Match {{ match.id.substring(1) }}</div>
+                        <div class="vs-text">VS</div>
+                        <div class="match-details-center">
+                            <span class="match-date-center">{{ formatDate(match.date) }} · {{ formatTime(match.date)
+                                }}</span>
+                            @if (match.venue) {
+                            <span class="venue-center">📍 {{ match.venue }}</span>
+                            }
+                        </div>
+                    </div>
                     <div class="team team-right">
                         <div class="team-info text-right">
                             <span class="team-short">{{ match.team2.shortName }}</span>
@@ -41,38 +49,45 @@
                     </div>
                 </div>
 
-                <!-- Venue -->
-                <div class="venue">📍 {{ match.venue }}</div>
+                <!-- Status Badge -->
+                <div class="badge-corner">
+                    <span class="badge" [class.badge-upcoming]="match.status==='upcoming'"
+                        [class.badge-live]="match.status==='live'" [class.badge-completed]="match.status==='completed'">
+                        {{ statusLabel(match.status) }}
+                    </span>
+                </div>
+            </div>
 
-                <!-- Completed Result -->
-                @if (match.status === 'completed' && match.result) {
+            <!-- Result row (completed) -->
+            @if (match.status === 'completed' && match.result) {
+            <div style="padding: 0 1rem 0.5rem 1.2rem;">
                 <div class="result-row">
                     <span class="score-chip">{{ match.result.team1Score }}</span>
-                    <span class="winner-label">
-                        {{ match.result.winner === match.team1.id ? match.team1.shortName : match.team2.shortName }} won
-                    </span>
+                    <span class="winner-label">{{ match.result.winner === match.team1.id ? match.team1.shortName :
+                        match.team2.shortName }} won</span>
                     <span class="score-chip">{{ match.result.team2Score }}</span>
                 </div>
-                }
+            </div>
+            }
 
-                <!-- Existing Prediction Summary -->
-                @if (predFor(match.id); as pred) {
+            <!-- Your prediction summary -->
+            @if (predFor(match.id); as pred) {
+            <div style="padding: 0 1rem 0.6rem 1.2rem;">
                 <div class="my-pred-summary">
-                    <span class="pred-label">Your prediction:</span>
+                    <span class="pred-label">Your pick:</span>
                     <span>{{ pred.team1Score }} – {{ pred.team2Score }}</span>
-                    <span class="pred-winner">
-                        ({{ pred.winner === match.team1.id ? match.team1.shortName : match.team2.shortName }} wins)
-                    </span>
+                    <span class="pred-winner">({{ pred.winner === match.team1.id ? match.team1.shortName :
+                        match.team2.shortName }} wins)</span>
                     @if (match.status === 'completed' && match.result) {
                     <span class="pred-pts">+{{ ptsFor(match.id) }} pts</span>
                     }
                 </div>
-                }
             </div>
+            }
 
             <!-- Prediction Form (Expanded) -->
             @if (selectedMatchId() === match.id) {
-            <div class="pred-form fade-in-up" (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()"
+            <div class="pred-form" (click)="$event.stopPropagation()" (mousedown)="$event.stopPropagation()"
                 (touchstart)="$event.stopPropagation()">
                 <div class="divider"></div>
 
@@ -86,13 +101,12 @@
                     } @else {
                     <span>🔒 Match starting soon — predictions locked</span>
                     }
-
                     @if (!predFor(match.id)) {
                     <p class="did-not-predict-lbl">You did not predict this match.</p>
                     }
                 </div>
                 } @else if (submitted()) {
-                <div class="success-msg fade-in">
+                <div class="success-msg">
                     <span>🎉</span>
                     <div>
                         <strong>Prediction saved!</strong>
@@ -101,11 +115,11 @@
                     </div>
                 </div>
                 } @else {
-                <h4 class="form-title">Your Prediction Strategy</h4>
+                <h4 class="form-title">🏆 Your Prediction Strategy</h4>
 
                 <!-- 1. Winner Pick -->
                 <div class="form-group grid-group">
-                    <span class="form-label" style="font-weight:700;">1. Pick Match Winner (3 pts)</span>
+                    <span class="form-label">1. Pick Match Winner 🏆 (3 pts)</span>
                     <div class="winner-options">
                         <label class="winner-option" [class.selected]="winner() === match.team1.id">
                             <input type="radio" [value]="match.team1.id" [checked]="winner() === match.team1.id"
@@ -120,11 +134,11 @@
                     </div>
                 </div>
 
-                <!-- 2 & 3. Innings Ranges with team names -->
+                <!-- 2 & 3. Innings Ranges -->
                 <div class="score-row">
                     <div class="form-group" style="flex:1;">
-                        <span class="form-label" style="font-weight:700;">2. {{ match.team1.emoji }} {{
-                            match.team1.shortName }} Score Range (3 pts)</span>
+                        <span class="form-label">2. {{ match.team1.emoji }} {{ match.team1.shortName }} Score Range 🏟️
+                            (3 pts)</span>
                         <select class="form-input w-full" [ngModel]="firstInningRange()"
                             (ngModelChange)="firstInningRange.set($event)">
                             <option value="">Select Range</option>
@@ -136,8 +150,8 @@
                         </select>
                     </div>
                     <div class="form-group" style="flex:1;">
-                        <span class="form-label" style="font-weight:700;">3. {{ match.team2.emoji }} {{
-                            match.team2.shortName }} Score Range (3 pts)</span>
+                        <span class="form-label">3. {{ match.team2.emoji }} {{ match.team2.shortName }} Score Range 🏟️
+                            (3 pts)</span>
                         <select class="form-input w-full" [ngModel]="secondInningRange()"
                             (ngModelChange)="secondInningRange.set($event)">
                             <option value="">Select Range</option>
@@ -153,7 +167,7 @@
                 <!-- 4 & 5. More Boundaries -->
                 <div class="score-row">
                     <div class="form-group" style="flex:1;">
-                        <span class="form-label" style="font-weight:700;">4. Most 4s (2 pts)</span>
+                        <span class="form-label">4. Most <span class="premium-4-icon">4</span>s team (2 pts)</span>
                         <select class="form-input w-full" [ngModel]="teamMore4s()"
                             (ngModelChange)="teamMore4s.set($event)">
                             <option value="">Select Team</option>
@@ -163,7 +177,7 @@
                         </select>
                     </div>
                     <div class="form-group" style="flex:1;">
-                        <span class="form-label" style="font-weight:700;">5. Most 6s (2 pts)</span>
+                        <span class="form-label">5. Most <span class="premium-6-icon">6</span>s team (2 pts)</span>
                         <select class="form-input w-full" [ngModel]="teamMore6s()"
                             (ngModelChange)="teamMore6s.set($event)">
                             <option value="">Select Team</option>
@@ -176,67 +190,50 @@
 
                 <!-- 6. Max 6s Player -->
                 <div class="form-group grid-group">
-                    <span class="form-label" style="font-weight:700;">6. Player with Maximum 6s (3 pts)</span>
-                    <select class="form-input w-full" [ngModel]="playerMax6s()"
-                        (ngModelChange)="playerMax6s.set($event)">
-                        <option value="">Select Player</option>
-                        @for (player of matchPlayers(); track player) {
-                        <option [value]="player">{{ player }}</option>
-                        }
-                    </select>
+                    <span class="form-label">6. Player with Maximum <span class="premium-6-icon">6</span>s 🔥 (3
+                        pts)</span>
+                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
+                        [ngModel]="playerMax6s()" (ngModelChange)="playerMax6s.set($event)">
+                    </app-searchable-select>
                 </div>
 
-                <!-- 7. Most 4s -->
+                <!-- 7. Max 4s Player -->
                 <div class="form-group grid-group">
-                    <span class="form-label" style="font-weight:700;">7. Player with Most 4s (4 pts)</span>
-                    <select class="form-input w-full" [ngModel]="playerMost4s()"
-                        (ngModelChange)="playerMost4s.set($event)">
-                        <option value="">Select Player</option>
-                        @for (player of matchPlayers(); track player) {
-                        <option [value]="player">{{ player }}</option>
-                        }
-                    </select>
+                    <span class="form-label">7. Player with Maximum <span class="premium-4-icon">4</span>s 🔥 (4
+                        pts)</span>
+                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
+                        [ngModel]="fantasyPlayer()" (ngModelChange)="fantasyPlayer.set($event)">
+                    </app-searchable-select>
                 </div>
 
                 <!-- 8. Player of Match -->
                 <div class="form-group grid-group">
-                    <span class="form-label" style="font-weight:700;">8. Player of the Match ⭐ (5 pts)</span>
-                    <select class="form-input w-full" [ngModel]="playerOfMatch()"
-                        (ngModelChange)="playerOfMatch.set($event)">
-                        <option value="">Select Player</option>
-                        @for (player of matchPlayers(); track player) {
-                        <option [value]="player">{{ player }}</option>
-                        }
-                    </select>
+                    <span class="form-label">8. Player of the Match 🎖️ (5 pts)</span>
+                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
+                        [ngModel]="playerOfMatch()" (ngModelChange)="playerOfMatch.set($event)">
+                    </app-searchable-select>
                 </div>
 
-                <!-- 9. Super Striker -->
+                <!-- 9. Bowler (Less Economy) -->
                 <div class="form-group grid-group">
-                    <span class="form-label" style="font-weight:700;">9. Super Striker of the Match (4 pts)</span>
-                    <select class="form-input w-full" [ngModel]="fantasyPlayer()"
-                        (ngModelChange)="fantasyPlayer.set($event)">
-                        <option value="">Select Player</option>
-                        @for (player of matchPlayers(); track player) {
-                        <option [value]="player">{{ player }}</option>
-                        }
-                    </select>
+                    <span class="form-label">9. Bowler (Less Economy) 🧤 (4 pts)</span>
+                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
+                        [ngModel]="superStriker()" (ngModelChange)="superStriker.set($event)">
+                    </app-searchable-select>
                 </div>
 
-                <!-- 10. Best Economy -->
+                <!-- 10. Super Striker -->
                 <div class="form-group grid-group">
-                    <span class="form-label" style="font-weight:700;">10. Bowler with Best Economy (4 pts)</span>
-                    <select class="form-input w-full" [ngModel]="bestEconomy()"
-                        (ngModelChange)="bestEconomy.set($event)">
-                        <option value="">Select Bowler</option>
-                        @for (player of matchPlayers(); track player) {
-                        <option [value]="player">{{ player }}</option>
-                        }
-                    </select>
+                    <span class="form-label">10. Super Striker of the match 🌪️ (4 pts)</span>
+                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Bowler"
+                        [ngModel]="mostDotBalls()" (ngModelChange)="mostDotBalls.set($event)">
+                    </app-searchable-select>
                 </div>
 
                 <div class="divider"></div>
 
-                <h4 class="form-title" style="margin-top: 1rem; margin-bottom: 0.5rem;">Exact Score Bonus (+10 pts)</h4>
+                <h4 class="form-title" style="margin-top: 0.75rem; margin-bottom: 0.5rem;">🎯 Exact Score Bonus (+10
+                    pts)</h4>
 
                 <!-- Team 1 Score -->
                 <div class="score-row">
@@ -267,13 +264,15 @@
                 </div>
 
                 <!-- Submit -->
-                <!-- Disabled if form isn't complete (this checks that all 10 are chosen) -->
                 <button class="btn btn-primary submit-btn" [disabled]="!canSubmit()" (click)="submitPrediction()"
                     style="margin-top: 1rem;">
-                    {{ existingPrediction() ? '✏️ Update Prediction' : '🚀 Submit Prediction' }}
+                    @if (existingPrediction()) {
+                    ✏️ Update Prediction
+                    } @else {
+                    <span class="premium-rocket">🚀</span> Submit Prediction
+                    }
                 </button>
 
-                <!-- Scoring hint -->
                 <p class="scoring-hint">
                     Complete all 10 criteria for +25 Bonus Points! Fill all fields to unlock submission.
                 </p>
@@ -289,4 +288,7 @@
         </div>
         }
     </div>
+    }
+    }
+
 </div>

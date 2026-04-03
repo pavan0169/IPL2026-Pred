@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
-export const firebaseConfig = {
+const firebaseConfig = {
     apiKey: "AIzaSyDNTv8mag6NH-rj2Q4a3U9qrtkx6NT9DBw",
     authDomain: "ipl2026-pred.firebaseapp.com",
     projectId: "ipl2026-pred",
@@ -15,3 +16,4 @@ export const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);

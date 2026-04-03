@@ -3,6 +3,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Matches collection (Detailed match documents)
+    match /matches/{matchId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Predictions collection (Individual prediction docs)
+    match /predictions/{predictionId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // AppData collection (Single document store for match states)
     match /appData/matchStates {
       allow read: if true;
@@ -10,10 +22,15 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // User Predictions collection (One document per user)
+    // Backup reference
+    match /appData/matchResultsReference {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // User Predictions collection (Legacy path - optional to keep)
     match /user_predictions/{userId} {
       allow read: if true;
-      // Users can only write their own document, admins can write to any
       allow write: if request.auth != null && (userId == request.auth.uid);
     }
 

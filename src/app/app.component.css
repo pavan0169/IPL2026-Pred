@@ -151,16 +151,50 @@
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.55rem 0.9rem;
+    padding: 0.55rem 0.75rem;
     border-radius: var(--radius);
     cursor: pointer;
     transition: all var(--transition);
     /* Removed overflow: hidden so the nav-glow shadow is visible */
 }
 
+/* Desktop-specific overrides for larger web version */
+.nav-bar .nav-button {
+    gap: 0.8rem;
+    padding: 0.6rem 1.15rem;
+}
+
 .nav-button .label {
     font-weight: 500;
     font-size: 0.85rem;
+}
+
+.nav-button .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition), transform var(--transition), filter var(--transition);
+}
+
+.nav-button .icon svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+    transition: transform var(--transition), filter var(--transition);
+}
+
+.nav-bar .nav-button .icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.nav-button.active .icon svg {
+    filter: drop-shadow(0 2px 6px rgba(139, 92, 246, 0.45));
+    transform: scale(1.08);
+}
+
+.nav-button:hover .icon svg {
+    transform: scale(1.12) translateY(-1px);
 }
 
 .nav-button:hover {

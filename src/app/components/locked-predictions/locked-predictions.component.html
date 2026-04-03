@@ -1,0 +1,391 @@
+<div class="page-container fade-in">
+    <!-- Active Match Insights Block -->
+    @for (match of activeMatches(); track match.id) {
+    <div class="card unified-insights-card" #predictionCard [id]="'match-card-' + match.id"
+        style="margin-bottom: 2rem;">
+
+        <!-- Sharing Loading Overlay -->
+        @if (isSharing()) {
+        <div class="sharing-overlay fade-in">
+            <div class="sharing-loader">
+                <span class="spinner"></span>
+                <p>{{ autoShareMessage() || 'Generating high-quality image...' }}</p>
+            </div>
+        </div>
+        }
+
+        <!-- Capture Area for Screenshots -->
+        <div #captureArea class="capture-container">
+            <!-- Compact Banner -->
+            <div class="active-match-banner">
+                <div class="banner-row">
+                    <div class="banner-left-main">
+                        <span class="banner-title">Today's 🔐 IPL 2026 Predictions</span>
+                    </div>
+
+                    <div class="banner-mid-group">
+                        <div class="match-capsule">
+                            <span class="capsule-match-num">Match {{ match.id.substring(1) }}</span>
+                            <span class="capsule-teams">
+                                {{ match.team1.emoji }} {{ match.team1.shortName }} <small class="vs-small">vs</small>
+                                {{ match.team2.emoji }} {{ match.team2.shortName }}
+                            </span>
+                        </div>
+                        <div class="venue-info">
+                            <svg class="location-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            <span class="venue-text">{{ match.venue }}</span>
+                        </div>
+                    </div>
+
+                    <div class="participation-badge">
+                        {{ getActualPredictionCount(match.id) }}/{{ userStats().length }} ✅
+                        @if (canToggleValues()) {
+                        <button class="btn-toggle-view" (click)="toggleValues(); $event.stopPropagation()"
+                            title="Reveal Predictions">
+                            {{ showActualValues() ? '🧛' : '🧞' }}
+                        </button>
+                        }
+                    </div>
+
+                    <!-- Share Button (Excluded from capture in TS) -->
+                    <button class="btn btn-share-card" (click)="shareAsImage(match, captureArea)"
+                        [disabled]="isSharing()" title="Share insights to WhatsApp">
+                        <span class="share-icon">📲</span>
+                        <span class="share-text">Share</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lock Time Bar -->
+            <div class="match-lock-callout">
+                @if (isMatchStarted(match)) {
+                <span class="lock-msg">🔐 Locked at <b>{{ getLockTime(match.date) }}</b></span>
+                } @else {
+                <span class="lock-msg">⌛ Locks at <b>{{ getLockTime(match.date) }}</b></span>
+                }
+            </div>
+
+            @if (getMatchPredictions(match.id).length === 0) {
+            <div class="empty-card" style="padding: 2rem; border-top: 1px solid var(--glass-border);">
+                <span>🔮</span>
+                <p>No predictions submitted yet for this match!</p>
+            </div>
+            } @else {
+            <!-- Unified Table (web + mobile scroll) -->
+            <div class="table-container">
+                <div class="swipe-hint">Swipe to compare ↔️</div>
+                <table class="pred-table">
+                    <thead>
+                        <tr>
+                            <th class="sticky-col category-header">Category</th>
+                            @if (match.result) {
+                            <th class="result-header-col">
+                                <div class="player-header-inner">
+                                    <div class="mini-avatar result-avatar">🏆</div>
+                                    <span class="player-name">Result</span>
+                                </div>
+                            </th>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <th class="player-header" [class.top-scorer]="isTopScorer(match, row.pred)">
+                                <div class="player-header-inner">
+                                    <div class="avatar-wrapper">
+                                        @if (isTopScorer(match, row.pred)) {
+                                        <div class="top-scorer-badge">👑</div>
+                                        }
+                                        <div class="mini-avatar"
+                                            [style.background]="getPlayerGradient(row.user.username)">{{
+                                            row.user.username.charAt(0) | uppercase }}</div>
+                                    </div>
+                                    <span class="player-name">{{ row.user.username }}
+                                        @if (match.result) {
+                                        <span class="player-header-pts"
+                                            [style.background]="getPointsBadgeStyle(row.user.username)">⭐ {{
+                                            calculateMatchPoints(match, row.pred) }}</span>
+                                        }
+                                    </span>
+                                </div>
+                            </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Winner -->
+                        <tr>
+                            <td class="sticky-col category-label">🏆 Winner</td>
+                            @if (match.result) {
+                            <td class="result-val-cell result-col">{{ getTeamName(match, match.result.winner) }}</td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell" [class.pred-correct]="isCorrect(match, row.pred, 'winner')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'winner')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? getTeamName(match, row.pred.winner) : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'winner')) { <span
+                                    class="pts-tag">+3</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Exact Score -->
+                        <tr>
+                            <td class="sticky-col category-label">
+                                🎯 Exact Score
+                                <span class="score-team-capsule">
+                                    <span [style.color]="getTeamColor(match.team1.shortName)">{{ match.team1.shortName
+                                        }}</span>
+                                    <span class="vs-sep">-</span>
+                                    <span [style.color]="getTeamColor(match.team2.shortName)">{{ match.team2.shortName
+                                        }}</span>
+                                </span>
+                            </td>
+                            @if (match.result) {
+                            <td class="result-val-cell score-cell result-col">{{ match.result.team1Score }}-{{
+                                match.result.team2Score }}</td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell score-cell" [class.pred-correct]="isCorrect(match, row.pred, 'score')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'score')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                @if (row.pred && row.pred.team1Score !== undefined) {
+                                <span class="score-inline">{{row.pred.team1Score}}-{{row.pred.team2Score}}</span>
+                                } @else { - }
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'score')) { <span
+                                    class="pts-tag">+10</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Team 1 Range -->
+                        <tr>
+                            <td class="sticky-col category-label">🏟️ {{ match.team1.shortName }}</td>
+                            @if (match.result) {
+                            <td class="result-val-cell result-col">{{ match.result.firstInningRange || '-' }}</td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell" [class.pred-correct]="isCorrect(match, row.pred, 'firstInningRange')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'firstInningRange')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? row.pred.firstInningRange : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'firstInningRange')) { <span
+                                    class="pts-tag">+3</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Team 2 Range -->
+                        <tr>
+                            <td class="sticky-col category-label">🏟️ {{ match.team2.shortName }}</td>
+                            @if (match.result) {
+                            <td class="result-val-cell result-col">{{ match.result.secondInningRange || '-' }}</td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell" [class.pred-correct]="isCorrect(match, row.pred, 'secondInningRange')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'secondInningRange')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? row.pred.secondInningRange : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'secondInningRange')) { <span
+                                    class="pts-tag">+3</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Most 4s Team -->
+                        <tr>
+                            <td class="sticky-col category-label">Most <span class="premium-4-icon">4</span>s Team</td>
+                            @if (match.result) {
+                            <td class="result-val-cell result-col">{{ getTeamName(match, match.result.teamMore4s) }}
+                            </td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell" [class.pred-correct]="isCorrect(match, row.pred, 'teamMore4s')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'teamMore4s')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? getTeamName(match, row.pred.teamMore4s) : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'teamMore4s')) { <span
+                                    class="pts-tag">+2</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Most 6s Team -->
+                        <tr>
+                            <td class="sticky-col category-label">Most <span class="premium-6-icon">6</span>s Team</td>
+                            @if (match.result) {
+                            <td class="result-val-cell result-col">{{ getTeamName(match, match.result.teamMore6s) }}
+                            </td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell" [class.pred-correct]="isCorrect(match, row.pred, 'teamMore6s')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'teamMore6s')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? getTeamName(match, row.pred.teamMore6s) : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'teamMore6s')) { <span
+                                    class="pts-tag">+2</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Max 4s Player -->
+                        <tr>
+                            <td class="sticky-col category-label">🔥 Max <span class="premium-4-icon">4</span>s Player
+                            </td>
+                            @if (match.result) {
+                            <td class="result-val-cell player-col result-col">{{ match.result.fantasyPlayer || '-' }}
+                            </td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell player-col"
+                                [class.pred-correct]="isCorrect(match, row.pred, 'fantasyPlayer')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'fantasyPlayer')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? row.pred.fantasyPlayer : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'fantasyPlayer')) { <span
+                                    class="pts-tag">+4</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Max 6s Player -->
+                        <tr>
+                            <td class="sticky-col category-label">🔥 Max <span class="premium-6-icon">6</span>s Player
+                            </td>
+                            @if (match.result) {
+                            <td class="result-val-cell player-col result-col">{{ match.result.playerMax6s || '-' }}</td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell player-col"
+                                [class.pred-correct]="isCorrect(match, row.pred, 'playerMax6s')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'playerMax6s')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? row.pred.playerMax6s : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'playerMax6s')) { <span
+                                    class="pts-tag">+3</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Player of Match -->
+                        <tr>
+                            <td class="sticky-col category-label">🎖️ POM</td>
+                            @if (match.result) {
+                            <td class="result-val-cell player-col result-col">{{ match.result.playerOfMatch || '-' }}
+                            </td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell player-col"
+                                [class.pred-correct]="isCorrect(match, row.pred, 'playerOfMatch')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'playerOfMatch')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? row.pred.playerOfMatch : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'playerOfMatch')) { <span
+                                    class="pts-tag">+5</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Bowler Economy -->
+                        <tr>
+                            <td class="sticky-col category-label">🧤 Bowler</td>
+                            @if (match.result) {
+                            <td class="result-val-cell player-col result-col">{{ match.result.superStriker || '-' }}
+                            </td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell player-col"
+                                [class.pred-correct]="isCorrect(match, row.pred, 'superStriker')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'superStriker')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? row.pred.superStriker : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'superStriker')) { <span
+                                    class="pts-tag">+4</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Super Striker -->
+                        <tr>
+                            <td class="sticky-col category-label">🌪️ Striker</td>
+                            @if (match.result) {
+                            <td class="result-val-cell player-col result-col">{{ match.result.mostDotBalls || '-' }}
+                            </td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell player-col"
+                                [class.pred-correct]="isCorrect(match, row.pred, 'mostDotBalls')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'mostDotBalls')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ row.pred ? row.pred.mostDotBalls : '-' }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'mostDotBalls')) { <span
+                                    class="pts-tag">+4</span> }
+                            </td>
+                            }
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            }
+        </div>
+    </div>
+    }
+
+    <!-- Scoring Rules -->
+    <div class="card rules-card" style="margin-top: 1.5rem;">
+        <h3 style="margin:0 0 0.75rem; font-size: 0.95rem;">⭐ Prediction Rules (68 Pts Total)</h3>
+        <div class="rules-list">
+            <div class="rule-item">
+                <span class="rule-pts" style="background:var(--accent-gradient); color:#fff;">+25</span>
+                <span><b>Perfect Predictor Bonus</b> (All criteria correct)</span>
+            </div>
+            <div class="rule-item">
+                <span class="rule-pts" style="background:var(--info-light); color:var(--info);">+10</span>
+                <span><b>Exact Score Bonus</b> (Predict numerical scores perfectly)</span>
+            </div>
+            <div class="rule-item">
+                <span class="rule-pts">+5</span>
+                <span>Player of the Match</span>
+            </div>
+            <div class="rule-item">
+                <span class="rule-pts">+4</span>
+                <span>Player with Maximum <span class="premium-4-icon">4</span>s / Bowler (Less Economy) / Super Striker
+                    of the match</span>
+            </div>
+            <div class="rule-item">
+                <span class="rule-pts">+3</span>
+                <span>Match Winner / Team Score Ranges / Max <span class="premium-6-icon">6</span>s Player</span>
+            </div>
+            <div class="rule-item">
+                <span class="rule-pts">+2</span>
+                <span>Team with More <span class="premium-4-icon">4</span>s / More <span
+                        class="premium-6-icon">6</span>s</span>
+            </div>
+        </div>
+    </div>
+</div>

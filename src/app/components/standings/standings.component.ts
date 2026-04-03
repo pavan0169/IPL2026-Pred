@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IplService } from '../../services/ipl.service';
 import { AuthService } from '../../services/auth.service';
@@ -11,194 +11,357 @@ type SubTab = 'dashboard' | 'leaderboards' | 'stats';
 @Component({
     selector: 'app-standings',
     standalone: true,
-    imports: [CommonModule, CricketLoaderComponent, StatTileComponent, ProgressBarComponent],
+    imports: [CommonModule],
     templateUrl: './standings.component.html',
     styleUrl: './standings.component.css'
 })
 export class StandingsComponent {
-    private iplService = inject(IplService);
-    public authService = inject(AuthService);
-    Math = Math;
+    activeTab = signal<'standings' | 'stats' | 'dashboard'>('dashboard');
+    viewTab = signal<'today' | 'daily' | 'weekly' | 'overall'>('today');
+    userStats() { return this.iplService.userStats(); }
+    matches() { return this.iplService.matches(); }
+    predictions() { return this.iplService.predictions(); }
 
-    activeSubTab = signal<SubTab>('dashboard');
-    userStats = this.iplService.userStats;
-    matches = this.iplService.matches;
-    predictions = this.iplService.predictions;
 
-    dataLoaded = computed(() => this.matches().length > 0);
+    getLatestCompletedMatch() {
+        const completed = this.matches()
+            .filter(m => !!m.result)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        return completed.length > 0 ? completed[0] : null;
+    }
 
-    currentUserStats = computed(() => {
-        const uid = this.authService.currentUser()?.uid;
-        return this.userStats().find(s => s.userId === uid) || null;
+    todayStandings = computed(() => {
+        const match = this.getLatestCompletedMatch();
+        if (!match || !match.result) return [];
+
+        const predictions = this.predictions().filter(p => p.matchId === match.id);
+        const users = this.iplService.userStats();
+
+        console.log('--- DEBUG TODAY STANDINGS ---');
+        console.log('Match Result:', JSON.stringify(match.result));
+        console.log('User Stats Length:', users.length);
+        if (predictions.length > 0) {
+            console.log('Sample Prediction:', JSON.stringify(predictions[0]));
+        }
+
+        const standings = users.map(user => {
+            const pred = predictions.find(p => p.userId === user.userId);
+            const points = pred ? this.iplService.calcPoints(pred, match.result!) : 0;
+            return {
+                userId: user.userId,
+                username: user.username,
+                matchPoints: points,
+                prediction: pred
+            };
+        }).sort((a, b) => b.matchPoints - a.matchPoints);
+
+        // Assign rank with tie handling
+        let rank = 1;
+        standings.forEach((s, i) => {
+            if (i > 0 && s.matchPoints < standings[i - 1].matchPoints) {
+                rank = i + 1;
+            }
+            (s as any).rank = rank;
+        });
+
+        return standings;
     });
 
-    selectedUserId = signal<string | null>(null);
+    weeklyChampions = computed(() => {
+        const matches = this.matches();
+        const predictions = this.predictions();
+        const completed = matches.filter(m => !!m.result);
 
-    // EXTENDED STATS FOR PLAYER CARDS
-    allUserStatsExtended = computed(() => {
-        const users = this.userStats();
-        const predsMap = this.iplService.allPredictionsByMatch();
-        const matches = this.iplService.matches().filter(m => m.status === 'completed');
+        if (completed.length === 0) return [];
 
-        return users.map(user => {
-            let bestMatch = 0;
-            let exactScores = 0;
-            let perfects = 0;
+        const weeklyData = new Map<string, { label: string, matches: any[], scores: Map<string, number>, weekStart: Date }>();
 
-            matches.forEach(m => {
-                const matchPreds = predsMap.get(m.id) || [];
-                const p = matchPreds.find(pred => pred.userId === user.userId);
-                if (p && m.result) {
-                    const pts = this.iplService.calcPoints(p, m.result);
-                    if (pts > bestMatch) bestMatch = pts;
+        completed.forEach(m => {
+            const d = new Date(m.date);
+            // Monday-Sunday weeks
+            const day = d.getDay();
+            const diff = day === 0 ? 6 : day - 1; // 0=Sun, 1=Mon...
+            const start = new Date(d);
+            start.setDate(d.getDate() - diff);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            end.setHours(23, 59, 59, 999);
 
-                    // Exact Score Logic
-                    if (p.team1Score !== undefined && m.result.team1Score !== undefined &&
-                        p.team2Score !== undefined && m.result.team2Score !== undefined) {
-                        if (p.team1Score === m.result.team1Score && p.team2Score === m.result.team2Score) {
-                            exactScores++;
-                        }
-                    }
+            const label = `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+            if (!weeklyData.has(label)) {
+                weeklyData.set(label, { label, matches: [], scores: new Map<string, number>(), weekStart: start });
+            }
+            const week = weeklyData.get(label)!;
+            week.matches.push(m);
 
-                    // Perfect Predictor Logic (All 10 categories correct)
-                    // Simplified: check if bonus pts for all correct categories were awarded
-                    // Based on IplService.calcPoints returning +25 for 10/10
-                    // We can re-check categories here
-                    let correctCategories = 0;
-                    const isM = (a?: string, b?: string) => a && b && a.toLowerCase().trim() === b.toLowerCase().trim();
-                    if (isM(p.winner, m.result.winner)) correctCategories++;
-                    if (isM(p.firstInningRange, m.result.firstInningRange)) correctCategories++;
-                    if (isM(p.secondInningRange, m.result.secondInningRange)) correctCategories++;
-                    if (isM(p.teamMore4s, m.result.teamMore4s)) correctCategories++;
-                    if (isM(p.teamMore6s, m.result.teamMore6s)) correctCategories++;
-                    if (isM(p.playerMax6s, m.result.playerMax6s)) correctCategories++;
-                    if (isM(p.playerMost4s, m.result.playerMost4s)) correctCategories++;
-                    if (isM(p.playerOfMatch, m.result.playerOfMatch)) correctCategories++;
-                    if (isM(p.fantasyPlayer, m.result.fantasyPlayer)) correctCategories++;
-                    if (isM(p.bestEconomy, m.result.bestEconomy)) correctCategories++;
-                    if (correctCategories === 10) perfects++;
-                }
+            const matchPreds = predictions.filter(p => p.matchId === m.id);
+            matchPreds.forEach(p => {
+                const pts = this.iplService.calcPoints(p, m.result!);
+                week.scores.set(p.userId, (week.scores.get(p.userId) || 0) + pts);
             });
+        });
+
+        return Array.from(weeklyData.values()).map((w, idx) => {
+            const sortedPlayers = Array.from(w.scores.entries())
+                .map(([userId, points]) => ({
+                    userId,
+                    username: this.userStats().find(s => s.userId === userId)?.username || 'User',
+                    points
+                }))
+                .sort((a, b) => b.points - a.points);
 
             return {
-                ...user,
-                avgPts: user.totalPredictions > 0 ? (user.totalPoints / user.totalPredictions).toFixed(1) : '0.0',
-                accuracy: user.totalPredictions > 0 ? Math.round((user.correctWinners / user.totalPredictions) * 100) : 0,
-                bestMatch,
-                exactScores,
-                perfects
+                label: w.label,
+                weekNumber: 0, // Will sort and assign after
+                matchCount: w.matches.length,
+                topPlayers: sortedPlayers,
+                weekStart: w.weekStart
+            };
+        }).sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime())
+            .map((w, idx, arr) => ({ ...w, weekNumber: arr.length - idx }));
+    });
+
+    dailyChampions = computed(() => {
+        const matches = this.matches();
+        const predictions = this.predictions();
+        const completed = matches
+            .filter(m => !!m.result)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        return completed.map(m => {
+            const matchPreds = predictions.filter(p => p.matchId === m.id);
+            const scoredPlayers = this.iplService.userStats().map(user => {
+                const pred = matchPreds.find(p => p.userId === user.userId);
+                const pts = pred ? this.iplService.calcPoints(pred, m.result!) : 0;
+                return { userId: user.userId, username: user.username, points: pts, predicted: !!pred };
+            }).sort((a, b) => b.points - a.points);
+
+            return {
+                match: m,
+                dateLabel: new Date(m.date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }),
+                players: scoredPlayers
             };
         });
     });
 
-    // HIGHLIGHTS LOGIC
-    latestWeeklyWinner = computed(() => {
-        const weeks = this.weeklyWinners();
-        return weeks.length > 0 ? weeks[0] : null;
+    playerStats = computed(() => {
+        const matches = this.matches();
+        const predictions = this.predictions();
+        const users = this.userStats();
+        const completed = matches.filter(m => !!m.result);
+        const totalCompleted = completed.length;
+
+        // Pre-calculate weekly winners
+        const weeklyWinnersRaw = this.weeklyChampions();
+        const allWeeklyWinnerIds = weeklyWinnersRaw.map(w => {
+            const maxPts = w.topPlayers[0]?.points;
+            if (maxPts === undefined || maxPts === 0) return [];
+            return w.topPlayers.filter(tp => tp.points === maxPts).map(tp => tp.userId);
+        }).flat();
+
+        return users.map(user => {
+            const uid = user.userId;
+            let rank1Count = 0;
+            let rank2Count = 0;
+            let bestScore = 0;
+            let totalMatchPts = 0;
+            let matchesPlayed = 0;
+            let exactScoreCount = 0;
+            let perfectCount = 0;
+            let correctCategoryTotal = 0;
+            let categoryAttempts = 0;
+
+            const weeklyWins = allWeeklyWinnerIds.filter(id => id === uid).length;
+
+            completed.forEach(m => {
+                const matchPreds = predictions.filter(p => p.matchId === m.id);
+                const pred = matchPreds.find(p => p.userId === uid);
+
+                // Per-match leaderboard rank
+                const scored = users.map(u => {
+                    const up = matchPreds.find(p => p.userId === u.userId);
+                    return { userId: u.userId, pts: up ? this.iplService.calcPoints(up, m.result!) : 0 };
+                }).sort((a, b) => b.pts - a.pts);
+                const myPos = scored.findIndex(s => s.userId === uid);
+                if (myPos === 0) rank1Count++;
+                else if (myPos === 1) rank2Count++;
+
+                if (!pred) return;
+                matchesPlayed++;
+                const pts = this.iplService.calcPoints(pred, m.result!);
+                totalMatchPts += pts;
+                if (pts > bestScore) bestScore = pts;
+
+                // Exact score bonus
+                if (pred.team1Score !== undefined && pred.team2Score !== undefined &&
+                    m.result!.team1Score !== undefined && m.result!.team2Score !== undefined &&
+                    +pred.team1Score === +m.result!.team1Score && +pred.team2Score === +m.result!.team2Score) {
+                    exactScoreCount++;
+                }
+
+                // Category accuracy
+                const checks: [any, any][] = [
+                    [pred.winner, m.result!.winner],
+                    [pred.firstInningRange, m.result!.firstInningRange],
+                    [pred.secondInningRange, m.result!.secondInningRange],
+                    [pred.teamMore4s, m.result!.teamMore4s],
+                    [pred.teamMore6s, m.result!.teamMore6s],
+                    [pred.playerMax6s, m.result!.playerMax6s],
+                    [pred.fantasyPlayer, m.result!.fantasyPlayer],
+                    [pred.playerOfMatch, m.result!.playerOfMatch],
+                    [pred.superStriker, m.result!.superStriker],
+                    [pred.mostDotBalls, m.result!.mostDotBalls],
+                ];
+                checks.forEach(([p, r]) => {
+                    if (p !== undefined && p !== null && String(p).trim() !== '') {
+                        categoryAttempts++;
+                        if (this.iplService.isStringMatch(String(p), String(r ?? ''))) correctCategoryTotal++;
+                    }
+                });
+                if (checks.every(([p, r]) => this.iplService.isStringMatch(String(p ?? ''), String(r ?? '')))) {
+                    perfectCount++;
+                }
+            });
+
+            return {
+                userId: uid,
+                username: user.username,
+                totalPoints: user.totalPoints,
+                rank: user.rank,
+                correctWinners: user.correctWinners,
+                totalPredictions: user.totalPredictions,
+                rank1Count,
+                rank2Count,
+                weeklyWins,
+                bestScore,
+                avgPts: matchesPlayed > 0 ? Math.round((totalMatchPts / matchesPlayed) * 10) / 10 : 0,
+                exactScoreCount,
+                perfectCount,
+                participationRate: totalCompleted > 0 ? Math.round((matchesPlayed / totalCompleted) * 100) : 0,
+                accuracy: categoryAttempts > 0 ? Math.round((correctCategoryTotal / categoryAttempts) * 100) : 0,
+                matchesPlayed,
+                totalCompleted,
+            };
+        }).sort((a, b) => b.totalPoints - a.totalPoints);
     });
 
-    dailyWinner = computed(() => {
-        // Most recent match winner (if completed)
-        const completed = this.completedMatches();
-        if (completed.length === 0) return null;
+    dashboardHighlights = computed(() => {
+        const stats = this.playerStats();
+        const weekly = this.weeklyChampions();
+        const daily = this.dailyChampions();
 
-        const lastMatch = completed[completed.length - 1];
-        const preds = this.iplService.allPredictionsByMatch().get(lastMatch.id) || [];
-        if (preds.length === 0) return null;
+        if (stats.length === 0) return null;
 
-        const scored = preds.map(p => ({
-            userId: p.userId,
-            username: p.username || 'User',
-            points: lastMatch.result ? this.iplService.calcPoints(p, lastMatch.result) : 0
-        })).sort((a, b) => b.points - a.points);
+        // Weekly winner (latest week)
+        const weeklyWinner = weekly.length > 0 ? weekly[0].topPlayers[0] : null;
 
-        return scored[0].points > 0 ? scored[0] : null;
+        // Daily winner (latest match)
+        const dailyWinner = daily.length > 0 ? daily[0].players[0] : null;
+
+        // Most wins (Overall rank 1 count)
+        const mostWins = [...stats].sort((a, b) => b.rank1Count - a.rank1Count)[0];
+
+        // Max points (Overall leader)
+        const maxPoints = stats[0]; // Already sorted by totalPoints
+
+        // Most accurate
+        const mostAccurate = [...stats].sort((a, b) => b.accuracy - a.accuracy)[0];
+
+        return {
+            weeklyWinner: weeklyWinner ? { name: weeklyWinner.username, pts: weeklyWinner.points } : null,
+            dailyWinner: dailyWinner ? { name: dailyWinner.username, pts: dailyWinner.points } : null,
+            mostWins: mostWins ? { name: mostWins.username, count: mostWins.rank1Count } : null,
+            maxPoints: maxPoints ? { name: maxPoints.username, pts: maxPoints.totalPoints } : null,
+            mostAccurate: mostAccurate ? { name: mostAccurate.username, rate: mostAccurate.accuracy } : null
+        };
     });
 
-    mostWinsUser = computed(() => {
-        const sorted = [...this.userStats()].sort((a, b) => b.correctWinners - a.correctWinners);
-        return sorted.length > 0 ? sorted[0] : null;
-    });
+    dashboardLeaderboard = computed(() => {
+        const stats = this.playerStats();
+        const weekly = this.weeklyChampions();
+        const daily = this.dailyChampions();
 
-    mostAccurateUser = computed(() => {
-        const sorted = [...this.userStats()].sort((a, b) => {
-            const accA = a.totalPredictions > 0 ? (a.correctWinners / a.totalPredictions) : 0;
-            const accB = b.totalPredictions > 0 ? (b.correctWinners / b.totalPredictions) : 0;
-            return accB - accA;
+        if (stats.length === 0) return [];
+
+        const maxPoints = stats[0].totalPoints;
+        const maxWins = Math.max(...stats.map(s => s.rank1Count));
+        const maxAcc = Math.max(...stats.map(s => s.accuracy));
+        const currentDailyWinnerId = daily.length > 0 ? daily[0].players[0]?.userId : null;
+        const currentWeeklyWinnerId = weekly.length > 0 ? weekly[0].topPlayers[0]?.userId : null;
+
+        return stats.map(s => {
+            const badges = [];
+            if (s.userId === currentWeeklyWinnerId) badges.push({ type: 'weekly', label: 'weekly' });
+            if (s.totalPoints === maxPoints) badges.push({ type: 'max', label: 'max pts' });
+            if (s.rank1Count === maxWins && maxWins > 0) badges.push({ type: 'wins', label: 'most wins' });
+            if (s.userId === currentDailyWinnerId) badges.push({ type: 'today', label: 'today' });
+            if (s.accuracy === maxAcc && maxAcc > 0) badges.push({ type: 'accuracy', label: 'top acc' });
+
+            // Points from latest weekly record
+            const latestWeeklyPts = weekly.length > 0 ? (weekly[0].topPlayers.find(p => p.userId === s.userId)?.points || 0) : 0;
+
+            return {
+                ...s,
+                weeklyPts: latestWeeklyPts,
+                badges,
+                pointsPercent: maxPoints > 0 ? Math.round((s.totalPoints / maxPoints) * 100) : 0
+            };
         });
-        return sorted.length > 0 ? sorted[0] : null;
     });
 
-    setSubTab(tab: SubTab) {
-        this.activeSubTab.set(tab);
-    }
+    selectedUserId = signal<string | null>(null);
 
-    getBarColor(index: number): string {
-        const colors = ['#8b5cf6', '#ef4444', '#10b981', '#f59e0b', '#06b6d4', '#6366f1'];
+    getPlayerColor(index: number): string {
+        const colors = [
+            '#6366f1', // Indigo
+            '#f43f5e', // Rose
+            '#10b981', // Emerald
+            '#f59e0b', // Amber
+            '#0ea5e9', // Sky
+            '#8b5cf6', // Violet
+            '#ec4899', // Pink
+            '#14b8a6', // Teal
+            '#f97316', // Orange
+            '#64748b'  // Slate
+        ];
         return colors[index % colors.length];
     }
 
-    private sortedMatches() {
-        const matches = this.matches();
-        const getMatchTime = (m: any): number => new Date(m.date).getTime();
-        return [...matches].sort((a, b) => getMatchTime(a) - getMatchTime(b));
+    constructor(public iplService: IplService) { }
+
+    shortenLabel(label: string): string {
+        const map: { [key: string]: string } = {
+            'Match Winner': 'Winner',
+            'Score Range': 'Score',
+            'PBKS Score Range': 'PBKS Score',
+            'GT Score Range': 'GT Score',
+            'CSK Score Range': 'CSK Score',
+            'RCB Score Range': 'RCB Score',
+            'MI Score Range': 'MI Score',
+            'DC Score Range': 'DC Score',
+            'RR Score Range': 'RR Score',
+            'LSG Score Range': 'LSG Score',
+            'SRH Score Range': 'SRH Score',
+            'KKR Score Range': 'KKR Score',
+            'Most 4s team': 'Team 4s',
+            'Most 6s team': 'Team 6s',
+            'Max 6s Player': 'Player 6s',
+            'Player with Maximum 4s': 'Player 4s',
+            'Bowler (Less Economy)': 'Eco Bowler',
+            'Fantasy Player (Most Runs)': 'Top Batsman',
+            'Super Striker (10 balls min)': 'Super Striker',
+            'Bowler (Most Dot Balls)': 'Dot Bowler',
+            'Player of the Match': 'Player of Match'
+        };
+        return map[label] || label;
     }
 
-    activeMatchInfo() {
-        const sorted = this.sortedMatches();
-        const now = Date.now();
-        const getMatchTime = (m: any): number => new Date(m.date).getTime();
-
-        for (let i = 0; i < sorted.length; i++) {
-            const start = getMatchTime(sorted[i]);
-            const nextStart = i + 1 < sorted.length ? getMatchTime(sorted[i + 1]) : Infinity;
-            if (start <= now && now < nextStart) {
-                return { match: sorted[i], index: i, all: sorted };
-            }
-        }
-
-        const past = sorted.filter(m => getMatchTime(m) <= now);
-        if (past.length) {
-            const lastPast = past[past.length - 1];
-            return { match: lastPast, index: sorted.indexOf(lastPast), all: sorted };
-        }
-        return null;
-    }
-
-    activeMatch() {
-        return this.activeMatchInfo()?.match || null;
-    }
-
-    nextMatch() {
-        const info = this.activeMatchInfo();
-        if (!info) return null;
-        const { index, all } = info;
-        return (index + 1 < all.length) ? all[index + 1] : null;
-    }
 
     completedMatches() {
-        return this.matches().filter(m => m.status === 'completed');
+        return this.matches().filter(m => !!m.result);
     }
 
-    getActiveMatchPredictions() {
-        const match = this.activeMatch();
-        if (!match) return [];
-        return this.getPredictionsForMatchId(match.id);
-    }
-
-    getNextMatchPredictions() {
-        const match = this.nextMatch();
-        if (!match) return [];
-        return this.getPredictionsForMatchId(match.id);
-    }
-
-    private getPredictionsForMatchId(matchId: string) {
-        const preds = this.iplService.allPredictionsByMatch().get(matchId) || [];
-        return this.userStats().map(user => ({
-            user,
-            pred: preds.find(p => p.userId === user.userId)
-        })).sort((a, b) => b.user.totalPoints - a.user.totalPoints);
-    }
 
     getTeamName(msg: any, tid?: string) {
         if (!msg || !tid) return '-';
@@ -208,7 +371,16 @@ export class StandingsComponent {
     }
 
     rankEmoji(rank: number): string {
-        return ['🥇', '🥈', '🥉'][rank - 1] ?? `#${rank}`;
+        if (rank === 1) return '🥇';
+        if (rank === 2) return '🥈';
+        if (rank === 3) return '🥉';
+        if (rank === 4) return '4️⃣';
+        if (rank === 5) return '5️⃣';
+        if (rank === 6) return '6️⃣';
+        if (rank === 7) return '7️⃣';
+        if (rank === 8) return '8️⃣';
+        if (rank === 9) return '9️⃣';
+        return `#${rank}`;
     }
 
     calcAccuracy(pred: number, correct: number): number {
@@ -243,18 +415,18 @@ export class StandingsComponent {
     getUserBreakdownMatches() {
         const uid = this.selectedUserId();
         if (!uid) return [];
-        return this.completedMatches().map(match => {
-            const userPred = this.predictions().find(p => p.userId === uid && p.matchId === match.id);
-            let points = 0;
-            if (userPred && match.result) {
-                points = this.iplService.calcPoints(userPred, match.result);
-            }
-            return {
-                match,
-                prediction: userPred,
-                pointsEarned: points
-            };
-        }).filter(item => item.prediction);
+        const latestMatch = this.getLatestCompletedMatch();
+        if (!latestMatch) return [];
+
+        const userPred = this.predictions().find(p => p.userId === uid && p.matchId === latestMatch.id);
+        if (!userPred) return [];
+
+        const points = this.iplService.calcPoints(userPred, latestMatch.result!);
+        return [{
+            match: latestMatch,
+            prediction: userPred,
+            pointsEarned: points
+        }];
     }
 
     getDetailedPoints(pred: any, match: any) {
@@ -271,7 +443,7 @@ export class StandingsComponent {
         };
 
         const addDtl = (label: string, pVal: string | undefined, rVal: string | undefined, pts: number) => {
-            const isMatch = pVal && rVal && pVal.toLowerCase() === rVal.toLowerCase() && pVal !== '-' && rVal !== '-';
+            const isMatch = this.iplService.isStringMatch(pVal, rVal) && pVal !== '-' && rVal !== '-';
             details.push({
                 label,
                 pts: isMatch ? pts : 0,
@@ -293,23 +465,23 @@ export class StandingsComponent {
             actualValue: `${result.team1Score ?? '-'}-${result.team2Score ?? '-'}`
         });
 
-        addDtl('1st Innings Range', pred.firstInningRange, result.firstInningRange, 3);
-        addDtl('2nd Innings Range', pred.secondInningRange, result.secondInningRange, 3);
-        addDtl('Most 4s', teamName(pred.teamMore4s), teamName(result.teamMore4s), 2);
-        addDtl('Most 6s', teamName(pred.teamMore6s), teamName(result.teamMore6s), 2);
+        addDtl(`${match.team1.shortName} Score Range`, pred.firstInningRange, result.firstInningRange, 3);
+        addDtl(`${match.team2.shortName} Score Range`, pred.secondInningRange, result.secondInningRange, 3);
+        addDtl('Most 4s team', teamName(pred.teamMore4s), teamName(result.teamMore4s), 2);
+        addDtl('Most 6s team', teamName(pred.teamMore6s), teamName(result.teamMore6s), 2);
 
-        const max6s = addDtl('Player Max 6s', pred.playerMax6s, result.playerMax6s, 3);
-        const most4s = addDtl('Most 4s', pred.playerMost4s, result.playerMost4s, 4);
+        const max6s = addDtl('Max 6s Player', pred.playerMax6s, result.playerMax6s, 3);
+        const fantasy = addDtl('Player with Maximum 4s', pred.fantasyPlayer, result.fantasyPlayer, 4);
         const pom = addDtl('Player of Match', pred.playerOfMatch, result.playerOfMatch, 5);
-        const fantasy = addDtl('Super Striker', pred.fantasyPlayer, result.fantasyPlayer, 4);
-        const bestEconomy = addDtl('Best Economy', pred.bestEconomy, result.bestEconomy, 4);
+        const striker = addDtl('Bowler       (Less Economy)', pred.superStriker, result.superStriker, 4);
+        const dotBalls = addDtl('Super Striker of the match', pred.mostDotBalls, result.mostDotBalls, 4);
 
         const allCorrect = pred.winner === result.winner &&
             pred.firstInningRange === result.firstInningRange &&
             pred.secondInningRange === result.secondInningRange &&
             pred.teamMore4s === result.teamMore4s &&
             pred.teamMore6s === result.teamMore6s &&
-            max6s && fantasy && pom && most4s && bestEconomy;
+            max6s && fantasy && pom && striker && dotBalls;
 
         if (allCorrect) {
             details.push({ label: 'Perfect Predictor', pts: 25, earned: true, myValue: '100%', actualValue: '100%' });

@@ -1,46 +1,38 @@
 type User @table {
-  displayName: String!
-  createdAt: Timestamp!
-  email: String
-  photoUrl: String
+  id: String! @primaryKey
+  username: String!
+  email: String!
+  createdAt: Timestamp! @default(expr: "request.time")
+  totalPoints: Int @default(value: 0)
+  rank: Int
 }
 
-type Idea @table {
+type Match @table {
+  id: String! @primaryKey
+  team1Id: String!
+  team2Id: String!
+  date: Timestamp!
+  venue: String!
+  status: String! @default(value: "upcoming")
+}
+
+type Prediction @table {
+  id: String! @primaryKey # matchId_userId
   user: User!
-  title: String!
-  createdAt: Timestamp!
-  description: String
-  details: String
-  status: String
-  isFavorite: Boolean
-  isPriority: Boolean
-}
-
-type Tag @table {
-  user: User!
-  name: String!
-  createdAt: Timestamp!
-}
-
-type IdeaTag @table(key: ["idea", "tag"]) {
-  idea: Idea!
-  tag: Tag!
-  createdAt: Timestamp!
-}
-
-type Link @table {
-  user: User!
-  sourceIdeaId: UUID!
-  targetIdeaId: UUID!
-  createdAt: Timestamp!
-  description: String
-}
-
-type Attachment @table {
-  idea: Idea!
-  type: String!
-  url: String!
-  createdAt: Timestamp!
-  fileName: String
-  description: String
+  matchId: String!
+  team1Score: Int!
+  team2Score: Int!
+  winner: String!
+  firstInningRange: String
+  secondInningRange: String
+  teamMore4s: String
+  teamMore6s: String
+  playerMax6s: String
+  fantasyPlayer: String
+  playerOfMatch: String
+  superStriker: String
+  mostDotBalls: String
+  submittedAt: Timestamp! @default(expr: "request.time")
+  points: Int
+  scored: Boolean @default(value: false)
 }

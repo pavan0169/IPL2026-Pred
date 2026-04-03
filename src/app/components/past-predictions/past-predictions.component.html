@@ -1,0 +1,133 @@
+<div class="page-container">
+    <div class="header-section">
+        <h2 class="section-title">📜 Past Match Predictions</h2>
+        <p class="section-subtitle">Review results and all players' predictions day by day</p>
+    </div>
+
+    @if (daywiseMatches().length === 0) {
+    <div class="empty-state">
+        <span class="icon">🕒</span>
+        <p>No completed matches found yet. Check back once a match is finished and results are updated.</p>
+    </div>
+    }
+
+    <div class="history-list">
+        @for (group of daywiseMatches(); track group.dateLabel) {
+        <div class="day-group">
+            <h3 class="day-header">{{ group.dateLabel }}</h3>
+            
+            <div class="matches-grid">
+                @for (match of group.matches; track match.id) {
+                <div class="match-card" [class.expanded]="expandedMatchId() === match.id">
+                    <div class="match-card-header" (click)="toggleMatch(match.id)">
+                        <div class="header-left">
+                            <div class="team-pill">
+                                <span style="opacity: 0.8; font-weight: 800; background: rgba(255,255,255,0.15); padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); margin-right: 0.3rem; font-size: 0.8rem;">Match {{ match.id.substring(1) }}</span>
+                                <span>{{ match.team1.emoji }} {{ match.team1.shortName }}</span>
+                                <span class="vs">vs</span>
+                                <span>{{ match.team2.emoji }} {{ match.team2.shortName }}</span>
+                            </div>
+                            <div class="match-card-meta">
+                                📅 {{ formatShortDate(match.date) }} · {{ match.venue }}
+                            </div>
+                        </div>
+
+                        <div class="header-right">
+                            @if (match.result) {
+                            <div class="winner-badge">
+                                🏆 W: {{ getTeamName(match, match.result.winner) }}
+                            </div>
+                            <div class="score-pill">
+                                <span class="score-label">Score</span>
+                                {{ match.result.team1Score }} - {{ match.result.team2Score }}
+                            </div>
+                            }
+                            <span class="expand-icon">{{ expandedMatchId() === match.id ? '▼' : '▶' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Expandable Prediction Table -->
+                    @if (expandedMatchId() === match.id) {
+                    <div class="predictions-expanded fade-in">
+                        <div class="table-container shadow-sm">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th class="sticky-col">Player</th>
+                                        <th>Points</th>
+                                        <th>Winner</th>
+                                        <th>Score</th>
+                                        <th>Player of Match</th>
+                                        <th>Fantasy Player</th>
+                                        <th>Innings (1st)</th>
+                                        <th>Innings (2nd)</th>
+                                        <th>More 4s</th>
+                                        <th>More 6s</th>
+                                        <th>Max 6s</th>
+                                        <th>Bowler (L.E.)</th>
+                                        <th>Super Striker</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (item of getPredictionsForMatch(match.id); track item.user.userId) {
+                                    <tr [class.no-prediction]="!item.pred">
+                                        <td class="sticky-col">
+                                            <div class="player-info">
+                                                <div class="mini-avatar">{{ item.user.username.charAt(0) | uppercase }}</div>
+                                                <span class="player-name">{{ item.user.username }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="points-cell">
+                                            @if (item.pred && match.result) {
+                                                <span class="pts-val">+{{ iplService.calcPoints(item.pred, match.result) }}</span>
+                                            } @else {
+                                                <span class="muted">-</span>
+                                            }
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.winner, match.result.winner)">
+                                            {{ getTeamName(match, item.pred?.winner) }}
+                                        </td>
+                                        <td [class.correct]="match.result && item.pred?.team1Score == match.result.team1Score && item.pred?.team2Score == match.result.team2Score">
+                                            {{ item.pred?.team1Score ?? '-' }} - {{ item.pred?.team2Score ?? '-' }}
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.playerOfMatch, match.result.playerOfMatch)">
+                                            {{ item.pred?.playerOfMatch ?? '-' }}
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.fantasyPlayer, match.result.fantasyPlayer)">
+                                            {{ item.pred?.fantasyPlayer ?? '-' }}
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.firstInningRange, match.result.firstInningRange)">
+                                            {{ item.pred?.firstInningRange ?? '-' }}
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.secondInningRange, match.result.secondInningRange)">
+                                            {{ item.pred?.secondInningRange ?? '-' }}
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.teamMore4s, match.result.teamMore4s)">
+                                            {{ getTeamName(match, item.pred?.teamMore4s) }}
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.teamMore6s, match.result.teamMore6s)">
+                                            {{ getTeamName(match, item.pred?.teamMore6s) }}
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.playerMax6s, match.result.playerMax6s)">
+                                            {{ item.pred?.playerMax6s ?? '-' }}
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.superStriker, match.result.superStriker)">
+                                            {{ item.pred?.superStriker ?? '-' }}
+                                        </td>
+                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.mostDotBalls, match.result.mostDotBalls)">
+                                            {{ item.pred?.mostDotBalls ?? '-' }}
+                                        </td>
+                                    </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    }
+                </div>
+                }
+            </div>
+        </div>
+        }
+    </div>
+</div>

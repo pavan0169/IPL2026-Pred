@@ -4,10 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { IplService } from '../../services/ipl.service';
 import { Match, Prediction, getMatchPlayers } from '../../models/ipl.models';
 
+import { SearchableSelectComponent } from '../shared/searchable-select/searchable-select.component';
+
 @Component({
     selector: 'app-predict',
     standalone: true,
-    imports: [CommonModule, FormsModule],
+    imports: [CommonModule, FormsModule, SearchableSelectComponent],
     templateUrl: './predict.component.html',
     styleUrl: './predict.component.css'
 })
@@ -32,6 +34,25 @@ export class PredictComponent {
         });
     });
 
+    matchGroups = computed(() => {
+        const matches = this.visibleMatches();
+        const now = new Date().getTime();
+
+        const upcoming = matches.filter(m =>
+            (m.status === 'upcoming' && new Date(m.date).getTime() > now) ||
+            m.status === 'live'
+        );
+
+        const completed = matches
+            .filter(m => !!m.result || (m.status === 'upcoming' && new Date(m.date).getTime() <= now))
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        return [
+            { title: 'Upcoming Matches', icon: '⏳', matches: upcoming },
+            { title: 'Completed Matches', icon: '✅', matches: completed }
+        ];
+    });
+
     team1Score = signal(150);
     team2Score = signal(150);
     winner = signal('');
@@ -44,13 +65,14 @@ export class PredictComponent {
     fantasyPlayer = signal('');
     playerOfMatch = signal('');
     playerMost4s = signal('');
-    bestEconomy = signal('');
+    superStriker = signal('');
+    mostDotBalls = signal('');
 
     canSubmit = computed(() => {
         return !!(this.winner() && this.firstInningRange() && this.secondInningRange() &&
             this.teamMore4s() && this.teamMore6s() && this.playerMax6s() &&
             this.fantasyPlayer() && this.playerOfMatch() && this.playerMost4s() &&
-            this.bestEconomy());
+            this.superStriker() && this.mostDotBalls());
     });
 
     submitted = signal(false);
@@ -111,7 +133,8 @@ export class PredictComponent {
             this.fantasyPlayer.set(existing.fantasyPlayer || '');
             this.playerOfMatch.set(existing.playerOfMatch || '');
             this.playerMost4s.set(existing.playerMost4s || '');
-            this.bestEconomy.set(existing.bestEconomy || '');
+            this.superStriker.set(existing.superStriker || '');
+            this.mostDotBalls.set(existing.mostDotBalls || '');
         } else {
             this.team1Score.set(150);
             this.team2Score.set(150);
@@ -124,7 +147,8 @@ export class PredictComponent {
             this.fantasyPlayer.set('');
             this.playerOfMatch.set('');
             this.playerMost4s.set('');
-            this.bestEconomy.set('');
+            this.superStriker.set('');
+            this.mostDotBalls.set('');
         }
     }
 
@@ -154,7 +178,8 @@ export class PredictComponent {
             fantasyPlayer: this.fantasyPlayer(),
             playerOfMatch: this.playerOfMatch(),
             playerMost4s: this.playerMost4s(),
-            bestEconomy: this.bestEconomy()
+            superStriker: this.superStriker(),
+            mostDotBalls: this.mostDotBalls()
         });
         this.submitted.set(true);
     }

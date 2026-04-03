@@ -30,7 +30,7 @@
             </p>
             <div class="hero-actions fade-in-up">
                 <button class="btn btn-primary btn-hero" (click)="goTo('signup')">
-                    🚀 Get Started Free
+                    <span class="premium-rocket">🚀</span> Get Started Free
                 </button>
                 <button class="btn btn-ghost btn-hero" (click)="goTo('login')">
                     Sign In
@@ -69,7 +69,7 @@
 
             <div class="auth-icon">🔐</div>
             <h2 class="auth-title">Welcome Back</h2>
-            <p class="auth-sub">Sign in to your IPL Predict account</p>
+            <p class="auth-sub">Sign in to your IPL 2026 Predict account</p>
 
             <form class="auth-form" (ngSubmit)="onLogin()" #lf="ngForm">
                 <div class="form-group">
@@ -88,7 +88,11 @@
                 }
 
                 <button type="submit" class="btn btn-primary submit-btn" [disabled]="loginLoading()">
-                    {{ loginLoading() ? '⏳ Signing in…' : '🚀 Sign In' }}
+                    @if (loginLoading()) {
+                        ⏳ Signing in…
+                    } @else {
+                        <span class="premium-rocket">🚀</span> Sign In
+                    }
                 </button>
             </form>
 

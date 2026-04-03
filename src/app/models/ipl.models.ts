@@ -31,6 +31,8 @@ export interface MatchResult {
     playerOfMatch?: string;
     playerMost4s?: string;
     bestEconomy?: string;
+    superStriker?: string;
+    mostDotBalls?: string;
     lastEditedAt?: string; // ISO timestamp
     lastEditedBy?: string; // username or email
 }
@@ -52,6 +54,8 @@ export interface Prediction {
     playerOfMatch?: string;
     playerMost4s?: string;
     bestEconomy?: string;
+    superStriker?: string;
+    mostDotBalls?: string;
     submittedAt: Date | string;
     points?: number;
     scored?: boolean;
