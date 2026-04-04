@@ -250,11 +250,23 @@ export class IplService {
 
         const docId = `${pred.matchId}_${currentUser.uid}`;
         const newPred: Prediction = {
-            ...pred,
             id: docId,
+            matchId: pred.matchId,
             userId: currentUser.uid,
             username: currentUser.username,
-            submittedAt: new Date().toISOString()
+            submittedAt: new Date().toISOString(),
+            team1Score: pred.team1Score,
+            team2Score: pred.team2Score,
+            winner: pred.winner,
+            firstInningRange: pred.firstInningRange,
+            secondInningRange: pred.secondInningRange,
+            teamMore4s: pred.teamMore4s,
+            teamMore6s: pred.teamMore6s,
+            playerMax6s: pred.playerMax6s,
+            most4s: pred.most4s,
+            playerOfMatch: pred.playerOfMatch,
+            economy: pred.economy,
+            superStriker: pred.superStriker
         };
 
         setDoc(doc(db, 'predictions', docId), newPred);
@@ -270,6 +282,10 @@ export class IplService {
     }
 
     async updateMatchResult(matchId: string, result: MatchResult) {
+        const currentUser = this.authService.currentUser();
+        result.lastEditedAt = new Date().toISOString();
+        result.lastEditedBy = currentUser?.username || currentUser?.email || 'Admin';
+
         // Save to active state matches collection
         await setDoc(doc(db, 'matches', matchId), {
             status: 'completed',
@@ -287,8 +303,23 @@ export class IplService {
     }
 
     async seedResultsReference(data: Record<string, MatchState>) {
-        await setDoc(doc(db, 'appData', 'matchResultsReference'), data, { merge: true });
-        alert('Historical reference successfully seeded with match results!');
+        const batch = writeBatch(db);
+
+        // Update the permanent reference backup
+        batch.set(doc(db, 'appData', 'matchResultsReference'), data, { merge: true });
+
+        // Forcefully update the active state matches collection so live standings refresh natively
+        for (const [matchId, matchState] of Object.entries(data)) {
+            const liveMatchDoc = doc(db, 'matches', matchId);
+            batch.set(liveMatchDoc, {
+                status: matchState.status || 'completed',
+                result: matchState.result,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+        }
+
+        await batch.commit();
+        alert('Active Matches and Historical reference successfully seeded with match results!');
     }
 
     async seedPredictions(data: any[]) {
@@ -365,25 +396,24 @@ export class IplService {
         if (!data) return {};
 
         return {
+            team1Score: data.team1Score !== undefined ? +data.team1Score : undefined,
+            team2Score: data.team2Score !== undefined ? +data.team2Score : undefined,
             winner: data.winner || '',
             firstInningRange: data.firstInningRange || '',
             secondInningRange: data.secondInningRange || '',
             teamMore4s: data.teamMore4s || '',
             teamMore6s: data.teamMore6s || '',
             playerMax6s: data.playerMax6s || '',
+            most4s: data.most4s || '',
             playerOfMatch: data.playerOfMatch || '',
-            team1Score: data.team1Score !== undefined ? +data.team1Score : undefined,
-            team2Score: data.team2Score !== undefined ? +data.team2Score : undefined,
-            // Standardizing fields across versions
-            most4s: data.most4s || data.playerMost4s || '',
-            economy: data.economy || data.bestEconomy || data.mostDotBalls || '',
-            superStriker: data.superStriker || data.fantasyPlayer || ''
+            economy: data.economy || '',
+            superStriker: data.superStriker || ''
         };
     }
 
     calcPoints(pred: Prediction, result: MatchResult): number {
         if (!pred || !result) return 0;
-        
+
         const p = IplService.normalizeData(pred);
         const r = IplService.normalizeData(result);
 
@@ -399,7 +429,7 @@ export class IplService {
         });
 
         // Bonus: Exact score prediction (+10 pts)
-        if (p.team1Score !== undefined && p.team2Score !== undefined && 
+        if (p.team1Score !== undefined && p.team2Score !== undefined &&
             r.team1Score !== undefined && r.team2Score !== undefined) {
             if (+p.team1Score === +r.team1Score && +p.team2Score === +r.team2Score) {
                 pts += 10;
@@ -416,7 +446,7 @@ export class IplService {
 
     async recalculateAllScores() {
         if (!this.authService.isAdmin()) return;
-        
+
         const matches = this._matches().filter(m => !!m.result);
         const predictions = this._predictions();
         const users = this._users();
@@ -433,7 +463,7 @@ export class IplService {
                 if (match?.result) {
                     const pts = this.calcPoints(p, match.result);
                     totalPoints += pts;
-                    
+
                     const pNorm = IplService.normalizeData(p);
                     const rNorm = IplService.normalizeData(match.result);
                     if (this.isStringMatch(pNorm.winner, rNorm.winner)) {

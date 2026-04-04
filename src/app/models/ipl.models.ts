@@ -27,15 +27,10 @@ export interface MatchResult {
     teamMore4s?: string;
     teamMore6s?: string;
     playerMax6s?: string;
-    playerOfMatch?: string;
     most4s?: string;
+    playerOfMatch?: string;
     economy?: string;
     superStriker?: string;
-    // Legacy mapping support
-    playerMost4s?: string;
-    bestEconomy?: string;
-    fantasyPlayer?: string;
-    mostDotBalls?: string;
     lastEditedAt?: string; // ISO timestamp
     lastEditedBy?: string; // username or email
 }
@@ -45,6 +40,7 @@ export interface Prediction {
     matchId: string;
     userId: string;
     username?: string;
+    submittedAt: Date | string;
     team1Score: number;
     team2Score: number;
     winner: string;
@@ -53,16 +49,10 @@ export interface Prediction {
     teamMore4s?: string;
     teamMore6s?: string;
     playerMax6s?: string;
-    playerOfMatch?: string;
     most4s?: string;
+    playerOfMatch?: string;
     economy?: string;
     superStriker?: string;
-    // Legacy mapping support
-    playerMost4s?: string;
-    bestEconomy?: string;
-    fantasyPlayer?: string;
-    mostDotBalls?: string;
-    submittedAt: Date | string;
     points?: number;
     scored?: boolean;
 }
