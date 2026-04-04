@@ -124,7 +124,7 @@
                             <td class="pred-cell" [class.pred-correct]="isCorrect(match, row.pred, 'winner')"
                                 [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'winner')">
                                 @if (isMatchStarted(match) || showActualValues()) {
-                                {{ row.pred ? getTeamName(match, row.pred.winner) : '-' }}
+                                {{ getNormalizedValue(row.pred, 'winner') ? getTeamName(match, getNormalizedValue(row.pred, 'winner')) : '-' }}
                                 } @else {
                                 @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
                                 }
@@ -174,7 +174,7 @@
                             <td class="pred-cell" [class.pred-correct]="isCorrect(match, row.pred, 'firstInningRange')"
                                 [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'firstInningRange')">
                                 @if (isMatchStarted(match) || showActualValues()) {
-                                {{ row.pred ? row.pred.firstInningRange : '-' }}
+                                {{ getNormalizedValue(row.pred, 'firstInningRange') }}
                                 } @else {
                                 @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
                                 }
@@ -193,7 +193,7 @@
                             <td class="pred-cell" [class.pred-correct]="isCorrect(match, row.pred, 'secondInningRange')"
                                 [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'secondInningRange')">
                                 @if (isMatchStarted(match) || showActualValues()) {
-                                {{ row.pred ? row.pred.secondInningRange : '-' }}
+                                {{ getNormalizedValue(row.pred, 'secondInningRange') }}
                                 } @else {
                                 @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
                                 }
@@ -242,24 +242,24 @@
                             </td>
                             }
                         </tr>
-                        <!-- Max 4s Player -->
+                        <!-- Most 4s Player -->
                         <tr>
-                            <td class="sticky-col category-label">🔥 Max <span class="premium-4-icon">4</span>s Player
+                            <td class="sticky-col category-label">🏏 Most 4s Player
                             </td>
                             @if (match.result) {
-                            <td class="result-val-cell player-col result-col">{{ match.result.fantasyPlayer || '-' }}
+                            <td class="result-val-cell player-col result-col">{{ getNormalizedValue(match.result, 'most4s') }}
                             </td>
                             }
                             @for (row of getMatchPredictions(match.id); track row.user.userId) {
                             <td class="pred-cell player-col"
-                                [class.pred-correct]="isCorrect(match, row.pred, 'fantasyPlayer')"
-                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'fantasyPlayer')">
+                                [class.pred-correct]="isCorrect(match, row.pred, 'most4s')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'most4s')">
                                 @if (isMatchStarted(match) || showActualValues()) {
-                                {{ row.pred ? row.pred.fantasyPlayer : '-' }}
+                                {{ getNormalizedValue(row.pred, 'most4s') }}
                                 } @else {
                                 @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
                                 }
-                                @if (match.result && isCorrect(match, row.pred, 'fantasyPlayer')) { <span
+                                @if (match.result && isCorrect(match, row.pred, 'most4s')) { <span
                                     class="pts-tag">+4</span> }
                             </td>
                             }
@@ -276,7 +276,7 @@
                                 [class.pred-correct]="isCorrect(match, row.pred, 'playerMax6s')"
                                 [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'playerMax6s')">
                                 @if (isMatchStarted(match) || showActualValues()) {
-                                {{ row.pred ? row.pred.playerMax6s : '-' }}
+                                {{ getNormalizedValue(row.pred, 'playerMax6s') }}
                                 } @else {
                                 @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
                                 }
@@ -308,9 +308,30 @@
                         </tr>
                         <!-- Bowler Economy -->
                         <tr>
-                            <td class="sticky-col category-label">🧤 Bowler</td>
+                            <td class="sticky-col category-label">🧤 Bowler (Economy)</td>
                             @if (match.result) {
-                            <td class="result-val-cell player-col result-col">{{ match.result.superStriker || '-' }}
+                            <td class="result-val-cell player-col result-col">{{ getNormalizedValue(match.result, 'economy') }}
+                            </td>
+                            }
+                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
+                            <td class="pred-cell player-col"
+                                [class.pred-correct]="isCorrect(match, row.pred, 'economy')"
+                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'economy')">
+                                @if (isMatchStarted(match) || showActualValues()) {
+                                {{ getNormalizedValue(row.pred, 'economy') }}
+                                } @else {
+                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
+                                }
+                                @if (match.result && isCorrect(match, row.pred, 'economy')) { <span
+                                    class="pts-tag">+4</span> }
+                            </td>
+                            }
+                        </tr>
+                        <!-- Super Striker -->
+                        <tr>
+                            <td class="sticky-col category-label">🌪️ Super Striker</td>
+                            @if (match.result) {
+                            <td class="result-val-cell player-col result-col">{{ getNormalizedValue(match.result, 'superStriker') }}
                             </td>
                             }
                             @for (row of getMatchPredictions(match.id); track row.user.userId) {
@@ -318,32 +339,11 @@
                                 [class.pred-correct]="isCorrect(match, row.pred, 'superStriker')"
                                 [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'superStriker')">
                                 @if (isMatchStarted(match) || showActualValues()) {
-                                {{ row.pred ? row.pred.superStriker : '-' }}
+                                {{ getNormalizedValue(row.pred, 'superStriker') }}
                                 } @else {
                                 @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
                                 }
                                 @if (match.result && isCorrect(match, row.pred, 'superStriker')) { <span
-                                    class="pts-tag">+4</span> }
-                            </td>
-                            }
-                        </tr>
-                        <!-- Super Striker -->
-                        <tr>
-                            <td class="sticky-col category-label">🌪️ Striker</td>
-                            @if (match.result) {
-                            <td class="result-val-cell player-col result-col">{{ match.result.mostDotBalls || '-' }}
-                            </td>
-                            }
-                            @for (row of getMatchPredictions(match.id); track row.user.userId) {
-                            <td class="pred-cell player-col"
-                                [class.pred-correct]="isCorrect(match, row.pred, 'mostDotBalls')"
-                                [class.pred-incorrect]="match.result && row.pred && !isCorrect(match, row.pred, 'mostDotBalls')">
-                                @if (isMatchStarted(match) || showActualValues()) {
-                                {{ row.pred ? row.pred.mostDotBalls : '-' }}
-                                } @else {
-                                @if (row.pred) { <span class="locked-placeholder">✔</span> } @else { - }
-                                }
-                                @if (match.result && isCorrect(match, row.pred, 'mostDotBalls')) { <span
                                     class="pts-tag">+4</span> }
                             </td>
                             }

@@ -190,8 +190,7 @@
 
                 <!-- 6. Max 6s Player -->
                 <div class="form-group grid-group">
-                    <span class="form-label">6. Player with Maximum <span class="premium-6-icon">6</span>s 🔥 (3
-                        pts)</span>
+                    <span class="form-label">6. Max <span class="premium-6-icon">6</span>s Player 🔥 (3 pts)</span>
                     <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
                         [ngModel]="playerMax6s()" (ngModelChange)="playerMax6s.set($event)">
                     </app-searchable-select>
@@ -202,7 +201,7 @@
                     <span class="form-label">7. Player with Maximum <span class="premium-4-icon">4</span>s 🔥 (4
                         pts)</span>
                     <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
-                        [ngModel]="fantasyPlayer()" (ngModelChange)="fantasyPlayer.set($event)">
+                        [ngModel]="most4s()" (ngModelChange)="most4s.set($event)">
                     </app-searchable-select>
                 </div>
 
@@ -218,7 +217,7 @@
                 <div class="form-group grid-group">
                     <span class="form-label">9. Bowler (Less Economy) 🧤 (4 pts)</span>
                     <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
-                        [ngModel]="superStriker()" (ngModelChange)="superStriker.set($event)">
+                        [ngModel]="economy()" (ngModelChange)="economy.set($event)">
                     </app-searchable-select>
                 </div>
 
@@ -226,7 +225,7 @@
                 <div class="form-group grid-group">
                     <span class="form-label">10. Super Striker of the match 🌪️ (4 pts)</span>
                     <app-searchable-select [options]="matchPlayers()" placeholder="Select Bowler"
-                        [ngModel]="mostDotBalls()" (ngModelChange)="mostDotBalls.set($event)">
+                        [ngModel]="superStriker()" (ngModelChange)="superStriker.set($event)">
                     </app-searchable-select>
                 </div>
 

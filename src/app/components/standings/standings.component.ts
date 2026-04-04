@@ -201,17 +201,20 @@ export class StandingsComponent {
                 }
 
                 // Category accuracy
+                const pNorm = IplService.normalizeData(pred);
+                const rNorm = IplService.normalizeData(m.result!);
+
                 const checks: [any, any][] = [
-                    [pred.winner, m.result!.winner],
-                    [pred.firstInningRange, m.result!.firstInningRange],
-                    [pred.secondInningRange, m.result!.secondInningRange],
-                    [pred.teamMore4s, m.result!.teamMore4s],
-                    [pred.teamMore6s, m.result!.teamMore6s],
-                    [pred.playerMax6s, m.result!.playerMax6s],
-                    [pred.fantasyPlayer, m.result!.fantasyPlayer],
-                    [pred.playerOfMatch, m.result!.playerOfMatch],
-                    [pred.superStriker, m.result!.superStriker],
-                    [pred.mostDotBalls, m.result!.mostDotBalls],
+                    [pNorm.winner, rNorm.winner],
+                    [pNorm.firstInningRange, rNorm.firstInningRange],
+                    [pNorm.secondInningRange, rNorm.secondInningRange],
+                    [pNorm.teamMore4s, rNorm.teamMore4s],
+                    [pNorm.teamMore6s, rNorm.teamMore6s],
+                    [pNorm.playerMax6s, rNorm.playerMax6s],
+                    [pNorm.most4s, rNorm.most4s],
+                    [pNorm.playerOfMatch, rNorm.playerOfMatch],
+                    [pNorm.economy, rNorm.economy],
+                    [pNorm.superStriker, rNorm.superStriker],
                 ];
                 checks.forEach(([p, r]) => {
                     if (p !== undefined && p !== null && String(p).trim() !== '') {
@@ -333,26 +336,17 @@ export class StandingsComponent {
     shortenLabel(label: string): string {
         const map: { [key: string]: string } = {
             'Match Winner': 'Winner',
-            'Score Range': 'Score',
-            'PBKS Score Range': 'PBKS Score',
-            'GT Score Range': 'GT Score',
-            'CSK Score Range': 'CSK Score',
-            'RCB Score Range': 'RCB Score',
-            'MI Score Range': 'MI Score',
-            'DC Score Range': 'DC Score',
-            'RR Score Range': 'RR Score',
-            'LSG Score Range': 'LSG Score',
-            'SRH Score Range': 'SRH Score',
-            'KKR Score Range': 'KKR Score',
-            'Most 4s team': 'Team 4s',
-            'Most 6s team': 'Team 6s',
-            'Max 6s Player': 'Player 6s',
+            '1st Inning Range': 'Score 1',
+            '2nd Inning Range': 'Score 2',
+            'Team with more 4s': 'Team 4s',
+            'Team with more 6s': 'Team 6s',
+            'Player with Maximum 6s': 'Player 6s',
             'Player with Maximum 4s': 'Player 4s',
             'Bowler (Less Economy)': 'Eco Bowler',
-            'Fantasy Player (Most Runs)': 'Top Batsman',
-            'Super Striker (10 balls min)': 'Super Striker',
-            'Bowler (Most Dot Balls)': 'Dot Bowler',
-            'Player of the Match': 'Player of Match'
+            'Super Striker of the match': 'Super Striker',
+            'Player of the Match': 'Player of Match',
+            'Exact Score Bonus': 'Exact Score',
+            'Perfect Predictor': 'Perfect'
         };
         return map[label] || label;
     }
@@ -433,29 +427,45 @@ export class StandingsComponent {
         const result = match?.result;
         if (!pred || !result) return [];
 
-        const details = [];
+        const details: any[] = [];
+        const pNorm = IplService.normalizeData(pred);
+        const rNorm = IplService.normalizeData(result);
 
         const teamName = (tid?: string) => {
             if (!tid) return undefined;
-            if (tid === match.team1.id) return match.team1.shortName;
-            if (tid === match.team2.id) return match.team2.shortName;
-            return tid;
+            const team = this.iplService.teams.find(t => t.id === tid);
+            return team ? team.shortName : tid;
         };
 
-        const addDtl = (label: string, pVal: string | undefined, rVal: string | undefined, pts: number) => {
-            const isMatch = this.iplService.isStringMatch(pVal, rVal) && pVal !== '-' && rVal !== '-';
+        const isStringMatch = (pVal: any, rVal: any) => {
+            return this.iplService.isStringMatch(pVal, rVal);
+        };
+
+        let correctCount = 0;
+
+        IplService.SCORING_CATEGORIES.forEach(cat => {
+            let pVal = (pNorm as any)[cat.key];
+            let rVal = (rNorm as any)[cat.key];
+
+            // For team-based categories, convert IDs to names for the UI
+            if (['winner', 'teamMore4s', 'teamMore6s'].includes(cat.key)) {
+                pVal = teamName(pVal);
+                rVal = teamName(rVal);
+            }
+
+            const earned = isStringMatch(pVal, rVal) && !!pVal && !!rVal && pVal !== '-' && rVal !== '-';
+            if (earned) correctCount++;
+
             details.push({
-                label,
-                pts: isMatch ? pts : 0,
-                earned: !!isMatch,
+                label: cat.label,
+                pts: earned ? cat.pts : 0,
+                earned,
                 myValue: pVal || '-',
                 actualValue: rVal || '-'
             });
-            return isMatch;
-        };
+        });
 
-        addDtl('Match Winner', teamName(pred.winner), teamName(result.winner), 3);
-
+        // Add Exact Score Bonus (Special handling as it's not a standard category)
         const exactScoreMatch = pred.team1Score === result.team1Score && pred.team2Score === result.team2Score;
         details.push({
             label: 'Exact Score Bonus',
@@ -465,26 +475,15 @@ export class StandingsComponent {
             actualValue: `${result.team1Score ?? '-'}-${result.team2Score ?? '-'}`
         });
 
-        addDtl(`${match.team1.shortName} Score Range`, pred.firstInningRange, result.firstInningRange, 3);
-        addDtl(`${match.team2.shortName} Score Range`, pred.secondInningRange, result.secondInningRange, 3);
-        addDtl('Most 4s team', teamName(pred.teamMore4s), teamName(result.teamMore4s), 2);
-        addDtl('Most 6s team', teamName(pred.teamMore6s), teamName(result.teamMore6s), 2);
-
-        const max6s = addDtl('Max 6s Player', pred.playerMax6s, result.playerMax6s, 3);
-        const fantasy = addDtl('Player with Maximum 4s', pred.fantasyPlayer, result.fantasyPlayer, 4);
-        const pom = addDtl('Player of Match', pred.playerOfMatch, result.playerOfMatch, 5);
-        const striker = addDtl('Bowler       (Less Economy)', pred.superStriker, result.superStriker, 4);
-        const dotBalls = addDtl('Super Striker of the match', pred.mostDotBalls, result.mostDotBalls, 4);
-
-        const allCorrect = pred.winner === result.winner &&
-            pred.firstInningRange === result.firstInningRange &&
-            pred.secondInningRange === result.secondInningRange &&
-            pred.teamMore4s === result.teamMore4s &&
-            pred.teamMore6s === result.teamMore6s &&
-            max6s && fantasy && pom && striker && dotBalls;
-
-        if (allCorrect) {
-            details.push({ label: 'Perfect Predictor', pts: 25, earned: true, myValue: '100%', actualValue: '100%' });
+        // Add Perfect Predictor Bonus
+        if (correctCount === 10) {
+            details.push({
+                label: 'Perfect Predictor',
+                pts: 25,
+                earned: true,
+                myValue: '100%',
+                actualValue: '100%'
+            });
         }
 
         return details;

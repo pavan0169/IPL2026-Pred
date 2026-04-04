@@ -21,6 +21,7 @@ export class AdminComponent {
     hasAnyCompletedMatches = computed(() => this.matches().some(m => !!m.result));
     showBackupPanel = signal<boolean>(false);
     manualSeedInput = signal<string>('');
+    manualPredSeedInput = signal<string>('');
     expandedMatchId = signal<string | null>(null);
     sendingEmail = signal<Record<string, boolean>>({});
 
@@ -54,13 +55,26 @@ export class AdminComponent {
     formData: Record<string, {
         team1Score: number; team2Score: number; winner: string; status: string;
         firstInningRange?: string; secondInningRange?: string; teamMore4s?: string; teamMore6s?: string;
-        playerMax6s?: string; fantasyPlayer?: string; playerOfMatch?: string;
-        superStriker?: string; mostDotBalls?: string;
+        playerMax6s?: string; most4s?: string; playerOfMatch?: string;
+        economy?: string; superStriker?: string;
     }> = {};
 
     // User prediction override form
     editingUserPred = signal<{ userId: string; matchId: string } | null>(null);
-    userPredForm: Partial<Prediction> = { winner: '', firstInningRange: '', secondInningRange: '', teamMore4s: '', teamMore6s: '', playerMax6s: '', fantasyPlayer: '', playerOfMatch: '', superStriker: '', mostDotBalls: '', team1Score: 0, team2Score: 0 };
+    userPredForm: Partial<Prediction> = { 
+        winner: '', 
+        firstInningRange: '', 
+        secondInningRange: '', 
+        teamMore4s: '', 
+        teamMore6s: '', 
+        playerMax6s: '', 
+        most4s: '', 
+        playerOfMatch: '', 
+        economy: '', 
+        superStriker: '', 
+        team1Score: 0, 
+        team2Score: 0 
+    };
 
     getMatchPlayers(team1Id: string, team2Id: string) {
         return getMatchPlayers(team1Id, team2Id);
@@ -82,6 +96,7 @@ export class AdminComponent {
     }
 
     private syncMatchToForm(m: any) {
+        const normalized = IplService.normalizeData(m.result);
         this.formData[m.id] = {
             team1Score: m.result?.team1Score ?? 150,
             team2Score: m.result?.team2Score ?? 150,
@@ -92,10 +107,10 @@ export class AdminComponent {
             teamMore4s: m.result?.teamMore4s ?? '',
             teamMore6s: m.result?.teamMore6s ?? '',
             playerMax6s: m.result?.playerMax6s ?? '',
-            fantasyPlayer: m.result?.fantasyPlayer ?? '',
+            most4s: normalized.most4s ?? '',
             playerOfMatch: m.result?.playerOfMatch ?? '',
-            superStriker: m.result?.superStriker ?? '',
-            mostDotBalls: m.result?.mostDotBalls ?? ''
+            economy: normalized.economy ?? '',
+            superStriker: normalized.superStriker ?? ''
         };
     }
 
@@ -124,10 +139,10 @@ export class AdminComponent {
             teamMore4s: fd.teamMore4s,
             teamMore6s: fd.teamMore6s,
             playerMax6s: fd.playerMax6s,
-            fantasyPlayer: fd.fantasyPlayer,
+            most4s: fd.most4s,
             playerOfMatch: fd.playerOfMatch,
-            superStriker: fd.superStriker,
-            mostDotBalls: fd.mostDotBalls
+            economy: fd.economy,
+            superStriker: fd.superStriker
         };
         this.iplService.updateMatchResult(matchId, result);
         this.expandedMatchId.set(null);
@@ -152,7 +167,15 @@ export class AdminComponent {
     }
 
     resetAll() {
-        this.iplService.resetData();
+        if (confirm('Are you sure you want to WIPE ALL DATA? This cannot be undone.')) {
+            this.iplService.resetData();
+        }
+    }
+
+    recalculateAllStandings() {
+        if (confirm('Recalculate ALL user standings based on current results? This will sync all leaderboard scores.')) {
+            this.iplService.recalculateAllScores();
+        }
     }
 
     restoreAll() {
@@ -217,6 +240,35 @@ export class AdminComponent {
         window.URL.revokeObjectURL(url);
     }
 
+    onManualPredSeed() {
+        try {
+            const data = JSON.parse(this.manualPredSeedInput());
+            if (confirm(`Are you sure you want to seed ${data.length} predictions? Existing predictions might be overwritten.`)) {
+                this.iplService.seedPredictions(data);
+                this.manualPredSeedInput.set('');
+                this.showBackupPanel.set(false);
+            }
+        } catch (e) {
+            alert('Invalid JSON format. Please ensure the data is an array of Prediction objects.');
+        }
+    }
+
+    downloadPredictionsJson() {
+        const preds = this.iplService.predictions();
+        if (preds.length === 0) {
+            alert('No predictions found to export.');
+            return;
+        }
+
+        const blob = new Blob([JSON.stringify(preds, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ipl_predictions_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
     formatDate(dateStr: string): string {
         return new Date(dateStr).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
     }
@@ -241,23 +293,34 @@ export class AdminComponent {
         if (!user.uid) return;
         const existing = this.getUserPrediction(user.uid, matchId);
 
-        this.userPredForm = existing ? { ...existing } : {
-            matchId: matchId,
-            userId: user.uid,
-            username: user.username,
-            winner: '',
-            firstInningRange: '',
-            secondInningRange: '',
-            teamMore4s: '',
-            teamMore6s: '',
-            playerMax6s: '',
-            fantasyPlayer: '',
-            playerOfMatch: '',
-            superStriker: '',
-            mostDotBalls: '',
-            team1Score: 160,
-            team2Score: 160
-        };
+        if (existing) {
+            // Normalize for the form
+            const normalized = IplService.normalizeData(existing);
+            this.userPredForm = {
+                ...existing,
+                most4s: normalized.most4s,
+                economy: normalized.economy,
+                superStriker: normalized.superStriker
+            };
+        } else {
+            this.userPredForm = {
+                matchId: matchId,
+                userId: user.uid,
+                username: user.username,
+                winner: '',
+                firstInningRange: '',
+                secondInningRange: '',
+                teamMore4s: '',
+                teamMore6s: '',
+                playerMax6s: '',
+                most4s: '',
+                playerOfMatch: '',
+                economy: '',
+                superStriker: '',
+                team1Score: 160,
+                team2Score: 160
+            };
+        }
 
         this.editingUserPred.set({ userId: user.uid, matchId });
     }

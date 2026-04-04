@@ -11,11 +11,12 @@
                 <span class="dot-pulse"></span> Live Firestore Sync
             </div>
             <div class="admin-actions">
+                <button class="btn btn-primary" (click)="recalculateAllStandings()" style="background: var(--accent-gradient); border: none; color: white;">🔄 Recalculate Standings</button>
                 <button class="btn btn-danger" (click)="resetAll()">Wipe Data</button>
                 <button class="btn btn-secondary" (click)="showBackupPanel.set(!showBackupPanel())"
                     [style.background]="showBackupPanel() ? 'var(--accent-gradient)' : 'var(--secondary-gradient)'"
                     style="color: white; border: none;">
-                    🔄 History & Backups
+                    📂 History & Backups
                 </button>
             </div>
         </div>
@@ -62,6 +63,28 @@
             }
             <p style="font-size: 0.7rem; color: var(--text-muted); align-self: center;">
                 Need help with the JSON format? Ask the AI assistant for a recovery snippet.
+            </p>
+        </div>
+
+        <div class="divider" style="margin: 1.5rem 0;"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+             <h5 style="margin-bottom: 0.5rem; font-size: 0.9rem;">Prediction Seeding (Restore user predictions)</h5>
+             <button class="btn btn-ghost btn-sm" (click)="downloadPredictionsJson()"
+                style="border: 1px solid var(--accent); color: var(--accent); background: rgba(139, 92, 246, 0.05); cursor: pointer; margin-bottom: 0.5rem;">
+                📤 Export All Predictions to JSON
+            </button>
+        </div>
+        <textarea #predSeedArea class="form-input" [value]="manualPredSeedInput()" (input)="manualPredSeedInput.set(predSeedArea.value)"
+            placeholder='[{"matchId": "m1", "userId": "...", "id": "m1_abc123", ...}]'
+            style="font-family: monospace; font-size: 0.75rem; height: 120px; background: rgba(0,0,0,0.1); border-color: var(--accent);"></textarea>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1rem; align-items: center;">
+            <button class="btn btn-secondary btn-sm" (click)="onManualPredSeed()" [disabled]="!manualPredSeedInput()">
+                📥 Seed Predictions from JSON
+            </button>
+            <p style="font-size: 0.7rem; color: var(--text-muted); align-self: center;">
+                Paste an array of prediction objects. Ensure "id" field matches the pattern matchId_userId.
             </p>
         </div>
     </div>
@@ -195,11 +218,12 @@
                         </app-searchable-select>
                     </div>
                     <!-- 7. Max 4s Player -->
-                    <div class="form-group">
-                        <label class="form-label">7. Player with Maximum <span class="premium-4-icon">4</span>s
-                            🔥</label>
+                    <div class="form-group half-group">
+                        <span class="form-label">7. Player with Max 4s 🔥</span>
                         <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                            placeholder="Select Player" [(ngModel)]="formData[match.id].fantasyPlayer">
+                            placeholder="Select Player"
+                            [(ngModel)]="formData[match.id].most4s"
+                            [name]="'most4s_' + match.id">
                         </app-searchable-select>
                     </div>
                 </div>
@@ -207,26 +231,32 @@
                 <div class="form-grid"
                     style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                     <!-- 8. Player of Match -->
-                    <div class="form-group">
-                        <label class="form-label">8. Player of Match 🎖️</label>
+                    <div class="form-group half-group">
+                        <span class="form-label">8. Player of the Match 🎖️</span>
                         <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                            placeholder="Select Player" [(ngModel)]="formData[match.id].playerOfMatch">
+                            placeholder="Select Player"
+                            [(ngModel)]="formData[match.id].playerOfMatch"
+                            [name]="'playerOfMatch_' + match.id">
                         </app-searchable-select>
                     </div>
                     <!-- 9. Bowler (Less Economy) -->
-                    <div class="form-group">
-                        <label class="form-label">9. Bowler (Less Economy) 🧤</label>
+                    <div class="form-group half-group">
+                        <span class="form-label">9. Best Economy 🧤</span>
                         <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                            placeholder="Select Player" [(ngModel)]="formData[match.id].superStriker">
+                            placeholder="Select Player"
+                            [(ngModel)]="formData[match.id].economy"
+                            [name]="'economy_' + match.id">
                         </app-searchable-select>
                     </div>
                 </div>
 
                 <!-- 10. Super Striker -->
-                <div class="form-group" style="margin-top: 1rem;">
-                    <label class="form-label">10. Super Striker of the match 🌪️</label>
+                <div class="form-group half-group" style="margin-top: 1rem;">
+                    <span class="form-label">10. Super Striker 🌪️</span>
                     <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                        placeholder="Select Bowler" [(ngModel)]="formData[match.id].mostDotBalls">
+                        placeholder="Select Player"
+                        [(ngModel)]="formData[match.id].superStriker"
+                        [name]="'superStriker_' + match.id">
                     </app-searchable-select>
                 </div>
 
@@ -359,32 +389,39 @@
                                 </app-searchable-select>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">🔥 7. Player with Maximum <span
-                                        class="premium-4-icon">4</span>s</label>
+                            <div class="form-group grid-group">
+                                <span class="form-label">7. Player Max 4s 🏏</span>
                                 <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                                    placeholder="Select Player" [(ngModel)]="userPredForm.fantasyPlayer">
+                                    placeholder="Select Player"
+                                    [(ngModel)]="userPredForm.most4s"
+                                    name="upMost4s">
                                 </app-searchable-select>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">⭐ 8. Player of Match</label>
+                            <div class="form-group grid-group">
+                                <span class="form-label">8. Player of Match 🏆</span>
                                 <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                                    placeholder="Select Player" [(ngModel)]="userPredForm.playerOfMatch">
+                                    placeholder="Select Player"
+                                    [(ngModel)]="userPredForm.playerOfMatch"
+                                    name="upPom">
                                 </app-searchable-select>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">🎯 9. Bowler (Economy)</label>
+                            <div class="form-group grid-group">
+                                <span class="form-label">9. Best Economy 🧤</span>
                                 <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                                    placeholder="Select Bowler" [(ngModel)]="userPredForm.superStriker">
+                                    placeholder="Select Player"
+                                    [(ngModel)]="userPredForm.economy"
+                                    name="upEconomy">
                                 </app-searchable-select>
                             </div>
 
-                            <div class="form-group">
-                                <label class="form-label">⚡ 10. Super Striker</label>
+                            <div class="form-group grid-group">
+                                <span class="form-label">10. Super Striker 🚀</span>
                                 <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                                    placeholder="Select Player" [(ngModel)]="userPredForm.mostDotBalls">
+                                    placeholder="Select Player"
+                                    [(ngModel)]="userPredForm.superStriker"
+                                    name="upStriker">
                                 </app-searchable-select>
                             </div>
 

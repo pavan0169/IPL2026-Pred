@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { Match, Team, Prediction, UserStats, MatchResult } from '../models/ipl.models';
 import { db } from '../firebase.config';
 import { collection, onSnapshot, doc, setDoc, updateDoc, writeBatch, deleteField, getDocs, addDoc, query } from 'firebase/firestore';
@@ -97,6 +97,19 @@ const SEED_MATCHES: Match[] = [
 
 @Injectable({ providedIn: 'root' })
 export class IplService {
+    static readonly SCORING_CATEGORIES = [
+        { key: 'winner', label: 'Match Winner', pts: 3 },
+        { key: 'firstInningRange', label: '1st Inning Range', pts: 3 },
+        { key: 'secondInningRange', label: '2nd Inning Range', pts: 3 },
+        { key: 'teamMore4s', label: 'Team with more 4s', pts: 2 },
+        { key: 'teamMore6s', label: 'Team with more 6s', pts: 2 },
+        { key: 'playerMax6s', label: 'Player with Maximum 6s', pts: 3 },
+        { key: 'most4s', label: 'Player with Maximum 4s', pts: 4 },
+        { key: 'playerOfMatch', label: 'Player of the Match', pts: 5 },
+        { key: 'economy', label: 'Bowler (Less Economy)', pts: 4 },
+        { key: 'superStriker', label: 'Super Striker of the match', pts: 4 }
+    ];
+
     private _matches = signal<Match[]>([]);
     private _predictions = signal<Prediction[]>([]);
     private _users = signal<User[]>([]);
@@ -249,7 +262,7 @@ export class IplService {
 
     adminUpdatePrediction(predictionId: string, updates: Partial<Prediction>) {
         if (!predictionId) return;
-        updateDoc(doc(db, 'predictions', predictionId), updates);
+        setDoc(doc(db, 'predictions', predictionId), updates, { merge: true });
     }
 
     getPredictionForMatch(matchId: string): Prediction | undefined {
@@ -265,17 +278,32 @@ export class IplService {
         }, { merge: true });
 
         // Also save to permanent reference backup
-        await updateDoc(doc(db, 'appData', 'matchResultsReference'), {
+        await setDoc(doc(db, 'appData', 'matchResultsReference'), {
             [`${matchId}`]: {
                 status: 'completed',
                 result: result
             }
-        });
+        }, { merge: true });
     }
 
     async seedResultsReference(data: Record<string, MatchState>) {
         await setDoc(doc(db, 'appData', 'matchResultsReference'), data, { merge: true });
         alert('Historical reference successfully seeded with match results!');
+    }
+
+    async seedPredictions(data: any[]) {
+        if (!Array.isArray(data)) {
+            alert('Seed data for predictions must be an array');
+            return;
+        }
+        const batch = writeBatch(db);
+        data.forEach((p: any) => {
+            if (!p.id) return;
+            const docRef = doc(db, 'predictions', p.id);
+            batch.set(docRef, p, { merge: true });
+        });
+        await batch.commit();
+        alert(`Successfully seeded ${data.length} predictions!`);
     }
 
     async restoreAllFromReference() {
@@ -316,50 +344,64 @@ export class IplService {
         return ps === rs;
     }
 
+    /**
+     * Standardizes prediction or result data regardless of which field names were used.
+     * This handles backwards compatibility between NEW and LEGACY formats.
+     */
+    static normalizeData(data: any): {
+        winner?: string;
+        firstInningRange?: string;
+        secondInningRange?: string;
+        teamMore4s?: string;
+        teamMore6s?: string;
+        playerMax6s?: string;
+        playerOfMatch?: string;
+        team1Score?: number;
+        team2Score?: number;
+        most4s?: string;
+        economy?: string;
+        superStriker?: string;
+    } {
+        if (!data) return {};
+
+        return {
+            winner: data.winner || '',
+            firstInningRange: data.firstInningRange || '',
+            secondInningRange: data.secondInningRange || '',
+            teamMore4s: data.teamMore4s || '',
+            teamMore6s: data.teamMore6s || '',
+            playerMax6s: data.playerMax6s || '',
+            playerOfMatch: data.playerOfMatch || '',
+            team1Score: data.team1Score !== undefined ? +data.team1Score : undefined,
+            team2Score: data.team2Score !== undefined ? +data.team2Score : undefined,
+            // Standardizing fields across versions
+            most4s: data.most4s || data.playerMost4s || '',
+            economy: data.economy || data.bestEconomy || data.mostDotBalls || '',
+            superStriker: data.superStriker || data.fantasyPlayer || ''
+        };
+    }
+
     calcPoints(pred: Prediction, result: MatchResult): number {
         if (!pred || !result) return 0;
+        
+        const p = IplService.normalizeData(pred);
+        const r = IplService.normalizeData(result);
+
         let pts = 0;
         let correctCategories = 0;
 
-        // 1. Winning team (3 pts)
-        if (this.isStringMatch(pred.winner, result.winner)) { pts += 3; correctCategories++; }
-
-        // 2. First Innings range (3 pts)
-        if (this.isStringMatch(pred.firstInningRange, result.firstInningRange)) { pts += 3; correctCategories++; }
-
-        // 3. Second Innings range (3 pts)
-        if (this.isStringMatch(pred.secondInningRange, result.secondInningRange)) { pts += 3; correctCategories++; }
-
-        // 4. More 4s (2 pts)
-        if (this.isStringMatch(pred.teamMore4s, result.teamMore4s)) { pts += 2; correctCategories++; }
-
-        // 5. More 6s (2 pts)
-        if (this.isStringMatch(pred.teamMore6s, result.teamMore6s)) { pts += 2; correctCategories++; }
-
-        // 6. Max 6s Player (3 pts)
-        if (this.isStringMatch(pred.playerMax6s, result.playerMax6s)) { pts += 3; correctCategories++; }
-
-        // 7. Max 4s Player (4 pts)
-        if (this.isStringMatch(pred.fantasyPlayer, result.fantasyPlayer)) { pts += 4; correctCategories++; }
-
-        // 8. Player of Match (5 pts)
-        if (this.isStringMatch(pred.playerOfMatch, result.playerOfMatch)) { pts += 5; correctCategories++; }
-
-        // 9. Bowler (Less Economy) (4 pts)
-        if (this.isStringMatch(pred.superStriker, result.superStriker)) { pts += 4; correctCategories++; }
-
-        // 10. Super Striker of the match (4 pts)
-        if (this.isStringMatch(pred.mostDotBalls, result.mostDotBalls)) { pts += 4; correctCategories++; }
+        IplService.SCORING_CATEGORIES.forEach(cat => {
+            const isMatch = this.isStringMatch((p as any)[cat.key], (r as any)[cat.key]);
+            if (isMatch) {
+                pts += cat.pts;
+                correctCategories++;
+            }
+        });
 
         // Bonus: Exact score prediction (+10 pts)
-        const p1 = pred.team1Score;
-        const p2 = pred.team2Score;
-        const r1 = result.team1Score;
-        const r2 = result.team2Score;
-
-        if (p1 !== undefined && p2 !== undefined && r1 !== undefined && r2 !== undefined) {
-            // Explicit number comparison with unary plus to handle potential string types
-            if (+p1 === +r1 && +p2 === +r2) {
+        if (p.team1Score !== undefined && p.team2Score !== undefined && 
+            r.team1Score !== undefined && r.team2Score !== undefined) {
+            if (+p.team1Score === +r.team1Score && +p.team2Score === +r.team2Score) {
                 pts += 10;
             }
         }
@@ -370,6 +412,49 @@ export class IplService {
         }
 
         return pts;
+    }
+
+    async recalculateAllScores() {
+        if (!this.authService.isAdmin()) return;
+        
+        const matches = this._matches().filter(m => !!m.result);
+        const predictions = this._predictions();
+        const users = this._users();
+
+        const batch = writeBatch(db);
+
+        users.forEach(user => {
+            let totalPoints = 0;
+            let correctWinners = 0;
+            const userPreds = predictions.filter(p => p.userId === user.uid);
+
+            userPreds.forEach(p => {
+                const match = matches.find(m => m.id === p.matchId);
+                if (match?.result) {
+                    const pts = this.calcPoints(p, match.result);
+                    totalPoints += pts;
+                    
+                    const pNorm = IplService.normalizeData(p);
+                    const rNorm = IplService.normalizeData(match.result);
+                    if (this.isStringMatch(pNorm.winner, rNorm.winner)) {
+                        correctWinners++;
+                    }
+                }
+            });
+
+            if (user.uid) {
+                const userRef = doc(db, 'users', user.uid);
+                batch.update(userRef, {
+                    totalPoints: totalPoints || 0,
+                    correctWinners: correctWinners || 0,
+                    totalPredictions: userPreds.length || 0,
+                    updatedAt: new Date().toISOString()
+                });
+            }
+        });
+
+        await batch.commit();
+        alert('All user scores have been recalculated from scratch based on the latest mapping logic!');
     }
 
     async adminSendMatchEmail(matchId: string) {
@@ -455,10 +540,15 @@ export class IplService {
     }
 
     resetMatchResult(matchId: string) {
-        updateDoc(doc(db, 'appData', 'matchStates'), {
+        setDoc(doc(db, 'matches', matchId), {
+            status: 'upcoming',
+            result: deleteField()
+        }, { merge: true });
+
+        setDoc(doc(db, 'appData', 'matchResultsReference'), {
             [`${matchId}.status`]: 'upcoming',
             [`${matchId}.result`]: deleteField()
-        });
+        }, { merge: true });
     }
 
     async resetData() {

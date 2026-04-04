@@ -115,21 +115,24 @@ export class LockedPredictionsComponent implements OnInit, OnDestroy {
 
   isCorrect(match: any, pred: any, category: string): boolean {
     if (!match?.result || !pred) return false;
-    const result = match.result;
-    switch (category) {
-      case 'winner': return this.iplService.isStringMatch(pred.winner, result.winner);
-      case 'firstInningRange': return this.iplService.isStringMatch(pred.firstInningRange, result.firstInningRange);
-      case 'secondInningRange': return this.iplService.isStringMatch(pred.secondInningRange, result.secondInningRange);
-      case 'teamMore4s': return this.iplService.isStringMatch(pred.teamMore4s, result.teamMore4s);
-      case 'teamMore6s': return this.iplService.isStringMatch(pred.teamMore6s, result.teamMore6s);
-      case 'playerMax6s': return this.iplService.isStringMatch(pred.playerMax6s, result.playerMax6s);
-      case 'fantasyPlayer': return this.iplService.isStringMatch(pred.fantasyPlayer, result.fantasyPlayer);
-      case 'playerOfMatch': return this.iplService.isStringMatch(pred.playerOfMatch, result.playerOfMatch);
-      case 'superStriker': return this.iplService.isStringMatch(pred.superStriker, result.superStriker);
-      case 'mostDotBalls': return this.iplService.isStringMatch(pred.mostDotBalls, result.mostDotBalls);
-      case 'score': return Number(pred.team1Score) === Number(result.team1Score) && Number(pred.team2Score) === Number(result.team2Score);
-      default: return false;
+
+    if (category === 'score') {
+      return Number(pred.team1Score) === Number(match.result.team1Score) &&
+        Number(pred.team2Score) === Number(match.result.team2Score);
     }
+
+    const p = IplService.normalizeData(pred);
+    const r = IplService.normalizeData(match.result);
+
+    return this.iplService.isStringMatch((p as any)[category], (r as any)[category]);
+  }
+
+  getNormalizedValue(data: any, category: string): string {
+    if (!data) return '-';
+    if (category === 'score') return `${data.team1Score || 0}-${data.team2Score || 0}`;
+
+    const normalized = IplService.normalizeData(data);
+    return (normalized as any)[category] || '-';
   }
 
   getMatchPredictions(matchId: string) {

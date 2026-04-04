@@ -62,17 +62,16 @@ export class PredictComponent {
     teamMore4s = signal('');
     teamMore6s = signal('');
     playerMax6s = signal('');
-    fantasyPlayer = signal('');
+    most4s = signal('');
     playerOfMatch = signal('');
-    playerMost4s = signal('');
-    superStriker = signal('');
-    mostDotBalls = signal('');
+    economy = signal('');
+    superStriker = signal(''); // Canonical Super Striker
 
     canSubmit = computed(() => {
         return !!(this.winner() && this.firstInningRange() && this.secondInningRange() &&
             this.teamMore4s() && this.teamMore6s() && this.playerMax6s() &&
-            this.fantasyPlayer() && this.playerOfMatch() && this.playerMost4s() &&
-            this.superStriker() && this.mostDotBalls());
+            this.most4s() && this.playerOfMatch() &&
+            this.economy() && this.superStriker());
     });
 
     submitted = signal(false);
@@ -130,11 +129,13 @@ export class PredictComponent {
             this.teamMore4s.set(existing.teamMore4s || '');
             this.teamMore6s.set(existing.teamMore6s || '');
             this.playerMax6s.set(existing.playerMax6s || '');
-            this.fantasyPlayer.set(existing.fantasyPlayer || '');
             this.playerOfMatch.set(existing.playerOfMatch || '');
-            this.playerMost4s.set(existing.playerMost4s || '');
-            this.superStriker.set(existing.superStriker || '');
-            this.mostDotBalls.set(existing.mostDotBalls || '');
+
+            // Canonical mapping for loading
+            const normalized = IplService.normalizeData(existing);
+            this.most4s.set(normalized.most4s || '');
+            this.economy.set(normalized.economy || '');
+            this.superStriker.set(normalized.superStriker || '');
         } else {
             this.team1Score.set(150);
             this.team2Score.set(150);
@@ -144,11 +145,10 @@ export class PredictComponent {
             this.teamMore4s.set('');
             this.teamMore6s.set('');
             this.playerMax6s.set('');
-            this.fantasyPlayer.set('');
+            this.most4s.set('');
             this.playerOfMatch.set('');
-            this.playerMost4s.set('');
+            this.economy.set('');
             this.superStriker.set('');
-            this.mostDotBalls.set('');
         }
     }
 
@@ -175,11 +175,10 @@ export class PredictComponent {
             teamMore4s: this.teamMore4s(),
             teamMore6s: this.teamMore6s(),
             playerMax6s: this.playerMax6s(),
-            fantasyPlayer: this.fantasyPlayer(),
+            most4s: this.most4s(),
             playerOfMatch: this.playerOfMatch(),
-            playerMost4s: this.playerMost4s(),
-            superStriker: this.superStriker(),
-            mostDotBalls: this.mostDotBalls()
+            economy: this.economy(),
+            superStriker: this.superStriker()
         });
         this.submitted.set(true);
     }
