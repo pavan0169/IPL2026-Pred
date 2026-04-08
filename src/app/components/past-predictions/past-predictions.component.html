@@ -15,14 +15,16 @@
         @for (group of daywiseMatches(); track group.dateLabel) {
         <div class="day-group">
             <h3 class="day-header">{{ group.dateLabel }}</h3>
-            
+
             <div class="matches-grid">
                 @for (match of group.matches; track match.id) {
                 <div class="match-card" [class.expanded]="expandedMatchId() === match.id">
                     <div class="match-card-header" (click)="toggleMatch(match.id)">
                         <div class="header-left">
                             <div class="team-pill">
-                                <span style="opacity: 0.8; font-weight: 800; background: rgba(255,255,255,0.15); padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); margin-right: 0.3rem; font-size: 0.8rem;">Match {{ match.id.substring(1) }}</span>
+                                <span
+                                    style="opacity: 0.8; font-weight: 800; background: rgba(255,255,255,0.15); padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); margin-right: 0.3rem; font-size: 0.8rem;">Match
+                                    {{ match.id.substring(1) }}</span>
                                 <span>{{ match.team1.emoji }} {{ match.team1.shortName }}</span>
                                 <span class="vs">vs</span>
                                 <span>{{ match.team2.emoji }} {{ match.team2.shortName }}</span>
@@ -31,7 +33,8 @@
                                 <span>📅 {{ formatShortDate(match.date) }} · {{ match.venue }}</span>
                                 @if (match.result?.lastEditedAt) {
                                 <div class="edit-pill">
-                                    <span class="edit-icon">✎</span> Result updated by <b>{{ match.result?.lastEditedBy }}</b> · {{ match.result?.lastEditedAt | date:'MMM d, y, h:mm a' }}
+                                    <span class="edit-icon">✎</span> Result updated by <b>{{ match.result?.lastEditedBy
+                                        }}</b> · {{ match.result?.lastEditedAt | date:'MMM d, y, h:mm a' }}
                                 </div>
                                 }
                             </div>
@@ -64,14 +67,17 @@
                                             Winner
                                             <div class="result-pill" *ngIf="match.result">
                                                 <span class="res-label">Result:</span>
-                                                <span class="res-val">{{ match.result.winner ? getTeamName(match, match.result.winner) : '-' }}</span>
+                                                <span class="res-val">{{ match.result.winner ? getTeamName(match,
+                                                    match.result.winner) : '-' }}</span>
                                             </div>
                                         </th>
                                         <th>
                                             Score
                                             <div class="result-pill" *ngIf="match.result">
                                                 <span class="res-label">Result:</span>
-                                                <span class="res-val">{{ match.result.team1Score !== undefined ? (match.result.team1Score + ' - ' + match.result.team2Score) : '-' }}</span>
+                                                <span class="res-val">{{ match.result.team1Score !== undefined ?
+                                                    (match.result.team1Score + ' - ' + match.result.team2Score) : '-'
+                                                    }}</span>
                                             </div>
                                         </th>
                                         <th>
@@ -106,14 +112,16 @@
                                             More 4s
                                             <div class="result-pill" *ngIf="match.result">
                                                 <span class="res-label">Result:</span>
-                                                <span class="res-val">{{ match.result.teamMore4s ? getTeamName(match, match.result.teamMore4s) : '-' }}</span>
+                                                <span class="res-val">{{ match.result.teamMore4s ? getTeamName(match,
+                                                    match.result.teamMore4s) : '-' }}</span>
                                             </div>
                                         </th>
                                         <th>
                                             More 6s
                                             <div class="result-pill" *ngIf="match.result">
                                                 <span class="res-label">Result:</span>
-                                                <span class="res-val">{{ match.result.teamMore6s ? getTeamName(match, match.result.teamMore6s) : '-' }}</span>
+                                                <span class="res-val">{{ match.result.teamMore6s ? getTeamName(match,
+                                                    match.result.teamMore6s) : '-' }}</span>
                                             </div>
                                         </th>
                                         <th>
@@ -144,60 +152,95 @@
                                     <tr [class.no-prediction]="!item.pred">
                                         <td class="sticky-col">
                                             <div class="player-info">
-                                                <div class="mini-avatar">{{ item.user.username.charAt(0) | uppercase }}</div>
+                                                <div class="mini-avatar">{{ item.user.username.charAt(0) | uppercase }}
+                                                </div>
                                                 <span class="player-name">{{ item.user.username }}</span>
                                             </div>
                                         </td>
                                         <td class="points-cell">
                                             @if (item.pred && match.result) {
-                                                <span class="pts-val">+{{ iplService.calcPoints(item.pred, match.result) }}</span>
+                                            <span class="pts-val">+{{ iplService.calcPoints(item.pred, match.result)
+                                                }}</span>
                                             } @else {
-                                                <span class="muted">-</span>
+                                            <span class="muted">-</span>
                                             }
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.winner, match.result.winner)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.winner, match.result.winner)">
                                             {{ getTeamName(match, item.pred?.winner) }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.winner, match.result.winner)" class="mini-pts">+3</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.winner, match.result.winner)"
+                                                class="mini-pts">+3</span>
                                         </td>
-                                        <td [class.correct]="match.result && item.pred?.team1Score == match.result.team1Score && item.pred?.team2Score == match.result.team2Score">
+                                        <td
+                                            [class.correct]="match.result && item.pred?.team1Score == match.result.team1Score && item.pred?.team2Score == match.result.team2Score">
                                             {{ item.pred?.team1Score ?? '-' }} - {{ item.pred?.team2Score ?? '-' }}
-                                            <span *ngIf="match.result && item.pred?.team1Score == match.result.team1Score && item.pred?.team2Score == match.result.team2Score" class="mini-pts">+10</span>
+                                            <span
+                                                *ngIf="match.result && item.pred?.team1Score == match.result.team1Score && item.pred?.team2Score == match.result.team2Score"
+                                                class="mini-pts">+10</span>
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.playerOfMatch, match.result.playerOfMatch)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.playerOfMatch, match.result.playerOfMatch)">
                                             {{ item.pred?.playerOfMatch ?? '-' }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.playerOfMatch, match.result.playerOfMatch)" class="mini-pts">+5</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.playerOfMatch, match.result.playerOfMatch)"
+                                                class="mini-pts">+5</span>
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.most4s, match.result.most4s)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.most4s, match.result.most4s)">
                                             {{ item.pred?.most4s ?? '-' }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.most4s, match.result.most4s)" class="mini-pts">+4</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.most4s, match.result.most4s)"
+                                                class="mini-pts">+4</span>
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.firstInningRange, match.result.firstInningRange)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.firstInningRange, match.result.firstInningRange)">
                                             {{ item.pred?.firstInningRange ?? '-' }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.firstInningRange, match.result.firstInningRange)" class="mini-pts">+3</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.firstInningRange, match.result.firstInningRange)"
+                                                class="mini-pts">+3</span>
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.secondInningRange, match.result.secondInningRange)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.secondInningRange, match.result.secondInningRange)">
                                             {{ item.pred?.secondInningRange ?? '-' }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.secondInningRange, match.result.secondInningRange)" class="mini-pts">+3</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.secondInningRange, match.result.secondInningRange)"
+                                                class="mini-pts">+3</span>
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.teamMore4s, match.result.teamMore4s)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.teamMore4s, match.result.teamMore4s)">
                                             {{ getTeamName(match, item.pred?.teamMore4s) }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.teamMore4s, match.result.teamMore4s)" class="mini-pts">+2</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.teamMore4s, match.result.teamMore4s)"
+                                                class="mini-pts">+2</span>
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.teamMore6s, match.result.teamMore6s)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.teamMore6s, match.result.teamMore6s)">
                                             {{ getTeamName(match, item.pred?.teamMore6s) }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.teamMore6s, match.result.teamMore6s)" class="mini-pts">+2</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.teamMore6s, match.result.teamMore6s)"
+                                                class="mini-pts">+2</span>
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.playerMax6s, match.result.playerMax6s)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.playerMax6s, match.result.playerMax6s)">
                                             {{ item.pred?.playerMax6s ?? '-' }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.playerMax6s, match.result.playerMax6s)" class="mini-pts">+3</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.playerMax6s, match.result.playerMax6s)"
+                                                class="mini-pts">+3</span>
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.economy, match.result.economy)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.economy, match.result.economy)">
                                             {{ item.pred?.economy ?? '-' }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.economy, match.result.economy)" class="mini-pts">+4</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.economy, match.result.economy)"
+                                                class="mini-pts">+4</span>
                                         </td>
-                                        <td [class.correct]="match.result && iplService.isStringMatch(item.pred?.superStriker, match.result.superStriker)">
+                                        <td
+                                            [class.correct]="match.result && iplService.isStringMatch(item.pred?.superStriker, match.result.superStriker)">
                                             {{ item.pred?.superStriker ?? '-' }}
-                                            <span *ngIf="match.result && iplService.isStringMatch(item.pred?.superStriker, match.result.superStriker)" class="mini-pts">+4</span>
+                                            <span
+                                                *ngIf="match.result && iplService.isStringMatch(item.pred?.superStriker, match.result.superStriker)"
+                                                class="mini-pts">+4</span>
                                         </td>
                                     </tr>
                                     }

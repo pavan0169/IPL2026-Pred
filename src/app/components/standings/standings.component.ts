@@ -16,8 +16,8 @@ type SubTab = 'dashboard' | 'leaderboards' | 'stats';
     styleUrl: './standings.component.css'
 })
 export class StandingsComponent {
-    activeTab = signal<'standings' | 'stats' | 'dashboard'>('dashboard');
-    viewTab = signal<'today' | 'daily' | 'weekly' | 'overall'>('today');
+    activeTab = signal<'leaderboards' | 'analytics'>('leaderboards');
+    viewTab = signal<'overall' | 'weekly' | 'daily' | 'today'>('overall');
     userStats() { return this.iplService.userStats(); }
     matches() { return this.iplService.matches(); }
     predictions() { return this.iplService.predictions(); }
@@ -403,7 +403,7 @@ export class StandingsComponent {
 
     selectedUserStats() {
         const uid = this.selectedUserId();
-        return uid ? this.userStats().find(s => s.userId === uid) : null;
+        return uid ? this.playerStats().find(s => s.userId === uid) : null;
     }
 
     getUserBreakdownMatches() {
@@ -466,7 +466,7 @@ export class StandingsComponent {
         });
 
         // Add Exact Score Bonus (Special handling as it's not a standard category)
-        const exactScoreMatch = pred.team1Score === result.team1Score && pred.team2Score === result.team2Score;
+        const exactScoreMatch = result.winner !== 'cancelled' && pred.team1Score === result.team1Score && pred.team2Score === result.team2Score;
         details.push({
             label: 'Exact Score Bonus',
             pts: exactScoreMatch ? 10 : 0,

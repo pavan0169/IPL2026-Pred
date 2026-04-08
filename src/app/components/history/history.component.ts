@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { IplService } from '../../services/ipl.service';
 
 @Component({
-    selector: 'app-history',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+  selector: 'app-history',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     <div class="history-page fade-in">
       <div class="page-header">
         <h2>📅 Match History</h2>
@@ -18,7 +18,9 @@ import { IplService } from '../../services/ipl.service';
           <div class="match-card card">
             <div class="match-header">
               <span class="match-date">{{ formatDate(match.date) }}</span>
-              <span class="badge badge-completed">COMPLETED</span>
+              <span class="badge" [ngClass]="{'badge-completed': match.status !== 'cancelled', 'badge-cancelled': match.status === 'cancelled'}">
+                {{ match.status | uppercase }}
+              </span>
             </div>
             
             <div class="teams-display">
@@ -47,7 +49,7 @@ import { IplService } from '../../services/ipl.service';
       </div>
     </div>
   `,
-    styles: [`
+  styles: [`
     .history-page { padding: 1rem; max-width: 1000px; margin: 0 auto; }
     .page-header { margin-bottom: 2rem; text-align: center; }
     .history-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
@@ -62,14 +64,15 @@ import { IplService } from '../../services/ipl.service';
     .vs { font-weight: 800; color: var(--text-muted); opacity: 0.5; }
     .result-info { display: flex; gap: 0.5rem; justify-content: center; font-weight: 700; font-size: 0.9rem; }
     .winner-name { color: var(--success); }
+    .badge-cancelled { background: var(--error, #ef4444); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem; }
   `]
 })
 export class HistoryComponent {
-    completedMatches = computed(() => this.iplService.matches().filter(m => m.status === 'completed'));
+  completedMatches = computed(() => this.iplService.matches().filter(m => m.status === 'completed' || m.status === 'cancelled'));
 
-    constructor(private iplService: IplService) { }
+  constructor(private iplService: IplService) { }
 
-    formatDate(dateStr: string): string {
-        return new Date(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-    }
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  }
 }

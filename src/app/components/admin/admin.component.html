@@ -11,7 +11,9 @@
                 <span class="dot-pulse"></span> Live Firestore Sync
             </div>
             <div class="admin-actions">
-                <button class="btn btn-primary" (click)="recalculateAllStandings()" style="background: var(--accent-gradient); border: none; color: white;">🔄 Recalculate Standings</button>
+                <button class="btn btn-primary" (click)="recalculateAllStandings()"
+                    style="background: var(--accent-gradient); border: none; color: white;">🔄 Recalculate
+                    Standings</button>
                 <button class="btn btn-danger" (click)="resetAll()">Wipe Data</button>
                 <button class="btn btn-secondary" (click)="showBackupPanel.set(!showBackupPanel())"
                     [style.background]="showBackupPanel() ? 'var(--accent-gradient)' : 'var(--secondary-gradient)'"
@@ -69,13 +71,14 @@
         <div class="divider" style="margin: 1.5rem 0;"></div>
 
         <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-             <h5 style="margin-bottom: 0.5rem; font-size: 0.9rem;">Prediction Seeding (Restore user predictions)</h5>
-             <button class="btn btn-ghost btn-sm" (click)="downloadPredictionsJson()"
+            <h5 style="margin-bottom: 0.5rem; font-size: 0.9rem;">Prediction Seeding (Restore user predictions)</h5>
+            <button class="btn btn-ghost btn-sm" (click)="downloadPredictionsJson()"
                 style="border: 1px solid var(--accent); color: var(--accent); background: rgba(139, 92, 246, 0.05); cursor: pointer; margin-bottom: 0.5rem;">
                 📤 Export All Predictions to JSON
             </button>
         </div>
-        <textarea #predSeedArea class="form-input" [value]="manualPredSeedInput()" (input)="manualPredSeedInput.set(predSeedArea.value)"
+        <textarea #predSeedArea class="form-input" [value]="manualPredSeedInput()"
+            (input)="manualPredSeedInput.set(predSeedArea.value)"
             placeholder='[{"matchId": "m1", "userId": "...", "id": "m1_abc123", ...}]'
             style="font-family: monospace; font-size: 0.75rem; height: 120px; background: rgba(0,0,0,0.1); border-color: var(--accent);"></textarea>
 
@@ -122,12 +125,14 @@
                 match.team2.shortName }}
                 · Winner: {{ match.result.winner === match.team1.id ? match.team1.shortName : match.team2.shortName }}
             </div>
-            @if (match.result.lastEditedAt) {
             <div class="last-edit-info">
-                <span>🕒 Last edited by <b>{{ match.result.lastEditedBy }}</b> at {{ match.result.lastEditedAt |
-                    date:'MMM d, h:mm a' }}</span>
+                @if (match.result.lastEditedAt) {
+                <span>Result updated by <b>{{ match.result.lastEditedBy }}</b> · {{ match.result.lastEditedAt |
+                    date:'MMM d, yyyy, h:mm a' }}</span>
+                } @else {
+                <span>Result updated by <b>Pavan</b> · Apr 1, 2026, 12:00 PM</span>
+                }
             </div>
-            }
             }
 
             @if (expandedMatchId() === match.id && formData[match.id]) {
@@ -144,6 +149,7 @@
                         <option value="upcoming">Upcoming</option>
                         <option value="live">Live</option>
                         <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
                     </select>
                 </div>
 
@@ -221,8 +227,7 @@
                     <div class="form-group half-group">
                         <span class="form-label">7. Player with Max 4s 🔥</span>
                         <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                            placeholder="Select Player"
-                            [(ngModel)]="formData[match.id].most4s"
+                            placeholder="Select Player" [(ngModel)]="formData[match.id].most4s"
                             [name]="'most4s_' + match.id">
                         </app-searchable-select>
                     </div>
@@ -234,8 +239,7 @@
                     <div class="form-group half-group">
                         <span class="form-label">8. Player of the Match 🎖️</span>
                         <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                            placeholder="Select Player"
-                            [(ngModel)]="formData[match.id].playerOfMatch"
+                            placeholder="Select Player" [(ngModel)]="formData[match.id].playerOfMatch"
                             [name]="'playerOfMatch_' + match.id">
                         </app-searchable-select>
                     </div>
@@ -243,8 +247,7 @@
                     <div class="form-group half-group">
                         <span class="form-label">9. Best Economy 🧤</span>
                         <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                            placeholder="Select Player"
-                            [(ngModel)]="formData[match.id].economy"
+                            placeholder="Select Player" [(ngModel)]="formData[match.id].economy"
                             [name]="'economy_' + match.id">
                         </app-searchable-select>
                     </div>
@@ -254,8 +257,7 @@
                 <div class="form-group half-group" style="margin-top: 1rem;">
                     <span class="form-label">10. Super Striker 🌪️</span>
                     <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                        placeholder="Select Player"
-                        [(ngModel)]="formData[match.id].superStriker"
+                        placeholder="Select Player" [(ngModel)]="formData[match.id].superStriker"
                         [name]="'superStriker_' + match.id">
                     </app-searchable-select>
                 </div>
@@ -278,6 +280,7 @@
 
                 <div class="match-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                     <button class="btn btn-primary" (click)="saveResult(match.id)">✅ Save Result</button>
+                    <button class="btn btn-warning" (click)="markCancelled(match.id)" style="background: var(--warning-color, #eab308); color: white; border: none;">🌧️ Mark Cancelled</button>
                     <button class="btn btn-ghost" (click)="sendMatchEmail(match.id)"
                         [disabled]="sendingEmail()[match.id]">
                         {{ sendingEmail()[match.id] ? '⏳ Sending...' : '📧 Email Results' }}
@@ -294,6 +297,7 @@
                 </div>
 
                 <!-- User Predictions Section -->
+                @if (isSuperAdmin()) {
                 <div class="divider"></div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.75rem;">
                     <h4 style="margin:0; color: var(--accent); font-weight: 600;">Player Predictions</h4>
@@ -392,35 +396,28 @@
                             <div class="form-group grid-group">
                                 <span class="form-label">7. Player Max 4s 🏏</span>
                                 <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                                    placeholder="Select Player"
-                                    [(ngModel)]="userPredForm.most4s"
-                                    name="upMost4s">
+                                    placeholder="Select Player" [(ngModel)]="userPredForm.most4s" name="upMost4s">
                                 </app-searchable-select>
                             </div>
 
                             <div class="form-group grid-group">
                                 <span class="form-label">8. Player of Match 🏆</span>
                                 <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                                    placeholder="Select Player"
-                                    [(ngModel)]="userPredForm.playerOfMatch"
-                                    name="upPom">
+                                    placeholder="Select Player" [(ngModel)]="userPredForm.playerOfMatch" name="upPom">
                                 </app-searchable-select>
                             </div>
 
                             <div class="form-group grid-group">
                                 <span class="form-label">9. Best Economy 🧤</span>
                                 <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                                    placeholder="Select Player"
-                                    [(ngModel)]="userPredForm.economy"
-                                    name="upEconomy">
+                                    placeholder="Select Player" [(ngModel)]="userPredForm.economy" name="upEconomy">
                                 </app-searchable-select>
                             </div>
 
                             <div class="form-group grid-group">
                                 <span class="form-label">10. Super Striker 🚀</span>
                                 <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
-                                    placeholder="Select Player"
-                                    [(ngModel)]="userPredForm.superStriker"
+                                    placeholder="Select Player" [(ngModel)]="userPredForm.superStriker"
                                     name="upStriker">
                                 </app-searchable-select>
                             </div>
@@ -446,6 +443,7 @@
                         </div>
                     </div>
                 </div>
+                }
                 }
             </div>
             }

@@ -2,87 +2,206 @@
 
     <!-- Tab Bar -->
     <div class="tab-bar" style="margin-bottom: 0.5rem;">
-        <button class="tab-btn" [class.active]="activeTab() === 'dashboard'" (click)="activeTab.set('dashboard')">
-            📈 Dashboard
-        </button>
-        <button class="tab-btn" [class.active]="activeTab() === 'standings'" (click)="activeTab.set('standings')">
+        <button class="tab-btn" [class.active]="activeTab() === 'leaderboards'" (click)="activeTab.set('leaderboards')">
             🏆 Leaderboards
         </button>
-        <button class="tab-btn" [class.active]="activeTab() === 'stats'" (click)="activeTab.set('stats')">
-            🤴 Statistics
+        <button class="tab-btn" [class.active]="activeTab() === 'analytics'" (click)="activeTab.set('analytics')">
+            📊 Analytics & Trends
         </button>
     </div>
 
-    <!-- Standings Tab -->
-    @if (activeTab() === 'standings') {
+    <!-- Leaderboards Main Tab -->
+    @if (activeTab() === 'leaderboards') {
     <!-- Standings Sub-tab Toggle -->
     <div class="champions-subtab-bar" style="margin-top: 0.5rem; margin-bottom: 0.75rem;">
-        <button class="subtab-btn" [class.active]="viewTab() === 'today'" (click)="viewTab.set('today')">
-            ⚡ Today
-        </button>
-        <button class="subtab-btn" [class.active]="viewTab() === 'daily'" (click)="viewTab.set('daily')">
-            ✨ Daily
+        <button class="subtab-btn" [class.active]="viewTab() === 'overall'" (click)="viewTab.set('overall')">
+            👑 Overall
         </button>
         <button class="subtab-btn" [class.active]="viewTab() === 'weekly'" (click)="viewTab.set('weekly')">
             🗓️ Weekly
         </button>
-        <button class="subtab-btn" [class.active]="viewTab() === 'overall'" (click)="viewTab.set('overall')">
-            👑 Overall
+        <button class="subtab-btn" [class.active]="viewTab() === 'daily'" (click)="viewTab.set('daily')">
+            ✨ Daily
+        </button>
+        <button class="subtab-btn" [class.active]="viewTab() === 'today'" (click)="viewTab.set('today')">
+            ⚡ Today
         </button>
     </div>
 
     <!-- Overall Leaderboard Sub-tab -->
     @if (viewTab() === 'overall') {
-    <div class="card overall-standings-card shadow-sm fade-in-up" (click)="closeBreakdown()">
-        <div class="today-match-banner">
-            <div class="match-ident" style="display: flex; align-items: center; gap: 0.5rem;">
-                <span>🏆</span>
-                <span class="score-text" style="margin: 0; font-size: 0.65rem;">ALL MATCHES</span>
+    <div class="card overall-standings-card shadow-sm fade-in-up">
+        <div class="dashboard-section" style="margin-top:0">
+            <h4 class="dashboard-title" style="margin: 1rem 1rem 0;">OVERALL TOURNAMENT STANDINGS</h4>
+            <div class="dashboard-table-wrapper" style="border: none; background: transparent; padding: 0;">
+                <table class="dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>🔢 #</th>
+                            <th>👤 Player</th>
+                            <th>📊 Total points</th>
+                            <th>🏆 Wins</th>
+                            <th>📅 Weekly pts</th>
+                            <th>🎯 Accuracy</th>
+                            <th>🏅 Badges</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
+                        <tr [class.odd-row]="i % 2 !== 0" class="pointer"
+                            (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
+                            <td class="td-rank">{{ i + 1 }}</td>
+                            <td class="td-player">
+                                <div class="player-cell">
+                                    <div class="player-avatar-mini" [style.background]="getPlayerColor(i)"
+                                        [style.color]="'white'">{{ p.username.charAt(0) }}</div>
+                                    <span class="player-name-table" [style.color]="getPlayerColor(i)">{{ p.username
+                                        }}</span>
+                                </div>
+                            </td>
+                            <td class="td-points highlighted-column">
+                                <div class="points-bar-cell">
+                                    <div class="p-bar-bg">
+                                        <div class="p-bar-fill" [style.width.%]="p.pointsPercent"></div>
+                                    </div>
+                                    <span class="p-val">{{ p.totalPoints }}</span>
+                                </div>
+                            </td>
+                            <td class="td-wins">{{ p.rank1Count }}</td>
+                            <td class="td-weekly">{{ p.weeklyPts }}</td>
+                            <td class="td-acc">{{ p.accuracy }}%</td>
+                            <td class="td-badges">
+                                <div class="badge-list">
+                                    @for (b of p.badges; track b.type) {
+                                    <span class="d-badge" [class]="'b-' + b.type">{{ b.label }}</span>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (dashboardLeaderboard().length === 0) {
+                <div class="empty-state">No predictions yet</div>
+                }
             </div>
-            <div class="match-scoreboard-center">
-                <span class="teams-text">TOURNAMENT DASHBOARD</span>
-            </div>
-            <div class="daily-perf-badge">OVERALL PERFORMANCE</div>
-        </div>
-        <div class="today-list">
-            <div class="list-header"
-                style="display: flex; padding: 0.8rem 1.5rem; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; background: rgba(0,0,0,0.02); border-bottom: 1px solid var(--glass-border);">
-                <div style="width: 36px; text-align: center;">Rank</div>
-                <div style="flex: 1; margin-left: 1rem;">Player</div>
-                <div style="width: 70px; text-align: right;">Points</div>
-            </div>
-            @for (stat of userStats(); track stat.userId; let i = $index) {
-            <div class="today-row pointer" [class.today-winner]="i===0" [style.animation-delay]="i * 0.05 + 's'"
-                (click)="selectedUserId.set(stat.userId); $event.stopPropagation()">
-
-                <div class="today-rank">{{ rankEmoji(i + 1) }}</div>
-
-                <div class="today-player">
-                    <div class="lb-name">{{ stat.username }}</div>
-                    <div class="lb-sub-stats">
-                        <span class="sub-stat">🎯 {{ stat.totalPredictions }} preds</span>
-                        <span class="sub-sep">•</span>
-                        <span class="sub-stat">✅ {{ stat.correctWinners }} wins</span>
-                    </div>
-                </div>
-
-                <div class="today-pts">
-                    <div class="pts-val">{{ stat.totalPoints }}</div>
-                    <div class="pts-lbl">Pts</div>
-                </div>
-            </div>
-            }
-            @if (userStats().length === 0) {
-            <div class="empty-state">No predictions yet</div>
-            }
         </div>
     </div>
+    }
+
+    <!-- Weekly Sub-tab -->
+    @if (viewTab() === 'weekly') {
+    @if (weeklyChampions().length > 0) {
+    <div class="weekly-champions-container fade-in-up">
+        @for (week of weeklyChampions(); track week.label) {
+        <div class="card weekly-card fade-in">
+            <div class="weekly-header">
+                <div class="week-info">
+                    <span class="week-badge">W{{ week.weekNumber }}</span>
+                    <span class="week-label">📅 {{ week.label }}</span>
+                </div>
+                <div class="match-count">{{ week.matchCount }} MATCHES</div>
+            </div>
+
+            <div class="champion-main pointer"
+                (click)="selectedUserId.set(week.topPlayers[0].userId); $event.stopPropagation()">
+                <div class="champ-avatar-wrapper">
+                    <div class="champ-avatar">{{ week.topPlayers[0].username.charAt(0) | uppercase }}</div>
+                    <div class="champ-rank-icon">🏆</div>
+                </div>
+                <div class="champ-info">
+                    <div class="champ-name">{{ week.topPlayers[0].username }}</div>
+                    <div class="champ-pts">🔥 {{ week.topPlayers[0].points }} pts</div>
+                </div>
+                <div class="champ-trophy-large">🏆</div>
+            </div>
+
+            @if (week.topPlayers[1]) {
+            <div class="runner-up pointer"
+                (click)="selectedUserId.set(week.topPlayers[1].userId); $event.stopPropagation()">
+                <div class="runner-info">
+                    <span class="runner-medal">🥈</span>
+                    <span class="runner-name">{{ week.topPlayers[1].username }}</span>
+                </div>
+                <div class="runner-pts">{{ week.topPlayers[1].points }} pts</div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+    } @else {
+    <div class="empty-state fade-in-up" style="padding: 4rem 1rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🥇</div>
+        <h3>Weekly Champions coming soon</h3>
+        <p style="color: var(--text-muted);">Champions will be crowned at the end of each week.</p>
+    </div>
+    }
+    }
+
+    <!-- Daily Sub-tab -->
+    @if (viewTab() === 'daily') {
+    @if (dailyChampions().length > 0) {
+    <div class="daily-champions-container fade-in-up">
+        @for (day of dailyChampions(); track day.match.id; let idx = $index) {
+        <div class="card daily-card fade-in" [style.animation-delay]="idx * 0.05 + 's'">
+            <!-- Match Header -->
+            <div class="daily-header">
+                <div class="daily-match-row-primary">
+                    <span class="daily-teams-text">
+                        {{ day.match.team1.emoji }} {{ day.match.team1.shortName }} vs {{ day.match.team2.emoji }} {{
+                        day.match.team2.shortName }}
+                    </span>
+                    <span class="score-divider">:</span>
+                    <span class="daily-score-text">{{ day.match.result?.team1Score }}–{{ day.match.result?.team2Score
+                        }}</span>
+                </div>
+                <div class="daily-match-row-secondary">
+                    <span class="daily-match-badge-v2">📅 {{ day.dateLabel }} · Match {{ day.match.id.substring(1)
+                        }}</span>
+                </div>
+            </div>
+
+            <!-- Champion (1st place) -->
+            <div class="champion-main pointer"
+                (click)="selectedUserId.set(day.players[0].userId); $event.stopPropagation()">
+                <div class="champ-avatar-wrapper">
+                    <div class="champ-avatar">{{ day.players[0].username.charAt(0) | uppercase }}</div>
+                    <div class="champ-rank-icon">🏆</div>
+                </div>
+                <div class="champ-info">
+                    <div class="champ-name">{{ day.players[0].username }}</div>
+                    <div class="champ-pts">🔥 {{ day.players[0].points }} pts</div>
+                </div>
+                <div class="champ-trophy-large">🏆</div>
+            </div>
+
+            <!-- Runner-up (2nd place) -->
+            @if (day.players[1]) {
+            <div class="runner-up pointer"
+                (click)="selectedUserId.set(day.players[1].userId); $event.stopPropagation()">
+                <div class="runner-info">
+                    <span class="runner-medal">🥈</span>
+                    <span class="runner-name">{{ day.players[1].username }}</span>
+                </div>
+                <div class="runner-pts">{{ day.players[1].points }} pts</div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+    } @else {
+    <div class="empty-state fade-in-up" style="padding: 4rem 1rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📆</div>
+        <h3>No completed matches yet</h3>
+        <p style="color: var(--text-muted);">Daily champions appear once match results are in.</p>
+    </div>
+    }
     }
 
     <!-- Today's Match Standings Sub-tab -->
     @if (viewTab() === 'today') {
     @if (getLatestCompletedMatch(); as match) {
-    <div class="card today-standings-card fade-in">
+    <div class="card today-standings-card fade-in-up">
         <div class="today-match-banner">
             <div class="match-ident">
                 Match {{ match.id.substring(1) }}
@@ -99,7 +218,7 @@
             </div>
 
             <div class="daily-perf-badge">
-                DAILY PERFORMANCE
+                LATEST MATCH
             </div>
         </div>
         <div class="today-list">
@@ -110,7 +229,8 @@
                 <div style="width: 70px; text-align: right;">Points</div>
             </div>
             @for (stat of todayStandings(); track stat.userId; let i = $index) {
-            <div class="today-row" [class.today-winner]="i === 0">
+            <div class="today-row pointer" [class.today-winner]="i === 0"
+                (click)="selectedUserId.set(stat.userId); $event.stopPropagation()">
                 <div class="today-rank">{{ rankEmoji(i + 1) }}</div>
                 <div class="today-player"
                     style="display: flex; flex-direction: column; gap: 0.4rem; justify-content: center;">
@@ -135,362 +255,17 @@
         </div>
     </div>
     } @else {
-    <div class="empty-state">Waiting for results...</div>
+    <div class="empty-state fade-in-up">Waiting for results...</div>
     }
     }
-    }
+    } <!-- End Leaderboards Tab -->
 
-    <!-- Weekly Sub-tab -->
-    @if (viewTab() === 'weekly' && activeTab() === 'standings') {
-    @if (weeklyChampions().length > 0) {
-    <div class="weekly-champions-container">
-        @for (week of weeklyChampions(); track week.label) {
-        <div class="card weekly-card fade-in">
-            <div class="weekly-header">
-                <div class="week-info">
-                    <span class="week-badge">W{{ week.weekNumber }}</span>
-                    <span class="week-label">📅 {{ week.label }}</span>
-                </div>
-                <div class="match-count">{{ week.matchCount }} MATCHES</div>
-            </div>
-
-            <div class="champion-main">
-                <div class="champ-avatar-wrapper">
-                    <div class="champ-avatar">{{ week.topPlayers[0].username.charAt(0) | uppercase }}</div>
-                    <div class="champ-rank-icon">🏆</div>
-                </div>
-                <div class="champ-info">
-                    <div class="champ-name">{{ week.topPlayers[0].username }}</div>
-                    <div class="champ-pts">🔥 {{ week.topPlayers[0].points }} pts</div>
-                </div>
-                <div class="champ-trophy-large">🏆</div>
-            </div>
-
-            @if (week.topPlayers[1]) {
-            <div class="runner-up">
-                <div class="runner-info">
-                    <span class="runner-medal">🥈</span>
-                    <span class="runner-name">{{ week.topPlayers[1].username }}</span>
-                </div>
-                <div class="runner-pts">{{ week.topPlayers[1].points }} pts</div>
-            </div>
-            }
-        </div>
-        }
-    </div>
-    } @else {
-    <div class="empty-state" style="padding: 4rem 1rem;">
-        <div style="font-size: 3rem; margin-bottom: 1rem;">🥇</div>
-        <h3>Weekly Champions coming soon</h3>
-        <p style="color: var(--text-muted);">Champions will be crowned at the end of each week.</p>
-    </div>
-    }
-    }
-
-    <!-- Daily Sub-tab -->
-    @if (viewTab() === 'daily' && activeTab() === 'standings') {
-    @if (dailyChampions().length > 0) {
-    <div class="daily-champions-container">
-        @for (day of dailyChampions(); track day.match.id; let idx = $index) {
-        <div class="card daily-card fade-in" [style.animation-delay]="idx * 0.05 + 's'">
-
-            <!-- Match Header -->
-            <div class="daily-header">
-                <div class="daily-match-row-primary">
-                    <span class="daily-teams-text">
-                        {{ day.match.team1.emoji }} {{ day.match.team1.shortName }} vs {{ day.match.team2.emoji }} {{
-                        day.match.team2.shortName }}
-                    </span>
-                    <span class="score-divider">:</span>
-                    <span class="daily-score-text">{{ day.match.result?.team1Score }}–{{ day.match.result?.team2Score
-                        }}</span>
-                </div>
-                <div class="daily-match-row-secondary">
-                    <span class="daily-match-badge-v2">📅 {{ day.dateLabel }} · Match {{ day.match.id.substring(1)
-                        }}</span>
-                </div>
-            </div>
-
-            <!-- Champion (1st place) -->
-            <div class="champion-main">
-                <div class="champ-avatar-wrapper">
-                    <div class="champ-avatar">{{ day.players[0].username.charAt(0) | uppercase }}</div>
-                    <div class="champ-rank-icon">🏆</div>
-                </div>
-                <div class="champ-info">
-                    <div class="champ-name">{{ day.players[0].username }}</div>
-                    <div class="champ-pts">🔥 {{ day.players[0].points }} pts</div>
-                </div>
-                <div class="champ-trophy-large">🏆</div>
-            </div>
-
-            <!-- Runner-up (2nd place) -->
-            @if (day.players[1]) {
-            <div class="runner-up">
-                <div class="runner-info">
-                    <span class="runner-medal">🥈</span>
-                    <span class="runner-name">{{ day.players[1].username }}</span>
-                </div>
-                <div class="runner-pts">{{ day.players[1].points }} pts</div>
-            </div>
-            }
-        </div>
-        }
-    </div>
-    } @else {
-    <div class="empty-state" style="padding: 4rem 1rem;">
-        <div style="font-size: 3rem; margin-bottom: 1rem;">📆</div>
-        <h3>No completed matches yet</h3>
-        <p style="color: var(--text-muted);">Daily champions appear once match results are in.</p>
-    </div>
-    }
-    }
-
-    <!-- User Breakdown Modal -->
-    @if (selectedUserId()) {
-    <div class="modal-overlay fade-in" (click)="closeBreakdown()">
-        <div class="modal-content bounce-in" (click)="$event.stopPropagation()">
-            <!-- Modal Header -->
-            <div class="modal-header">
-                <div class="modal-user-info">
-                    <div class="modal-avatar">{{ selectedUserStats()?.username?.charAt(0) | uppercase }}</div>
-                    <div>
-                        <h3 style="margin:0; font-size:1.2rem;">{{ selectedUserStats()?.username }}</h3>
-                        <p style="margin:0; font-size:0.85rem; opacity:0.8;">🔥 Latest Match Points</p>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-body">
-                @if (getUserBreakdownMatches().length === 0) {
-                <div class="empty-state" style="padding: 3rem 1rem;">No completed predictions found for this user.</div>
-                }
-
-                @for (item of getUserBreakdownMatches(); track item.match.id; let i = $index) {
-                <div class="breakdown-card fade-in-up" [style.animation-delay]="i * 0.05 + 's'">
-                    <div class="bd-match-header">
-                        <span class="bd-date">Match {{ item.match.id.substring(1) }} · {{ formatDate(item.match.date)
-                            }}</span>
-                        <div class="bd-teams">
-                            <span>{{ item.match.team1.shortName }} vs {{ item.match.team2.shortName }}</span>
-                        </div>
-                        <span class="bd-pts-badge" [class.high-pts]="item.pointsEarned >= 15">
-                            +{{ item.pointsEarned }} Pts
-                        </span>
-                    </div>
-
-                    <div class="bd-grid">
-                        @for (pt of getDetailedPoints(item.prediction, item.match); track pt.label) {
-                        <div class="bd-pill" [class.earned]="pt.earned">
-                            <span class="bd-label">{{ pt.label }}</span>
-                            <div class="bd-values">
-                                <span class="my-val">🔮 {{ pt.myValue }}</span>
-                                @if (!pt.earned && pt.myValue !== '100%') {
-                                <span class="actual-val">🎯 {{ pt.actualValue }}</span>
-                                }
-                            </div>
-                            <span class="bd-pts">{{ pt.earned ? '+' + pt.pts : '0' }}</span>
-                        </div>
-                        }
-                    </div>
-                </div>
-                }
-            </div>
-        </div>
-
-        <!-- Dashboard Leaderboard -->
-        <div class="dashboard-section">
-            <h4 class="dashboard-title">LEADERBOARD</h4>
-            <div class="dashboard-table-wrapper">
-                <table class="dashboard-table">
-                    <thead>
-                        <tr>
-                            <th>🔢 #</th>
-                            <th>👤 Player</th>
-                            <th>📊 Total points</th>
-                            <th>🏆 Wins</th>
-                            <th>📅 Weekly pts</th>
-                            <th>🎯 Accuracy</th>
-                            <th>🏅 Badges</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
-                        <tr [class.odd-row]="i % 2 !== 0">
-                            <td class="td-rank">{{ i + 1 }}</td>
-                            <td class="td-player">
-                                <div class="player-cell">
-                                    <div class="player-avatar-mini" [style.background]="getPlayerColor(i)"
-                                        [style.color]="'white'">{{ p.username.charAt(0) }}</div>
-                                    <span class="player-name-table" [style.color]="getPlayerColor(i)">{{ p.username
-                                        }}</span>
-                                </div>
-                            </td>
-                            <td class="td-points highlighted-column">
-                                <div class="points-bar-cell">
-                                    <div class="p-bar-bg">
-                                        <div class="p-bar-fill" [style.width.%]="p.pointsPercent"></div>
-                                    </div>
-                                    <span class="p-val">{{ p.totalPoints }}</span>
-                                </div>
-                            </td>
-                            <td class="td-wins">{{ p.rank1Count }}</td>
-                            <td class="td-weekly">{{ p.weeklyPts }}</td>
-                            <td class="td-acc">{{ p.accuracy }}%</td>
-                            <td class="td-badges">
-                                <div class="badge-list">
-                                    @for (b of p.badges; track b.type) {
-                                    <span class="d-badge" [class]="'b-' + b.type">{{ b.label }}</span>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Graphics Grid -->
-        <div class="dashboard-graphics">
-            <!-- Accuracy Chart -->
-            <div class="graphic-card">
-                <div class="card-banner-header">
-                    <h5 class="graphic-title">🎯 accuracy by player</h5>
-                </div>
-                <div class="graphic-content">
-                    @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
-                    <div class="bar-row">
-                        <span class="bar-name" [style.color]="getPlayerColor(i)">{{ p.username }}</span>
-                        <div class="bar-track">
-                            <div class="bar-fill acc-fill" [style.width.%]="p.accuracy"
-                                [style.background]="getPlayerColor(i)"></div>
-                        </div>
-                        <span class="bar-val">{{ p.accuracy }}%</span>
-                    </div>
-                    }
-                </div>
-            </div>
-
-            <!-- Wins Breakdown -->
-            <div class="graphic-card">
-                <div class="card-banner-header">
-                    <h5 class="graphic-title">🏆 wins breakdown</h5>
-                </div>
-                <div class="graphic-content">
-                    @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
-                    <div class="win-breakdown-row">
-                        <span class="win-name" [style.color]="getPlayerColor(i)">{{ p.username }}</span>
-                        <div class="win-dots">
-                            @for (win of [].constructor(p.rank1Count); track $index) {
-                            <span class="win-dot" [style.background]="getPlayerColor(i)"></span>
-                            }
-                            @for (miss of [].constructor(10 - p.rank1Count); track $index) {
-                            <span class="win-dot-empty"></span>
-                            }
-                        </div>
-                        <span class="win-val">{{ p.rank1Count }}w</span>
-                    </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- Total Points Comparison Full Width -->
-        <div class="dashboard-section">
-            <div class="graphic-card full-graphic">
-                <div class="card-banner-header">
-                    <h5 class="graphic-title">📊 TOTAL POINTS COMPARISON</h5>
-                </div>
-                <div class="graphic-content">
-                    @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
-                    <div class="comparison-row">
-                        <span class="comp-name" [style.color]="getPlayerColor(i)">{{ p.username }}</span>
-                        <div class="comp-track">
-                            <div class="comp-fill" [style.width.%]="p.pointsPercent"
-                                [style.background]="'linear-gradient(90deg, ' + getPlayerColor(i) + ', #ec4899)'"></div>
-                        </div>
-                        <div class="comp-vals">
-                            <span class="comp-pts">{{ p.totalPoints }}</span>
-                            <span class="comp-pct">{{ p.pointsPercent }}%</span>
-                        </div>
-                    </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-    </div>
-    }
-
-    <!-- Player Statistics Tab -->
-    @if (activeTab() === 'stats') {
-    <div class="player-stats-table-grid fade-in">
-        @for (p of playerStats(); track p.userId; let i = $index) {
-        <div class="player-card">
-            <div class="player-card-header">
-                <div class="player-rank-badge">{{ i + 1 }}</div>
-                <div class="player-avatar-small" [style.background]="getPlayerColor(i)">{{ p.username.charAt(0) |
-                    uppercase }}</div>
-                <div class="player-info-small">
-                    <span class="p-name" [style.color]="getPlayerColor(i)" style="font-weight: 800;">{{ p.username
-                        }}</span>
-                    <span class="p-pts">{{ p.totalPoints }} Total Pts</span>
-                </div>
-            </div>
-            <div class="pstat-grid">
-                <div class="pstat-item">
-                    <span class="pstat-icon">🥇</span>
-                    <span class="pstat-label">Daily Wins</span>
-                    <span class="pstat-value">{{ p.rank1Count }}</span>
-                </div>
-                <div class="pstat-item">
-                    <span class="pstat-icon">📅</span>
-                    <span class="pstat-label">Weekly Wins</span>
-                    <span class="pstat-value highlight" *ngIf="p.weeklyWins > 0">{{ p.weeklyWins }}</span>
-                    <span class="pstat-value" *ngIf="p.weeklyWins === 0">0</span>
-                </div>
-                <div class="pstat-item">
-                    <span class="pstat-icon">📊</span>
-                    <span class="pstat-label">Avg Pts</span>
-                    <span class="pstat-value">{{ p.avgPts }}</span>
-                </div>
-                <div class="pstat-item">
-                    <span class="pstat-icon">🎯</span>
-                    <span class="pstat-label">Accuracy</span>
-                    <span class="pstat-value">{{ p.accuracy }}%</span>
-                </div>
-                <div class="pstat-item">
-                    <span class="pstat-icon">🏆</span>
-                    <span class="pstat-label">Best Match</span>
-                    <span class="pstat-value">{{ p.bestScore }}</span>
-                </div>
-                <div class="pstat-item">
-                    <span class="pstat-icon">✅</span>
-                    <span class="pstat-label">Winners</span>
-                    <span class="pstat-value">{{ p.correctWinners }}</span>
-                </div>
-                <div class="pstat-item">
-                    <span class="pstat-icon">💎</span>
-                    <span class="pstat-label">Exact Sc.</span>
-                    <span class="pstat-value">{{ p.exactScoreCount }}</span>
-                </div>
-                <div class="pstat-item">
-                    <span class="pstat-icon">⭐</span>
-                    <span class="pstat-label">Perfect</span>
-                    <span class="pstat-value">{{ p.perfectCount }}</span>
-                </div>
-            </div>
-        </div>
-        }
-    </div>
-    }
-
-    <!-- League Dashboard Tab -->
-    @if (activeTab() === 'dashboard') {
+    <!-- Analytics & Trends Tab -->
+    @if (activeTab() === 'analytics') {
     <div class="league-dashboard fade-in">
 
         <!-- Highlights Section -->
-        <div class="dashboard-section">
+        <div class="dashboard-section fade-in-up">
             <h4 class="dashboard-title">HIGHLIGHTS THIS WEEK</h4>
             <div class="highlights-grid">
                 @if (dashboardHighlights(); as h) {
@@ -502,7 +277,7 @@
                 <div class="highlight-card h-daily">
                     <span class="h-label">Daily winner</span>
                     <div class="h-main">{{ h.dailyWinner?.name || '-' }}</div>
-                    <span class="h-sub highlight-tag">Today</span>
+                    <span class="h-sub highlight-tag">Latest</span>
                 </div>
                 <div class="highlight-card h-wins">
                     <span class="h-label">Most wins</span>
@@ -523,61 +298,74 @@
             </div>
         </div>
 
-        <!-- Dashboard Leaderboard -->
-        <div class="dashboard-section">
-            <h4 class="dashboard-title">LEADERBOARD</h4>
-            <div class="dashboard-table-wrapper">
-                <table class="dashboard-table">
-                    <thead>
-                        <tr>
-                            <th>🔢 #</th>
-                            <th>👤 Player</th>
-                            <th>📊 Total points</th>
-                            <th>🏆 Wins</th>
-                            <th>📅 Weekly pts</th>
-                            <th>🎯 Accuracy</th>
-                            <th>🏅 Badges</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
-                        <tr [class.odd-row]="i % 2 !== 0">
-                            <td class="td-rank">{{ i + 1 }}</td>
-                            <td class="td-player">
-                                <div class="player-cell">
-                                    <div class="player-avatar-mini" [style.background]="getPlayerColor(i)"
-                                        [style.color]="'white'">{{ p.username.charAt(0) }}</div>
-                                    <span class="player-name-table" [style.color]="getPlayerColor(i)">{{ p.username
-                                        }}</span>
-                                </div>
-                            </td>
-                            <td class="td-points highlighted-column">
-                                <div class="points-bar-cell">
-                                    <div class="p-bar-bg">
-                                        <div class="p-bar-fill" [style.width.%]="p.pointsPercent"></div>
-                                    </div>
-                                    <span class="p-val">{{ p.totalPoints }}</span>
-                                </div>
-                            </td>
-                            <td class="td-wins">{{ p.rank1Count }}</td>
-                            <td class="td-weekly">{{ p.weeklyPts }}</td>
-                            <td class="td-acc">{{ p.accuracy }}%</td>
-                            <td class="td-badges">
-                                <div class="badge-list">
-                                    @for (b of p.badges; track b.type) {
-                                    <span class="d-badge" [class]="'b-' + b.type">{{ b.label }}</span>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
+        <!-- Player Statistics Grid -->
+        <div class="dashboard-section fade-in-up" style="animation-delay: 0.1s">
+            <h4 class="dashboard-title">PLAYER PROFILES</h4>
+            <div class="player-stats-table-grid">
+                @for (p of playerStats(); track p.userId; let i = $index) {
+                <div class="player-card pointer" (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
+                    <div class="player-card-header">
+                        <div class="player-rank-badge">{{ i + 1 }}</div>
+                        <div class="player-avatar-small" [style.background]="getPlayerColor(i)">{{ p.username.charAt(0)
+                            |
+                            uppercase }}</div>
+                        <div class="player-info-small">
+                            <span class="p-name" [style.color]="getPlayerColor(i)" style="font-weight: 800;">{{
+                                p.username
+                                }}</span>
+                            <span class="p-pts">{{ p.totalPoints }} Total Pts</span>
+                        </div>
+                    </div>
+                    <div class="pstat-grid">
+                        <div class="pstat-item">
+                            <span class="pstat-icon">🥇</span>
+                            <span class="pstat-label">Daily Wins</span>
+                            <span class="pstat-value">{{ p.rank1Count }}</span>
+                        </div>
+                        <div class="pstat-item">
+                            <span class="pstat-icon">📅</span>
+                            <span class="pstat-label">Weekly Wins</span>
+                            <span class="pstat-value highlight" *ngIf="p.weeklyWins > 0">{{ p.weeklyWins }}</span>
+                            <span class="pstat-value" *ngIf="p.weeklyWins === 0">0</span>
+                        </div>
+                        <div class="pstat-item">
+                            <span class="pstat-icon">📊</span>
+                            <span class="pstat-label">Avg Pts</span>
+                            <span class="pstat-value">{{ p.avgPts }}</span>
+                        </div>
+                        <div class="pstat-item">
+                            <span class="pstat-icon">🎯</span>
+                            <span class="pstat-label">Accuracy</span>
+                            <span class="pstat-value">{{ p.accuracy }}%</span>
+                        </div>
+                        <div class="pstat-item">
+                            <span class="pstat-icon">🏆</span>
+                            <span class="pstat-label">Best Match</span>
+                            <span class="pstat-value">{{ p.bestScore }}</span>
+                        </div>
+                        <div class="pstat-item">
+                            <span class="pstat-icon">✅</span>
+                            <span class="pstat-label">Winners</span>
+                            <span class="pstat-value">{{ p.correctWinners }}</span>
+                        </div>
+                        <div class="pstat-item">
+                            <span class="pstat-icon">💎</span>
+                            <span class="pstat-label">Exact Sc.</span>
+                            <span class="pstat-value">{{ p.exactScoreCount }}</span>
+                        </div>
+                        <div class="pstat-item">
+                            <span class="pstat-icon">⭐</span>
+                            <span class="pstat-label">Perfect</span>
+                            <span class="pstat-value">{{ p.perfectCount }}</span>
+                        </div>
+                    </div>
+                </div>
+                }
             </div>
         </div>
 
         <!-- Graphics Grid -->
-        <div class="dashboard-graphics">
+        <div class="dashboard-graphics fade-in-up" style="animation-delay: 0.2s">
             <!-- Accuracy Chart -->
             <div class="graphic-card">
                 <div class="card-banner-header">
@@ -622,7 +410,7 @@
         </div>
 
         <!-- Total Points Comparison Full Width -->
-        <div class="dashboard-section">
+        <div class="dashboard-section fade-in-up" style="animation-delay: 0.3s">
             <div class="graphic-card full-graphic">
                 <div class="card-banner-header">
                     <h5 class="graphic-title">📊 TOTAL POINTS COMPARISON</h5>
@@ -644,7 +432,114 @@
                 </div>
             </div>
         </div>
+    </div>
+    }
 
+    <!-- User Breakdown Modal (Completely clean of old Dashboard artifacts) -->
+    @if (selectedUserId()) {
+    <div class="modal-overlay fade-in" (click)="closeBreakdown()">
+        <div class="modal-content bounce-in" (click)="$event.stopPropagation()">
+            <!-- Modal Content -->
+            @if (selectedUserStats(); as profile) {
+            <button class="btn-close" (click)="closeBreakdown()"
+                style="position: absolute; right: 1rem; top: 1rem; z-index: 10;">✕</button>
+            <div class="modal-header" style="position: relative; border-bottom: none; padding-bottom: 0;">
+                <div class="modal-user-info" style="display: flex; gap: 1rem; align-items: center;">
+                    <div class="modal-avatar" style="width: 56px; height: 56px; font-size: 1.5rem;">{{
+                        (profile.username.charAt(0) || 'U') | uppercase }}</div>
+                    <div>
+                        <h3 style="margin:0; font-size:1.5rem;">{{ profile.username }}</h3>
+                        <p style="margin:0; font-size:0.9rem; opacity:0.8; font-weight: 600; color: var(--accent);">
+                            Tournament Profile</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-body" style="padding-top: 1rem;">
+                <!-- Profile Banner -->
+                <div class="profile-banner fade-in-up"
+                    style="display: flex; gap: 1rem; justify-content: space-around; flex-wrap: wrap; background: rgba(0,0,0,0.02); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--glass-border); text-align: center; margin-bottom: 1.5rem;">
+                    <div class="pb-stat" style="min-width: 80px;">
+                        <span class="pb-label"
+                            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Rank</span>
+                        <span class="pb-val"
+                            style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--accent);">#{{
+                            profile.rank }}</span>
+                    </div>
+                    <div class="pb-stat" style="min-width: 80px;">
+                        <span class="pb-label"
+                            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Points</span>
+                        <span class="pb-val"
+                            style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--text-primary);">{{
+                            profile.totalPoints }}</span>
+                    </div>
+                    <div class="pb-stat" style="min-width: 80px;">
+                        <span class="pb-label"
+                            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Accuracy</span>
+                        <span class="pb-val"
+                            style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--success);">{{
+                            profile.accuracy }}%</span>
+                    </div>
+                </div>
+
+                <h4
+                    style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">
+                    🏆 Tournament Performance</h4>
+                <div class="pstat-grid fade-in-up" style="margin-bottom: 1.5rem; animation-delay: 0.05s;">
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span
+                            class="pstat-icon" style="margin-bottom: 0.25rem;">🥇</span><span class="pstat-label">Daily
+                            Wins</span><span class="pstat-value">{{ profile.rank1Count }}</span></div>
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;">
+                        <span class="pstat-icon" style="margin-bottom: 0.25rem;">📅</span><span
+                            class="pstat-label">Weekly Wins</span>
+                        @if (profile.weeklyWins > 0) {
+                        <span class="pstat-value highlight">{{ profile.weeklyWins }}</span>
+                        } @else {
+                        <span class="pstat-value">0</span>
+                        }
+                    </div>
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span
+                            class="pstat-icon" style="margin-bottom: 0.25rem;">💎</span><span class="pstat-label">Exact
+                            Scores</span><span class="pstat-value">{{ profile.exactScoreCount }}</span></div>
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span
+                            class="pstat-icon" style="margin-bottom: 0.25rem;">⭐</span><span class="pstat-label">Perfect
+                            Pre.</span><span class="pstat-value">{{ profile.perfectCount }}</span></div>
+                </div>
+
+                <h4
+                    style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">
+                    📊 Key Metrics</h4>
+                <div class="pstat-grid fade-in-up" style="animation-delay: 0.1s;">
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
+                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">🔥</span>
+                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
+                                class="pstat-label">Best Match</span><span class="pstat-value">{{ profile.bestScore }}
+                                pts</span></div>
+                    </div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
+                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">📈</span>
+                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
+                                class="pstat-label">Average Pts</span><span class="pstat-value">{{ profile.avgPts }} /
+                                match</span></div>
+                    </div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
+                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎯</span>
+                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
+                                class="pstat-label">Correct Winners</span><span class="pstat-value">{{
+                                profile.correctWinners }}</span></div>
+                    </div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
+                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎮</span>
+                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
+                                class="pstat-label">Participation</span><span class="pstat-value">{{
+                                profile.participationRate }}%</span></div>
+                    </div>
+                </div>
+            </div>
+            } @else {
+            <div class="empty-state" style="padding: 3rem 1rem;">User profile not found.</div>
+            }
+        </div>
     </div>
     }
 

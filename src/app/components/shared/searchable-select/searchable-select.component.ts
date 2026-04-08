@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, signal, computed, ElementRef, HostListener, forwardRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, computed, ElementRef, HostListener, forwardRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
+import { DropdownOption } from '../../../models/ipl.models';
 
 @Component({
   selector: 'app-searchable-select',
@@ -33,21 +34,31 @@ import { FormsModule, NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/f
                 #searchInput
                 type="text" 
                 class="search-input" 
-                [placeholder]="'Search player...'"
+                [placeholder]="'Search player / role...'"
                 [(ngModel)]="searchQuery" 
-                (keydown.enter)="$event.preventDefault()"
+                (ngModelChange)="focusedIndex.set(0)"
+                (keydown.arrowdown)="onArrowDown($event)"
+                (keydown.arrowup)="onArrowUp($event)"
+                (keydown.enter)="onEnter($event)"
               >
             </div>
           </div>
           
-          <div class="options-list">
-            @for (opt of filteredOptions(); track opt) {
+          <div class="options-list" #optionsList>
+            @for (opt of filteredOptions(); track opt.value; let i = $index) {
               <div 
                 class="option-item" 
-                [class.selected]="opt === selectedValue()"
+                [class.selected]="opt.value === selectedValue()"
+                [class.focused]="focusedIndex() === i"
                 (click)="selectOption(opt)"
+                (mouseenter)="focusedIndex.set(i)"
               >
-                {{ opt }}
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <span>{{ opt.label }}</span>
+                    @if (opt.badge) {
+                        <span class="role-badge" [ngClass]="opt.badge.toLowerCase().replace(' ', '-')">{{ opt.badge }}</span>
+                    }
+                </div>
               </div>
             }
             @if (filteredOptions().length === 0) {
@@ -191,8 +202,8 @@ import { FormsModule, NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/f
       transition: all 0.15s ease;
     }
 
-    .option-item:hover {
-      background: rgba(139, 92, 246, 0.1);
+    .option-item:hover, .option-item.focused {
+      background: rgba(139, 92, 246, 0.2);
       color: #fff;
     }
 
@@ -207,15 +218,35 @@ import { FormsModule, NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/f
       color: #888;
       font-size: 0.85rem;
     }
+
+    /* Role Badges */
+    .role-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.2rem 0.45rem;
+        border-radius: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+    }
+    .batsman { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; }
+    .bowler { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
+    .all-rounder { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #fcd34d; }
+    .wicket-keeper { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; }
   `]
 })
 export class SearchableSelectComponent implements ControlValueAccessor {
-  @Input() options: string[] = [];
+  @Input() options: DropdownOption[] = [];
   @Input() placeholder: string = 'Select an option';
+
+  @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('optionsList') optionsList!: ElementRef<HTMLDivElement>;
 
   selectedValue = signal('');
   isOpen = signal(false);
   searchQuery = signal('');
+  focusedIndex = signal(0);
 
   onChange: any = () => { };
   onTouched: any = () => { };
@@ -223,19 +254,61 @@ export class SearchableSelectComponent implements ControlValueAccessor {
   filteredOptions = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();
     if (!query) return this.options;
-    return this.options.filter(opt => opt.toLowerCase().includes(query));
+    return this.options.filter(opt => 
+        opt.label.toLowerCase().includes(query) || 
+        (opt.badge && opt.badge.toLowerCase().includes(query))
+    );
   });
 
   toggleDropdown() {
     this.isOpen.update(v => !v);
     if (this.isOpen()) {
       this.searchQuery.set('');
+      this.focusedIndex.set(0);
+      setTimeout(() => {
+        this.searchInput?.nativeElement?.focus();
+      });
     }
   }
 
-  selectOption(opt: string) {
-    this.selectedValue.set(opt);
-    this.onChange(opt);
+  onArrowDown(event: Event) {
+    event.preventDefault();
+    if (this.focusedIndex() < this.filteredOptions().length - 1) {
+      this.focusedIndex.update(v => v + 1);
+      this.scrollToFocus();
+    }
+  }
+
+  onArrowUp(event: Event) {
+    event.preventDefault();
+    if (this.focusedIndex() > 0) {
+      this.focusedIndex.update(v => v - 1);
+      this.scrollToFocus();
+    }
+  }
+
+  onEnter(event: Event) {
+    event.preventDefault();
+    const opts = this.filteredOptions();
+    if (opts.length > 0 && this.focusedIndex() >= 0 && this.focusedIndex() < opts.length) {
+      this.selectOption(opts[this.focusedIndex()]);
+    }
+  }
+
+  scrollToFocus() {
+    setTimeout(() => {
+      if (!this.optionsList) return;
+      const container = this.optionsList.nativeElement;
+      const activeEl = container.querySelector('.option-item.focused') as HTMLElement;
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: 'nearest' });
+      }
+    });
+  }
+
+  selectOption(opt: DropdownOption) {
+    this.selectedValue.set(opt.label);
+    this.onChange(opt.value);
     this.onTouched();
     this.isOpen.set(false);
   }
@@ -249,7 +322,12 @@ export class SearchableSelectComponent implements ControlValueAccessor {
 
   // ControlValueAccessor methods
   writeValue(value: any): void {
-    this.selectedValue.set(value || '');
+    if (!value) {
+        this.selectedValue.set('');
+        return;
+    }
+    const match = this.options?.find(o => o.value === value);
+    this.selectedValue.set(match ? match.label : value);
   }
 
   registerOnChange(fn: any): void {

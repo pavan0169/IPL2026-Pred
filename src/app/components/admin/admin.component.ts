@@ -1,9 +1,9 @@
-import { Component, signal, computed, effect, untracked } from '@angular/core';
+import { Component, signal, computed, effect, untracked, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IplService } from '../../services/ipl.service';
 import { MatchResult, Prediction, getMatchPlayers } from '../../models/ipl.models';
-import { User } from '../../services/auth.service';
+import { User, AuthService } from '../../services/auth.service';
 
 import { SearchableSelectComponent } from '../shared/searchable-select/searchable-select.component';
 
@@ -16,6 +16,8 @@ import { SearchableSelectComponent } from '../shared/searchable-select/searchabl
 })
 export class AdminComponent {
     Object = Object;
+    authService = inject(AuthService);
+    isSuperAdmin = computed(() => this.authService.currentUser()?.email === 'pavan.tv1999@gmail.com');
     matches() { return this.iplService.matches(); }
     hasAnyHistory = computed(() => Object.keys(this.iplService.resultsReference()).length > 0);
     hasAnyCompletedMatches = computed(() => this.matches().some(m => !!m.result));
@@ -61,19 +63,19 @@ export class AdminComponent {
 
     // User prediction override form
     editingUserPred = signal<{ userId: string; matchId: string } | null>(null);
-    userPredForm: Partial<Prediction> = { 
-        winner: '', 
-        firstInningRange: '', 
-        secondInningRange: '', 
-        teamMore4s: '', 
-        teamMore6s: '', 
-        playerMax6s: '', 
-        most4s: '', 
-        playerOfMatch: '', 
-        economy: '', 
-        superStriker: '', 
-        team1Score: 0, 
-        team2Score: 0 
+    userPredForm: Partial<Prediction> = {
+        winner: '',
+        firstInningRange: '',
+        secondInningRange: '',
+        teamMore4s: '',
+        teamMore6s: '',
+        playerMax6s: '',
+        most4s: '',
+        playerOfMatch: '',
+        economy: '',
+        superStriker: '',
+        team1Score: 0,
+        team2Score: 0
     };
 
     getMatchPlayers(team1Id: string, team2Id: string) {
@@ -157,6 +159,29 @@ export class AdminComponent {
         } finally {
             this.sendingEmail.update(st => ({ ...st, [matchId]: false }));
         }
+    }
+
+    markCancelled(matchId: string) {
+        if (!confirm('Are you sure you want to mark this match as CANCELLED? This will award 0 points to all players and update leaderboards.')) return;
+
+        const result: MatchResult = {
+            team1Score: 0,
+            team2Score: 0,
+            winner: 'cancelled',
+            firstInningRange: 'cancelled',
+            secondInningRange: 'cancelled',
+            teamMore4s: 'cancelled',
+            teamMore6s: 'cancelled',
+            playerMax6s: 'cancelled',
+            most4s: 'cancelled',
+            playerOfMatch: 'cancelled',
+            economy: 'cancelled',
+            superStriker: 'cancelled'
+        };
+        
+        this.iplService.updateMatchResult(matchId, result);
+        this.iplService.updateMatchStatus(matchId, 'cancelled');
+        this.expandedMatchId.set(null);
     }
 
     resetMatch(matchId: string) {

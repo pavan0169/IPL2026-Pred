@@ -5,7 +5,7 @@ import { collection, onSnapshot, doc, setDoc, updateDoc, writeBatch, deleteField
 import { AuthService, User } from './auth.service';
 
 interface MatchState {
-    status: 'upcoming' | 'live' | 'completed';
+    status: 'upcoming' | 'live' | 'completed' | 'cancelled';
     result?: MatchResult;
 }
 
@@ -360,7 +360,7 @@ export class IplService {
         });
     }
 
-    updateMatchStatus(matchId: string, status: 'upcoming' | 'live' | 'completed') {
+    updateMatchStatus(matchId: string, status: 'upcoming' | 'live' | 'completed' | 'cancelled') {
         setDoc(doc(db, 'matches', matchId), { status }, { merge: true });
     }
 
@@ -413,6 +413,7 @@ export class IplService {
 
     calcPoints(pred: Prediction, result: MatchResult): number {
         if (!pred || !result) return 0;
+        if (result.winner === 'cancelled') return 0;
 
         const p = IplService.normalizeData(pred);
         const r = IplService.normalizeData(result);
