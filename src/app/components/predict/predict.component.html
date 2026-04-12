@@ -200,8 +200,8 @@
                 <div class="form-group grid-group">
                     <span class="form-label">7. Player with Maximum <span class="premium-4-icon">4</span>s 🔥 (4
                         pts)</span>
-                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
-                        [ngModel]="most4s()" (ngModelChange)="most4s.set($event)">
+                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Player" [ngModel]="most4s()"
+                        (ngModelChange)="most4s.set($event)">
                     </app-searchable-select>
                 </div>
 
@@ -216,15 +216,15 @@
                 <!-- 9. Bowler (Less Economy) -->
                 <div class="form-group grid-group">
                     <span class="form-label">9. Bowler (Less Economy) 🧤 (4 pts)</span>
-                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
-                        [ngModel]="economy()" (ngModelChange)="economy.set($event)">
+                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Bowler" [ngModel]="economy()"
+                        (ngModelChange)="economy.set($event)">
                     </app-searchable-select>
                 </div>
 
                 <!-- 10. Super Striker -->
                 <div class="form-group grid-group">
                     <span class="form-label">10. Super Striker of the match 🌪️ (4 pts)</span>
-                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Bowler"
+                    <app-searchable-select [options]="matchPlayers()" placeholder="Select Player"
                         [ngModel]="superStriker()" (ngModelChange)="superStriker.set($event)">
                     </app-searchable-select>
                 </div>

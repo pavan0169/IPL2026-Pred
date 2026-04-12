@@ -57,6 +57,24 @@ export interface Prediction {
     scored?: boolean;
 }
 
+export interface AuditChange {
+    field: string;
+    oldValue: any;
+    newValue: any;
+}
+
+export interface AuditLog {
+    id: string;
+    timestamp: string;
+    adminId: string;
+    adminUsername: string;
+    actionType: 'RESULT_UPDATE' | 'PREDICTION_UPDATE' | 'STATUS_UPDATE' | 'RESULT_ADDED' | 'PREDICTION_ADDED' | 'STATUS_ADDED';
+    matchId: string;
+    targetUserId?: string;
+    targetUsername?: string;
+    changes: AuditChange[];
+}
+
 export interface UserStats {
     userId: string;
     username: string;

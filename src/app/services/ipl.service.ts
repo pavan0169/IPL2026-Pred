@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Match, Team, Prediction, UserStats, MatchResult } from '../models/ipl.models';
+import { Match, Team, Prediction, UserStats, MatchResult, AuditLog, AuditChange } from '../models/ipl.models';
 import { db } from '../firebase.config';
 import { collection, onSnapshot, doc, setDoc, updateDoc, writeBatch, deleteField, getDocs, addDoc, query } from 'firebase/firestore';
 import { AuthService, User } from './auth.service';
@@ -114,11 +114,13 @@ export class IplService {
     private _predictions = signal<Prediction[]>([]);
     private _users = signal<User[]>([]);
     private _resultsReference = signal<Record<string, MatchState>>({});
+    private _auditLogs = signal<AuditLog[]>([]);
 
     matches = this._matches.asReadonly();
     predictions = this._predictions.asReadonly();
     users = this._users.asReadonly();
     resultsReference = this._resultsReference.asReadonly();
+    auditLogs = this._auditLogs.asReadonly();
     teams = IPL_TEAMS;
 
     // Computed map for O(1) match lookup
@@ -202,6 +204,15 @@ export class IplService {
             });
             this._users.set(allUsers);
         });
+
+        onSnapshot(query(collection(db, 'audit_logs')), (snapshot) => {
+            const logs: AuditLog[] = [];
+            snapshot.docs.forEach(docSnap => {
+                logs.push({ id: docSnap.id, ...docSnap.data() } as AuditLog);
+            });
+            logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            this._auditLogs.set(logs);
+        });
     }
 
     userStats = computed<UserStats[]>(() => {
@@ -244,11 +255,13 @@ export class IplService {
         return statsArr;
     });
 
-    submitPrediction(pred: Omit<Prediction, 'id' | 'userId' | 'submittedAt'>) {
+    async submitPrediction(pred: Omit<Prediction, 'id' | 'userId' | 'submittedAt'>) {
         const currentUser = this.authService.currentUser();
         if (!currentUser || !currentUser.uid) return;
 
         const docId = `${pred.matchId}_${currentUser.uid}`;
+        const existing = this._predictions().find(p => p.id === docId);
+
         const newPred: Prediction = {
             id: docId,
             matchId: pred.matchId,
@@ -269,12 +282,28 @@ export class IplService {
             superStriker: pred.superStriker
         };
 
-        setDoc(doc(db, 'predictions', docId), newPred);
+        await setDoc(doc(db, 'predictions', docId), newPred);
+
+        if (this.authService.isAdmin()) {
+            const changes = this.getDifferences(existing || {}, newPred);
+            if (changes.length > 0) {
+                this.logAdminAction(existing ? 'PREDICTION_UPDATE' : 'PREDICTION_ADDED', pred.matchId, changes, { id: currentUser.uid, name: currentUser.username });
+            }
+        }
     }
 
-    adminUpdatePrediction(predictionId: string, updates: Partial<Prediction>) {
+    async adminUpdatePrediction(predictionId: string, updates: Partial<Prediction>) {
         if (!predictionId) return;
-        setDoc(doc(db, 'predictions', predictionId), updates, { merge: true });
+        const [matchId, userId] = predictionId.split('_');
+        const existing = this._predictions().find(p => p.id === predictionId);
+        const targetUserParam = { id: userId, name: updates.username || existing?.username || 'User' };
+        
+        await setDoc(doc(db, 'predictions', predictionId), updates, { merge: true });
+
+        const changes = this.getDifferences(existing || {}, updates);
+        if (changes.length > 0) {
+            this.logAdminAction(existing ? 'PREDICTION_UPDATE' : 'PREDICTION_ADDED', matchId, changes, targetUserParam);
+        }
     }
 
     getPredictionForMatch(matchId: string): Prediction | undefined {
@@ -285,6 +314,9 @@ export class IplService {
         const currentUser = this.authService.currentUser();
         result.lastEditedAt = new Date().toISOString();
         result.lastEditedBy = currentUser?.username || currentUser?.email || 'Admin';
+
+        const existingMatch = this._matches().find(m => m.id === matchId);
+        const previousResult = existingMatch?.result;
 
         // Save to active state matches collection
         await setDoc(doc(db, 'matches', matchId), {
@@ -300,6 +332,11 @@ export class IplService {
                 result: result
             }
         }, { merge: true });
+
+        const changes = this.getDifferences(previousResult || {}, result);
+        if (changes.length > 0) {
+            this.logAdminAction(previousResult ? 'RESULT_UPDATE' : 'RESULT_ADDED', matchId, changes);
+        }
     }
 
     async seedResultsReference(data: Record<string, MatchState>) {
@@ -361,7 +398,15 @@ export class IplService {
     }
 
     updateMatchStatus(matchId: string, status: 'upcoming' | 'live' | 'completed' | 'cancelled') {
+        const existing = this._matches().find(m => m.id === matchId);
+        const oldStatus = existing?.status;
         setDoc(doc(db, 'matches', matchId), { status }, { merge: true });
+
+        if (oldStatus !== status && oldStatus !== undefined) {
+            this.logAdminAction('STATUS_UPDATE', matchId, [{ field: 'status', oldValue: oldStatus, newValue: status }]);
+        } else if (oldStatus === undefined) {
+            this.logAdminAction('STATUS_ADDED', matchId, [{ field: 'status', oldValue: null, newValue: status }]);
+        }
     }
 
     isStringMatch(p?: string | number, r?: string | number): boolean {
@@ -602,5 +647,44 @@ export class IplService {
             console.error(err);
             alert('Error resetting database.');
         }
+    }
+
+    private getDifferences(oldObj: any, newObj: any): AuditChange[] {
+        const changes: AuditChange[] = [];
+        const keys = new Set([...Object.keys(oldObj || {}), ...Object.keys(newObj || {})]);
+        keys.forEach(k => {
+            if (k === 'lastEditedAt' || k === 'lastEditedBy' || k === 'updatedAt' || k === 'id' || k === 'submittedAt') return;
+            const oldVal = oldObj ? oldObj[k] : undefined;
+            const newVal = newObj ? newObj[k] : undefined;
+
+            if (oldVal === newVal) return;
+            if (oldVal !== undefined && newVal !== undefined && String(oldVal) === String(newVal)) return;
+            if ((oldVal === undefined && newVal === '') || (oldVal === '' && newVal === undefined)) return;
+
+            changes.push({ field: k, oldValue: oldVal, newValue: newVal });
+        });
+        return changes;
+    }
+
+    private logAdminAction(actionType: AuditLog['actionType'], matchId: string, changes: AuditChange[], targetUser?: { id: string; name: string }) {
+        if (changes.length === 0) return; 
+        const currentUser = this.authService.currentUser();
+        if (!currentUser) return;
+
+        const log: Omit<AuditLog, 'id'> = {
+            timestamp: new Date().toISOString(),
+            adminId: currentUser.uid || 'unknown',
+            adminUsername: currentUser.username || currentUser.email || 'Admin',
+            actionType,
+            matchId,
+            changes
+        };
+
+        if (targetUser) {
+            log.targetUserId = targetUser.id;
+            log.targetUsername = targetUser.name;
+        }
+
+        addDoc(collection(db, 'audit_logs'), log);
     }
 }

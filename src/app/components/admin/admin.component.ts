@@ -22,6 +22,8 @@ export class AdminComponent {
     hasAnyHistory = computed(() => Object.keys(this.iplService.resultsReference()).length > 0);
     hasAnyCompletedMatches = computed(() => this.matches().some(m => !!m.result));
     showBackupPanel = signal<boolean>(false);
+    showAuditLog = signal<boolean>(false);
+    auditLogs = computed(() => this.iplService.auditLogs());
     manualSeedInput = signal<string>('');
     manualPredSeedInput = signal<string>('');
     expandedMatchId = signal<string | null>(null);
@@ -376,5 +378,47 @@ export class AdminComponent {
             winner
         });
         alert('User prediction updated!');
+    }
+
+    formatFieldName(field: string): string {
+        const fieldNames: Record<string, string> = {
+            team1Score: 'Team 1 Score',
+            team2Score: 'Team 2 Score',
+            winner: 'Winner',
+            status: 'Match Status',
+            firstInningRange: '1st Inning Range',
+            secondInningRange: '2nd Inning Range',
+            teamMore4s: 'Team w/ More 4s',
+            teamMore6s: 'Team w/ More 6s',
+            playerMax6s: 'Player Max 6s',
+            most4s: 'Player Max 4s',
+            playerOfMatch: 'Player of Match',
+            economy: 'Best Economy',
+            superStriker: 'Super Striker'
+        };
+        return fieldNames[field] || field;
+    }
+
+    getActionIcon(actionType: string): { icon: string, color: string, label: string } {
+        switch (actionType) {
+            case 'RESULT_ADDED': return { icon: '✨', color: '#10b981', label: 'Added Result' };
+            case 'RESULT_UPDATE': return { icon: '🔄', color: '#3b82f6', label: 'Updated Result' };
+            case 'PREDICTION_ADDED': return { icon: '📝', color: '#10b981', label: 'Added Prediction' };
+            case 'PREDICTION_UPDATE': return { icon: '✏️', color: '#f59e0b', label: 'Edited Prediction' };
+            case 'STATUS_ADDED': return { icon: '🆕', color: '#10b981', label: 'Set Status' };
+            case 'STATUS_UPDATE': return { icon: '🚦', color: '#8b5cf6', label: 'Changed Status' };
+            default: return { icon: '📋', color: '#6b7280', label: 'Action' };
+        }
+    }
+
+    formatLogValue(val: any, field: string): string {
+        if (val === undefined || val === null || val === '') return 'None';
+        if (field === 'winner' || field === 'teamMore4s' || field === 'teamMore6s') {
+            if (val === 'tie') return 'Tie';
+            if (val === 'cancelled') return 'Cancelled';
+            const t = this.iplService.teams.find(x => x.id === val);
+            return t ? t.shortName : String(val);
+        }
+        return String(val);
     }
 }
