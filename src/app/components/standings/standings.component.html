@@ -30,62 +30,131 @@
 
     <!-- Overall Leaderboard Sub-tab -->
     @if (viewTab() === 'overall') {
-    <div class="card overall-standings-card shadow-sm fade-in-up">
-        <div class="dashboard-section" style="margin-top:0">
-            <h4 class="dashboard-title" style="margin: 1rem 1rem 0;">OVERALL TOURNAMENT STANDINGS</h4>
-            <div class="dashboard-table-wrapper" style="border: none; background: transparent; padding: 0;">
-                <table class="dashboard-table">
-                    <thead>
-                        <tr>
-                            <th>🔢 #</th>
-                            <th>👤 Player</th>
-                            <th>📊 Total points</th>
-                            <th>🏆 Wins</th>
-                            <th>📅 Weekly pts</th>
-                            <th>🎯 Accuracy</th>
-                            <th>🏅 Badges</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
-                        <tr [class.odd-row]="i % 2 !== 0" class="pointer"
-                            (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
-                            <td class="td-rank">{{ i + 1 }}</td>
-                            <td class="td-player">
-                                <div class="player-cell">
-                                    <div class="player-avatar-mini" [style.background]="getPlayerColor(i)"
-                                        [style.color]="'white'">{{ p.username.charAt(0) }}</div>
-                                    <span class="player-name-table" [style.color]="getPlayerColor(i)">{{ p.username
-                                        }}</span>
-                                </div>
-                            </td>
-                            <td class="td-points highlighted-column">
-                                <div class="points-bar-cell">
-                                    <div class="p-bar-bg">
-                                        <div class="p-bar-fill" [style.width.%]="p.pointsPercent"></div>
-                                    </div>
-                                    <span class="p-val">{{ p.totalPoints }}</span>
-                                </div>
-                            </td>
-                            <td class="td-wins">{{ p.rank1Count }}</td>
-                            <td class="td-weekly">{{ p.weeklyPts }}</td>
-                            <td class="td-acc">{{ p.accuracy }}%</td>
-                            <td class="td-badges">
-                                <div class="badge-list">
-                                    @for (b of p.badges; track b.type) {
-                                    <span class="d-badge" [class]="'b-' + b.type">{{ b.label }}</span>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                        }
-                    </tbody>
-                </table>
-                @if (dashboardLeaderboard().length === 0) {
-                <div class="empty-state">No predictions yet</div>
-                }
+    <div class="ots-container fade-in-up">
+
+        <!-- Podium: Top 3 -->
+        @if (dashboardLeaderboard().length >= 3) {
+        <div class="ots-podium">
+            <!-- 2nd Place -->
+            <div class="podium-slot silver pointer"
+                (click)="selectedUserId.set(dashboardLeaderboard()[1].userId); $event.stopPropagation()">
+                <div class="podium-rank-ring" [style.border-color]="getPlayerColor(1)">
+                    <div class="podium-avatar" [style.background]="getPlayerColor(1)">
+                        {{ dashboardLeaderboard()[1].username.charAt(0) | uppercase }}
+                    </div>
+                </div>
+                <span class="podium-medal">🥈</span>
+                <span class="podium-name" [style.color]="getPlayerColor(1)">{{ dashboardLeaderboard()[1].username }}</span>
+                <span class="podium-pts-big">{{ dashboardLeaderboard()[1].totalPoints }}</span>
+                <span class="podium-pts-label">POINTS</span>
+                <div class="podium-bar" [style.height.%]="dashboardLeaderboard()[1].pointsPercent * 0.7"></div>
+            </div>
+            <!-- 1st Place -->
+            <div class="podium-slot gold pointer"
+                (click)="selectedUserId.set(dashboardLeaderboard()[0].userId); $event.stopPropagation()">
+                <div class="podium-crown">👑</div>
+                <div class="podium-rank-ring champion-ring" [style.border-color]="getPlayerColor(0)">
+                    <div class="podium-avatar" [style.background]="getPlayerColor(0)">
+                        {{ dashboardLeaderboard()[0].username.charAt(0) | uppercase }}
+                    </div>
+                </div>
+                <span class="podium-medal">🥇</span>
+                <span class="podium-name" [style.color]="getPlayerColor(0)">{{ dashboardLeaderboard()[0].username }}</span>
+                <span class="podium-pts-big">{{ dashboardLeaderboard()[0].totalPoints }}</span>
+                <span class="podium-pts-label">POINTS</span>
+                <div class="podium-bar" [style.height.%]="100 * 0.7"></div>
+            </div>
+            <!-- 3rd Place -->
+            <div class="podium-slot bronze pointer"
+                (click)="selectedUserId.set(dashboardLeaderboard()[2].userId); $event.stopPropagation()">
+                <div class="podium-rank-ring" [style.border-color]="getPlayerColor(2)">
+                    <div class="podium-avatar" [style.background]="getPlayerColor(2)">
+                        {{ dashboardLeaderboard()[2].username.charAt(0) | uppercase }}
+                    </div>
+                </div>
+                <span class="podium-medal">🥉</span>
+                <span class="podium-name" [style.color]="getPlayerColor(2)">{{ dashboardLeaderboard()[2].username }}</span>
+                <span class="podium-pts-big">{{ dashboardLeaderboard()[2].totalPoints }}</span>
+                <span class="podium-pts-label">POINTS</span>
+                <div class="podium-bar" [style.height.%]="dashboardLeaderboard()[2].pointsPercent * 0.7"></div>
             </div>
         </div>
+        }
+
+        <!-- Full Player Cards List -->
+        <div class="ots-list">
+            @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
+            <div class="ots-player-card pointer" [class.ots-top1]="i === 0" [class.ots-top3]="i < 3"
+                (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
+                <!-- Rank -->
+                <div class="ots-rank-col">
+                    <span class="ots-rank-num" [class.ots-rank-gold]="i === 0" [class.ots-rank-silver]="i === 1"
+                        [class.ots-rank-bronze]="i === 2">
+                        @if (i < 3) { {{ rankEmoji(i + 1) }} }
+                        @else { {{ i + 1 }} }
+                    </span>
+                </div>
+                <!-- Avatar + Name -->
+                <div class="ots-player-col">
+                    <div class="ots-avatar" [style.background]="getPlayerColor(i)"
+                        [style.box-shadow]="'0 4px 14px ' + getPlayerColor(i) + '44'">
+                        {{ p.username.charAt(0) | uppercase }}
+                    </div>
+                    <div class="ots-name-block">
+                        <span class="ots-name" [style.color]="getPlayerColor(i)">{{ p.username }}</span>
+                        <div class="ots-badge-row">
+                            @for (b of p.badges; track b.type) {
+                            <span class="ots-badge" [class]="'ots-b-' + b.type">{{ b.label }}</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <!-- Points with progress bar -->
+                <div class="ots-points-col">
+                    <div class="ots-pts-track">
+                        <div class="ots-pts-fill" [style.width.%]="p.pointsPercent"
+                            [style.background]="'linear-gradient(90deg, ' + getPlayerColor(i) + '88, ' + getPlayerColor(i) + ')'">
+                        </div>
+                    </div>
+                    <span class="ots-pts-val">{{ p.totalPoints }}</span>
+                </div>
+                <!-- Stat chips -->
+                <div class="ots-stats-col">
+                    <div class="ots-stat-chip">
+                        <span class="sc-icon">🏆</span>
+                        <span class="sc-val">{{ p.rank1Count }}</span>
+                        <span class="sc-label">Wins</span>
+                    </div>
+                    <div class="ots-stat-chip">
+                        <span class="sc-icon">📅</span>
+                        <span class="sc-val">{{ p.weeklyPts }}</span>
+                        <span class="sc-label">Weekly</span>
+                    </div>
+                    <div class="ots-stat-chip">
+                        <span class="sc-icon">🎯</span>
+                        <span class="sc-val">{{ p.accuracy }}%</span>
+                        <span class="sc-label">Acc</span>
+                    </div>
+                </div>
+                <!-- Gap indicator -->
+                <div class="ots-gap-col">
+                    @if (i === 0) {
+                    <span class="ots-gap-leader">👑 Leader</span>
+                    } @else {
+                    <span class="ots-gap-behind">-{{ dashboardLeaderboard()[0].totalPoints - p.totalPoints }} pts</span>
+                    }
+                </div>
+            </div>
+            }
+        </div>
+
+        @if (dashboardLeaderboard().length === 0) {
+        <div class="empty-state fade-in-up" style="padding: 4rem 1rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🏆</div>
+            <h3>No predictions yet</h3>
+            <p style="color: var(--text-muted);">Standings will appear once match results are in.</p>
+        </div>
+        }
     </div>
     }
 
@@ -264,99 +333,187 @@
     @if (activeTab() === 'analytics') {
     <div class="league-dashboard fade-in">
 
-        <!-- Highlights Section -->
-        <div class="dashboard-section fade-in-up">
-            <h4 class="dashboard-title">HIGHLIGHTS THIS WEEK</h4>
-            <div class="highlights-grid">
-                @if (dashboardHighlights(); as h) {
-                <div class="highlight-card h-weekly">
-                    <span class="h-label">Weekly winner</span>
-                    <div class="h-main">{{ h.weeklyWinner?.name || '-' }}</div>
-                    <span class="h-sub">{{ h.weeklyWinner?.pts || 0 }} pts</span>
+        <!-- ═══════ Performance Trends Chart ═══════ -->
+        <div class="trends-section card fade-in-up" id="trends-chart-card">
+            <div class="trends-header">
+                <h4 class="dashboard-title">
+                    <span class="trends-icon">📈</span> PERFORMANCE TRENDS
+                </h4>
+                <div class="date-range-filter">
+                    <button class="range-pill" [class.active]="dateRange() === '7d'"
+                        (click)="setDateRange('7d')">Last 7 Days</button>
+                    <button class="range-pill" [class.active]="dateRange() === '30d'"
+                        (click)="setDateRange('30d')">Last 30 Days</button>
+                    <button class="range-pill" [class.active]="dateRange() === 'all'"
+                        (click)="setDateRange('all')">All Time</button>
                 </div>
-                <div class="highlight-card h-daily">
-                    <span class="h-label">Daily winner</span>
-                    <div class="h-main">{{ h.dailyWinner?.name || '-' }}</div>
-                    <span class="h-sub highlight-tag">Latest</span>
+            </div>
+
+            <!-- Google Chart Container -->
+            @if (chartLoading()) {
+            <div class="chart-loading-state">
+                <div class="chart-spinner"></div>
+                <span>Loading chart...</span>
+            </div>
+            } @else if (chartFilteredData().labels.length === 0) {
+            <div class="chart-empty-state">
+                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📊</div>
+                <h4>No data available</h4>
+                <p>Performance trends will appear once match results are in.</p>
+            </div>
+            }
+            <div #chartContainer class="chart-container"
+                [style.display]="chartLoading() || chartFilteredData().labels.length === 0 ? 'none' : 'block'"></div>
+
+            <!-- Player Selection Checkboxes -->
+            @if (chartData().series.length > 0) {
+            <div class="player-toggle-section">
+                <div class="toggle-header">
+                    <span class="toggle-title">🎯 Filter Players</span>
+                    <div class="toggle-actions">
+                        <button class="toggle-btn select-all"
+                            [class.active]="allPlayersSelected()"
+                            (click)="selectAllPlayers()"
+                            [disabled]="allPlayersSelected()">
+                            ✅ Select All
+                        </button>
+                        <button class="toggle-btn deselect-all"
+                            (click)="deselectAllPlayers()"
+                            [disabled]="selectedPlayers().size <= 1">
+                            ❌ Deselect All
+                        </button>
+                    </div>
                 </div>
-                <div class="highlight-card h-wins">
-                    <span class="h-label">Most wins</span>
-                    <div class="h-main">{{ h.mostWins?.name || '-' }}</div>
-                    <span class="h-sub accent-tag">{{ h.mostWins?.count || 0 }} wins</span>
+                <div class="player-checkbox-grid">
+                    @for (s of chartData().series; track s.userId) {
+                    <label class="player-checkbox-item"
+                        [class.checked]="isPlayerSelected(s.userId)"
+                        [class.disabled]="selectedPlayers().size <= 1 && isPlayerSelected(s.userId)">
+                        <input type="checkbox"
+                            [checked]="isPlayerSelected(s.userId)"
+                            (change)="togglePlayer(s.userId)"
+                            class="sr-only">
+                        <span class="color-indicator" [style.background]="s.color"></span>
+                        <span class="checkbox-player-name">{{ s.username }}</span>
+                        <span class="checkbox-check" [style.color]="s.color">
+                            @if (isPlayerSelected(s.userId)) { ✓ }
+                        </span>
+                    </label>
+                    }
                 </div>
-                <div class="highlight-card h-max">
-                    <span class="h-label">Max points</span>
-                    <div class="h-main">{{ h.maxPoints?.name || '-' }}</div>
-                    <span class="h-sub danger-tag">{{ h.maxPoints?.pts || 0 }} pts</span>
-                </div>
-                <div class="highlight-card h-accurate">
-                    <span class="h-label">Most accurate</span>
-                    <div class="h-main">{{ h.mostAccurate?.name || '-' }}</div>
-                    <span class="h-sub warning-tag">{{ h.mostAccurate?.rate || 0 }}%</span>
+            </div>
+            }
+        </div>
+
+        <!-- ═══════ Section 1: Race Track / Gap Analysis ═══════ -->
+        <div class="card race-track-card fade-in-up" style="animation-delay: 0.05s">
+            <div class="section-header-bar">
+                <h4 class="dashboard-title"><span>🏁</span> RACE TO THE TOP</h4>
+                <span class="section-subtitle">Point gaps & momentum</span>
+            </div>
+            <div class="race-track-body">
+                @for (p of raceTrackData(); track p.userId; let i = $index) {
+                <div class="race-lane" [class.race-leader]="p.isLeader"
+                    (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
+                    <!-- Player info -->
+                    <div class="race-player-info">
+                        <div class="race-avatar" [style.background]="getPlayerColor(i)"
+                            [style.box-shadow]="'0 4px 12px ' + getPlayerColor(i) + '55'">
+                            {{ p.username.charAt(0) | uppercase }}
+                        </div>
+                        <div class="race-name-block">
+                            <span class="race-name" [style.color]="getPlayerColor(i)">{{ p.username }}</span>
+                            <span class="race-pts">{{ p.totalPoints }} pts</span>
+                        </div>
+                    </div>
+                    <!-- Track bar -->
+                    <div class="race-track-bar">
+                        <div class="race-fill" [style.width.%]="p.trackPosition"
+                            [style.background]="'linear-gradient(90deg, ' + getPlayerColor(i) + '88, ' + getPlayerColor(i) + ')'">
+                            <div class="race-marker" [style.border-color]="getPlayerColor(i)">
+                                @if (p.momentum === 'rising') { <span class="momentum-arrow up">▲</span> }
+                                @else if (p.momentum === 'falling') { <span class="momentum-arrow down">▼</span> }
+                                @else { <span class="momentum-arrow steady">▶</span> }
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Gap & stats -->
+                    <div class="race-stats">
+                        @if (p.isLeader) {
+                        <span class="race-badge leader-badge">👑 LEADER</span>
+                        } @else {
+                        <span class="race-gap-label">{{ p.gapToLeader }} pts behind</span>
+                        }
+                        <span class="race-pct" [style.color]="getPlayerColor(i)">{{ p.leaderPercent }}%</span>
+                    </div>
                 </div>
                 }
             </div>
         </div>
 
-        <!-- Player Statistics Grid -->
+        <!-- ═══════ Section 2: Momentum & Streaks Dashboard ═══════ -->
         <div class="dashboard-section fade-in-up" style="animation-delay: 0.1s">
-            <h4 class="dashboard-title">PLAYER PROFILES</h4>
-            <div class="player-stats-table-grid">
-                @for (p of playerStats(); track p.userId; let i = $index) {
-                <div class="player-card pointer" (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
-                    <div class="player-card-header">
-                        <div class="player-rank-badge">{{ i + 1 }}</div>
-                        <div class="player-avatar-small" [style.background]="getPlayerColor(i)">{{ p.username.charAt(0)
-                            |
-                            uppercase }}</div>
-                        <div class="player-info-small">
-                            <span class="p-name" [style.color]="getPlayerColor(i)" style="font-weight: 800;">{{
-                                p.username
-                                }}</span>
-                            <span class="p-pts">{{ p.totalPoints }} Total Pts</span>
+            <div class="section-header-bar" style="padding: 0; background: none; border: none;">
+                <h4 class="dashboard-title"><span>⚡</span> MOMENTUM & STREAKS</h4>
+            </div>
+            <div class="momentum-grid">
+                @for (p of momentumData(); track p.userId; let i = $index) {
+                <div class="momentum-card card" [class.hot-streak]="p.winStreak >= 2"
+                    (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
+                    <div class="momentum-card-top" [style.border-color]="p.color">
+                        <div class="mc-player">
+                            <div class="mc-avatar" [style.background]="p.color">{{ p.username.charAt(0) | uppercase }}</div>
+                            <div class="mc-info">
+                                <span class="mc-name" [style.color]="p.color">{{ p.username }}</span>
+                                <span class="mc-rank">#{{ p.rank }} · {{ p.totalPoints }} pts</span>
+                            </div>
+                        </div>
+                        <div class="mc-momentum-badge"
+                            [class.rising]="p.momentum === 'rising'"
+                            [class.falling]="p.momentum === 'falling'"
+                            [class.steady]="p.momentum === 'steady'">
+                            @if (p.momentum === 'rising') { 📈 Rising }
+                            @else if (p.momentum === 'falling') { 📉 Falling }
+                            @else { ➡️ Steady }
                         </div>
                     </div>
-                    <div class="pstat-grid">
-                        <div class="pstat-item">
-                            <span class="pstat-icon">🥇</span>
-                            <span class="pstat-label">Daily Wins</span>
-                            <span class="pstat-value">{{ p.rank1Count }}</span>
+                    <div class="mc-metrics">
+                        <div class="mc-metric">
+                            <span class="mc-metric-label">Last Match</span>
+                            <span class="mc-metric-value" [class.positive]="p.lastMatchPts > 0">
+                                @if (p.lastMatchPts > 0) { +{{ p.lastMatchPts }} }
+                                @else { {{ p.lastMatchPts }} }
+                            </span>
                         </div>
-                        <div class="pstat-item">
-                            <span class="pstat-icon">📅</span>
-                            <span class="pstat-label">Weekly Wins</span>
-                            <span class="pstat-value highlight" *ngIf="p.weeklyWins > 0">{{ p.weeklyWins }}</span>
-                            <span class="pstat-value" *ngIf="p.weeklyWins === 0">0</span>
+                        <div class="mc-metric">
+                            <span class="mc-metric-label">This Week</span>
+                            <span class="mc-metric-value accent">{{ p.weeklyPts }} pts</span>
                         </div>
-                        <div class="pstat-item">
-                            <span class="pstat-icon">📊</span>
-                            <span class="pstat-label">Avg Pts</span>
-                            <span class="pstat-value">{{ p.avgPts }}</span>
+                        <div class="mc-metric">
+                            <span class="mc-metric-label">Velocity</span>
+                            <span class="mc-metric-value">{{ p.velocity }}/match</span>
                         </div>
-                        <div class="pstat-item">
-                            <span class="pstat-icon">🎯</span>
-                            <span class="pstat-label">Accuracy</span>
-                            <span class="pstat-value">{{ p.accuracy }}%</span>
+                        <div class="mc-metric">
+                            <span class="mc-metric-label">Accuracy</span>
+                            <span class="mc-metric-value">{{ p.accuracy }}%</span>
                         </div>
-                        <div class="pstat-item">
-                            <span class="pstat-icon">🏆</span>
-                            <span class="pstat-label">Best Match</span>
-                            <span class="pstat-value">{{ p.bestScore }}</span>
+                    </div>
+                    @if (p.winStreak >= 2) {
+                    <div class="mc-streak-banner">
+                        🔥 {{ p.winStreak }}-Match Win Streak!
+                    </div>
+                    }
+                    <div class="mc-range-row">
+                        <div class="mc-range-item">
+                            <span class="mc-range-label">Best</span>
+                            <span class="mc-range-val best">{{ p.bestMatchPts }}</span>
                         </div>
-                        <div class="pstat-item">
-                            <span class="pstat-icon">✅</span>
-                            <span class="pstat-label">Winners</span>
-                            <span class="pstat-value">{{ p.correctWinners }}</span>
+                        <div class="mc-range-bar">
+                            <div class="mc-range-fill" [style.width.%]="p.bestScore > 0 ? (p.avgPts / p.bestScore) * 100 : 0" [style.background]="p.color"></div>
                         </div>
-                        <div class="pstat-item">
-                            <span class="pstat-icon">💎</span>
-                            <span class="pstat-label">Exact Sc.</span>
-                            <span class="pstat-value">{{ p.exactScoreCount }}</span>
-                        </div>
-                        <div class="pstat-item">
-                            <span class="pstat-icon">⭐</span>
-                            <span class="pstat-label">Perfect</span>
-                            <span class="pstat-value">{{ p.perfectCount }}</span>
+                        <div class="mc-range-item">
+                            <span class="mc-range-label">Avg</span>
+                            <span class="mc-range-val">{{ p.avgPts }}</span>
                         </div>
                     </div>
                 </div>
@@ -364,82 +521,126 @@
             </div>
         </div>
 
-        <!-- Graphics Grid -->
-        <div class="dashboard-graphics fade-in-up" style="animation-delay: 0.2s">
-            <!-- Accuracy Chart -->
-            <div class="graphic-card">
-                <div class="card-banner-header">
-                    <h5 class="graphic-title">🎯 accuracy by player</h5>
-                </div>
-                <div class="graphic-content">
-                    @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
-                    <div class="bar-row">
-                        <span class="bar-name" [style.color]="getPlayerColor(i)">{{ p.username }}</span>
-                        <div class="bar-track">
-                            <div class="bar-fill acc-fill" [style.width.%]="p.accuracy"
-                                [style.background]="getPlayerColor(i)"></div>
-                        </div>
-                        <span class="bar-val">{{ p.accuracy }}%</span>
-                    </div>
-                    }
-                </div>
+        <!-- ═══════ Section 3: Competitive Landscape Map ═══════ -->
+        <div class="card landscape-card fade-in-up" style="animation-delay: 0.15s">
+            <div class="section-header-bar">
+                <h4 class="dashboard-title"><span>🗺️</span> COMPETITIVE LANDSCAPE</h4>
+                <span class="section-subtitle">Tier classification & rivalries</span>
             </div>
-
-            <!-- Wins Breakdown -->
-            <div class="graphic-card">
-                <div class="card-banner-header">
-                    <h5 class="graphic-title">🏆 wins breakdown</h5>
-                </div>
-                <div class="graphic-content">
-                    @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
-                    <div class="win-breakdown-row">
-                        <span class="win-name" [style.color]="getPlayerColor(i)">{{ p.username }}</span>
-                        <div class="win-dots">
-                            @for (win of [].constructor(p.rank1Count); track $index) {
-                            <span class="win-dot" [style.background]="getPlayerColor(i)"></span>
-                            }
-                            @for (miss of [].constructor(10 - p.rank1Count); track $index) {
-                            <span class="win-dot-empty"></span>
-                            }
-                        </div>
-                        <span class="win-val">{{ p.rank1Count }}w</span>
+            <div class="landscape-body">
+                @for (tier of landscapeData().tiers; track tier.id) {
+                <div class="landscape-tier" [class]="'tier-' + tier.id">
+                    <div class="tier-label-bar">
+                        <span class="tier-icon">{{ tier.icon }}</span>
+                        <span class="tier-name">{{ tier.label }}</span>
                     </div>
-                    }
+                    <div class="tier-players">
+                        @for (p of tier.players; track p.userId) {
+                        <div class="tier-player-chip" [style.border-color]="p.color"
+                            (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
+                            <div class="tier-chip-avatar" [style.background]="p.color">{{ p.username.charAt(0) | uppercase }}</div>
+                            <div class="tier-chip-info">
+                                <span class="tier-chip-name">{{ p.username }}</span>
+                                <span class="tier-chip-pts">{{ p.totalPoints }} pts · {{ p.pct }}%</span>
+                            </div>
+                        </div>
+                        }
+                    </div>
                 </div>
+                }
+                <!-- Rivalries -->
+                @if (landscapeData().rivalries.length > 0) {
+                <div class="rivalries-section">
+                    <h5 class="rivalries-title">⚔️ Active Rivalries <span class="rivalry-subtitle">(within 20 pts)</span></h5>
+                    <div class="rivalry-chips">
+                        @for (r of landscapeData().rivalries; track r.player1 + r.player2) {
+                        <div class="rivalry-chip">
+                            <span class="rivalry-player">{{ r.player1 }}</span>
+                            <span class="rivalry-vs">⚡{{ r.gap }} pts⚡</span>
+                            <span class="rivalry-player">{{ r.player2 }}</span>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+
+        <!-- ═══════ Section 4: Radar Chart Comparison ═══════ -->
+        <div class="card radar-card fade-in-up" style="animation-delay: 0.2s">
+            <div class="section-header-bar">
+                <h4 class="dashboard-title"><span>🎯</span> MULTI-METRIC COMPARISON</h4>
+                <span class="section-subtitle">Select players to compare</span>
+            </div>
+            <!-- Player toggle pills -->
+            <div class="radar-player-pills">
+                @for (p of radarData().players; track p.userId) {
+                <button class="radar-pill" [class.active]="isRadarPlayerSelected(p.userId)"
+                    [style.--pill-color]="p.color"
+                    (click)="toggleRadarPlayer(p.userId)">
+                    <span class="radar-pill-dot" [style.background]="p.color"></span>
+                    {{ p.username }}
+                </button>
+                }
+            </div>
+            <!-- SVG Radar Chart -->
+            <div class="radar-chart-wrapper">
+                <svg viewBox="0 0 300 300" class="radar-svg">
+                    <!-- Grid rings -->
+                    @for (ring of [25, 50, 75, 100]; track ring) {
+                    <circle [attr.cx]="150" [attr.cy]="150" [attr.r]="ring * 1.2"
+                        fill="none" stroke="var(--glass-border)" stroke-width="0.5" opacity="0.5"/>
+                    }
+                    <!-- Axis lines -->
+                    @for (axis of radarData().axes; track axis.key; let ai = $index) {
+                    <line [attr.x1]="150" [attr.y1]="150"
+                        [attr.x2]="getRadarAxisEnd(ai, radarData().axes.length).x"
+                        [attr.y2]="getRadarAxisEnd(ai, radarData().axes.length).y"
+                        stroke="var(--glass-border)" stroke-width="0.5" opacity="0.5"/>
+                    <!-- Axis labels -->
+                    <text [attr.x]="getRadarLabelPos(ai, radarData().axes.length).x"
+                        [attr.y]="getRadarLabelPos(ai, radarData().axes.length).y"
+                        [attr.text-anchor]="getRadarLabelPos(ai, radarData().axes.length).anchor"
+                        class="radar-label">{{ axis.label }}</text>
+                    }
+                    <!-- Player polygons -->
+                    @for (p of radarFilteredPlayers(); track p.userId) {
+                    <polygon [attr.points]="getRadarPolygon(p.values, radarData().axes.length)"
+                        [attr.fill]="p.color" fill-opacity="0.15"
+                        [attr.stroke]="p.color" stroke-width="2" stroke-linejoin="round"
+                        class="radar-polygon"/>
+                    <!-- Data points -->
+                    @for (v of p.values; track $index) {
+                    <circle [attr.cx]="getRadarPoint(v, $index, radarData().axes.length).split(',')[0]"
+                        [attr.cy]="getRadarPoint(v, $index, radarData().axes.length).split(',')[1]"
+                        r="3.5" [attr.fill]="p.color" [attr.stroke]="'white'" stroke-width="1.5"/>
+                    }
+                    }
+                </svg>
+            </div>
+            <!-- Legend -->
+            <div class="radar-legend">
+                @for (p of radarFilteredPlayers(); track p.userId) {
+                <div class="radar-legend-item">
+                    <span class="radar-legend-dot" [style.background]="p.color"></span>
+                    <span class="radar-legend-name">{{ p.username }}</span>
+                    <div class="radar-legend-vals">
+                        @for (v of p.rawValues; track $index; let vi = $index) {
+                        <span class="radar-val-chip">{{ radarData().axes[vi].label }}: <strong>{{ v }}</strong></span>
+                        }
+                    </div>
+                </div>
+                }
             </div>
         </div>
 
-        <!-- Total Points Comparison Full Width -->
-        <div class="dashboard-section fade-in-up" style="animation-delay: 0.3s">
-            <div class="graphic-card full-graphic">
-                <div class="card-banner-header">
-                    <h5 class="graphic-title">📊 TOTAL POINTS COMPARISON</h5>
-                </div>
-                <div class="graphic-content">
-                    @for (p of dashboardLeaderboard(); track p.userId; let i = $index) {
-                    <div class="comparison-row">
-                        <span class="comp-name" [style.color]="getPlayerColor(i)">{{ p.username }}</span>
-                        <div class="comp-track">
-                            <div class="comp-fill" [style.width.%]="p.pointsPercent"
-                                [style.background]="'linear-gradient(90deg, ' + getPlayerColor(i) + ', #ec4899)'"></div>
-                        </div>
-                        <div class="comp-vals">
-                            <span class="comp-pts">{{ p.totalPoints }}</span>
-                            <span class="comp-pct">{{ p.pointsPercent }}%</span>
-                        </div>
-                    </div>
-                    }
-                </div>
-            </div>
-        </div>
     </div>
     }
 
-    <!-- User Breakdown Modal (Completely clean of old Dashboard artifacts) -->
+    <!-- User Breakdown Modal -->
     @if (selectedUserId()) {
     <div class="modal-overlay fade-in" (click)="closeBreakdown()">
         <div class="modal-content bounce-in" (click)="$event.stopPropagation()">
-            <!-- Modal Content -->
             @if (selectedUserStats(); as profile) {
             <button class="btn-close" (click)="closeBreakdown()"
                 style="position: absolute; right: 1rem; top: 1rem; z-index: 10;">✕</button>
@@ -454,86 +655,39 @@
                     </div>
                 </div>
             </div>
-
             <div class="modal-body" style="padding-top: 1rem;">
-                <!-- Profile Banner -->
                 <div class="profile-banner fade-in-up"
                     style="display: flex; gap: 1rem; justify-content: space-around; flex-wrap: wrap; background: rgba(0,0,0,0.02); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--glass-border); text-align: center; margin-bottom: 1.5rem;">
                     <div class="pb-stat" style="min-width: 80px;">
-                        <span class="pb-label"
-                            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Rank</span>
-                        <span class="pb-val"
-                            style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--accent);">#{{
-                            profile.rank }}</span>
+                        <span class="pb-label" style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Rank</span>
+                        <span class="pb-val" style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--accent);">#{{ profile.rank }}</span>
                     </div>
                     <div class="pb-stat" style="min-width: 80px;">
-                        <span class="pb-label"
-                            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Points</span>
-                        <span class="pb-val"
-                            style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--text-primary);">{{
-                            profile.totalPoints }}</span>
+                        <span class="pb-label" style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Points</span>
+                        <span class="pb-val" style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--text-primary);">{{ profile.totalPoints }}</span>
                     </div>
                     <div class="pb-stat" style="min-width: 80px;">
-                        <span class="pb-label"
-                            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Accuracy</span>
-                        <span class="pb-val"
-                            style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--success);">{{
-                            profile.accuracy }}%</span>
+                        <span class="pb-label" style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Accuracy</span>
+                        <span class="pb-val" style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--success);">{{ profile.accuracy }}%</span>
                     </div>
                 </div>
-
-                <h4
-                    style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">
-                    🏆 Tournament Performance</h4>
+                <h4 style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">🏆 Tournament Performance</h4>
                 <div class="pstat-grid fade-in-up" style="margin-bottom: 1.5rem; animation-delay: 0.05s;">
-                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span
-                            class="pstat-icon" style="margin-bottom: 0.25rem;">🥇</span><span class="pstat-label">Daily
-                            Wins</span><span class="pstat-value">{{ profile.rank1Count }}</span></div>
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span class="pstat-icon" style="margin-bottom: 0.25rem;">🥇</span><span class="pstat-label">Daily Wins</span><span class="pstat-value">{{ profile.rank1Count }}</span></div>
                     <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;">
-                        <span class="pstat-icon" style="margin-bottom: 0.25rem;">📅</span><span
-                            class="pstat-label">Weekly Wins</span>
-                        @if (profile.weeklyWins > 0) {
-                        <span class="pstat-value highlight">{{ profile.weeklyWins }}</span>
-                        } @else {
-                        <span class="pstat-value">0</span>
-                        }
+                        <span class="pstat-icon" style="margin-bottom: 0.25rem;">📅</span><span class="pstat-label">Weekly Wins</span>
+                        @if (profile.weeklyWins > 0) { <span class="pstat-value highlight">{{ profile.weeklyWins }}</span> }
+                        @else { <span class="pstat-value">0</span> }
                     </div>
-                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span
-                            class="pstat-icon" style="margin-bottom: 0.25rem;">💎</span><span class="pstat-label">Exact
-                            Scores</span><span class="pstat-value">{{ profile.exactScoreCount }}</span></div>
-                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span
-                            class="pstat-icon" style="margin-bottom: 0.25rem;">⭐</span><span class="pstat-label">Perfect
-                            Pre.</span><span class="pstat-value">{{ profile.perfectCount }}</span></div>
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span class="pstat-icon" style="margin-bottom: 0.25rem;">💎</span><span class="pstat-label">Exact Scores</span><span class="pstat-value">{{ profile.exactScoreCount }}</span></div>
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span class="pstat-icon" style="margin-bottom: 0.25rem;">⭐</span><span class="pstat-label">Perfect</span><span class="pstat-value">{{ profile.perfectCount }}</span></div>
                 </div>
-
-                <h4
-                    style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">
-                    📊 Key Metrics</h4>
+                <h4 style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">📊 Key Metrics</h4>
                 <div class="pstat-grid fade-in-up" style="animation-delay: 0.1s;">
-                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
-                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">🔥</span>
-                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
-                                class="pstat-label">Best Match</span><span class="pstat-value">{{ profile.bestScore }}
-                                pts</span></div>
-                    </div>
-                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
-                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">📈</span>
-                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
-                                class="pstat-label">Average Pts</span><span class="pstat-value">{{ profile.avgPts }} /
-                                match</span></div>
-                    </div>
-                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
-                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎯</span>
-                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
-                                class="pstat-label">Correct Winners</span><span class="pstat-value">{{
-                                profile.correctWinners }}</span></div>
-                    </div>
-                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
-                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎮</span>
-                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
-                                class="pstat-label">Participation</span><span class="pstat-value">{{
-                                profile.participationRate }}%</span></div>
-                    </div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span class="pstat-icon" style="font-size: 1.8rem; margin:0;">🔥</span><div style="display:flex; flex-direction:column; align-items: flex-start;"><span class="pstat-label">Best Match</span><span class="pstat-value">{{ profile.bestScore }} pts</span></div></div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span class="pstat-icon" style="font-size: 1.8rem; margin:0;">📈</span><div style="display:flex; flex-direction:column; align-items: flex-start;"><span class="pstat-label">Average Pts</span><span class="pstat-value">{{ profile.avgPts }} / match</span></div></div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎯</span><div style="display:flex; flex-direction:column; align-items: flex-start;"><span class="pstat-label">Correct Winners</span><span class="pstat-value">{{ profile.correctWinners }}</span></div></div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎮</span><div style="display:flex; flex-direction:column; align-items: flex-start;"><span class="pstat-label">Participation</span><span class="pstat-value">{{ profile.participationRate }}%</span></div></div>
                 </div>
             </div>
             } @else {
@@ -542,5 +696,6 @@
         </div>
     </div>
     }
+
 
 </div>

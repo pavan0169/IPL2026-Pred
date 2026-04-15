@@ -1,24 +1,143 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, ViewChild, ElementRef, AfterViewInit, OnDestroy, effect, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { IplService } from '../../services/ipl.service';
 import { AuthService } from '../../services/auth.service';
 import { CricketLoaderComponent } from '../cricket-loader/cricket-loader.component';
 import { StatTileComponent } from '../shared/stat-tile/stat-tile.component';
 import { ProgressBarComponent } from '../shared/progress-bar/progress-bar.component';
+import { GoogleChartsService } from '../../services/google-charts.service';
 
 type SubTab = 'dashboard' | 'leaderboards' | 'stats';
+
+interface ChartSeries {
+    userId: string;
+    username: string;
+    color: string;
+    data: number[];
+}
+
+interface ChartDataPayload {
+    labels: string[];
+    series: ChartSeries[];
+    matchDates: Date[];
+}
 
 @Component({
     selector: 'app-standings',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './standings.component.html',
     styleUrl: './standings.component.css'
 })
-export class StandingsComponent {
+export class StandingsComponent implements AfterViewInit, OnDestroy {
     activeTab = signal<'leaderboards' | 'analytics'>('leaderboards');
     viewTab = signal<'overall' | 'weekly' | 'daily' | 'today'>('overall');
     userStats() { return this.iplService.userStats(); }
+
+    // ---- Chart State ----
+    @ViewChild('chartContainer') chartContainerRef!: ElementRef<HTMLDivElement>;
+    selectedPlayers = signal<Set<string>>(new Set());
+    dateRange = signal<'7d' | '30d' | 'all'>('all');
+    chartLoading = signal(true);
+    private chartInstance: any = null;
+    private resizeListener: (() => void) | null = null;
+    private chartInitialized = false;
+
+    /** Player colors — reuses getPlayerColor() palette */
+    private readonly playerColors = [
+        '#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#0ea5e9',
+        '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#64748b'
+    ];
+
+    // ---- Computed: full chart data (all players, all matches) ----
+    chartData = computed<ChartDataPayload>(() => {
+        const matches = this.matches()
+            .filter(m => !!m.result && m.result.winner !== 'cancelled')
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const predictions = this.predictions();
+        const users = this.iplService.userStats();
+
+        if (matches.length === 0 || users.length === 0) {
+            return { labels: [], series: [], matchDates: [] };
+        }
+
+        const labels: string[] = [];
+        const matchDates: Date[] = [];
+        const cumulativePoints = new Map<string, number[]>();
+
+        // Initialize cumulative tracking for each user
+        users.forEach(u => cumulativePoints.set(u.userId, []));
+
+        let runningTotals = new Map<string, number>();
+        users.forEach(u => runningTotals.set(u.userId, 0));
+
+        matches.forEach((m, idx) => {
+            const d = new Date(m.date);
+            const matchLabel = `M${m.id.substring(1)} (${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })})`;
+            labels.push(matchLabel);
+            matchDates.push(d);
+
+            const matchPreds = predictions.filter(p => p.matchId === m.id);
+
+            users.forEach(user => {
+                const pred = matchPreds.find(p => p.userId === user.userId);
+                const pts = pred ? this.iplService.calcPoints(pred, m.result!) : 0;
+                const running = (runningTotals.get(user.userId) || 0) + pts;
+                runningTotals.set(user.userId, running);
+                cumulativePoints.get(user.userId)!.push(running);
+            });
+        });
+
+        const series: ChartSeries[] = users.map((u, i) => ({
+            userId: u.userId,
+            username: u.username,
+            color: this.playerColors[i % this.playerColors.length],
+            data: cumulativePoints.get(u.userId) || []
+        }));
+
+        return { labels, series, matchDates };
+    });
+
+    // ---- Computed: filtered chart data ----
+    chartFilteredData = computed<ChartDataPayload>(() => {
+        const full = this.chartData();
+        const selected = this.selectedPlayers();
+        const range = this.dateRange();
+
+        if (full.labels.length === 0) return full;
+
+        // Date range filter
+        let startIdx = 0;
+        if (range !== 'all' && full.matchDates.length > 0) {
+            const now = new Date();
+            const daysAgo = range === '7d' ? 7 : 30;
+            const cutoff = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+            startIdx = full.matchDates.findIndex(d => d >= cutoff);
+            if (startIdx === -1) startIdx = full.matchDates.length; // no matches in range
+        }
+
+        const labels = full.labels.slice(startIdx);
+        const matchDates = full.matchDates.slice(startIdx);
+
+        // Player filter
+        const series = full.series
+            .filter(s => selected.has(s.userId))
+            .map(s => ({
+                ...s,
+                data: s.data.slice(startIdx)
+            }));
+
+        return { labels, series, matchDates };
+    });
+
+    allPlayersSelected = computed(() => {
+        const users = this.iplService.userStats();
+        return this.selectedPlayers().size >= users.length;
+    });
+
+    noPlayersSelected = computed(() => this.selectedPlayers().size === 0);
     matches() { return this.iplService.matches(); }
     predictions() { return this.iplService.predictions(); }
 
@@ -315,6 +434,279 @@ export class StandingsComponent {
 
     selectedUserId = signal<string | null>(null);
 
+    // ═══════════════════════════════════════════════════
+    // ANALYTICS DASHBOARD — Computed Signals
+    // ═══════════════════════════════════════════════════
+
+    // ---- Race Track Data ----
+    raceTrackData = computed(() => {
+        const stats = this.dashboardLeaderboard();
+        if (stats.length === 0) return [];
+
+        const leader = stats[0];
+        const chartFull = this.chartData();
+
+        return stats.map((p, i) => {
+            const gapToLeader = leader.totalPoints - p.totalPoints;
+            const leaderPercent = leader.totalPoints > 0
+                ? Math.round((p.totalPoints / leader.totalPoints) * 1000) / 10
+                : 0;
+            const gapToNext = i > 0 ? stats[i - 1].totalPoints - p.totalPoints : 0;
+            const gapFromPrev = i < stats.length - 1 ? p.totalPoints - stats[i + 1].totalPoints : 0;
+
+            // Momentum: compare last 3 matches points vs average
+            let momentum: 'rising' | 'falling' | 'steady' = 'steady';
+            const series = chartFull.series.find(s => s.userId === p.userId);
+            if (series && series.data.length >= 4) {
+                const d = series.data;
+                const last3Avg = (d[d.length - 1] - d[d.length - 4]) / 3;
+                const prev3Avg = d.length >= 7
+                    ? (d[d.length - 4] - d[d.length - 7]) / 3
+                    : (d[d.length - 4] - d[0]) / Math.max(d.length - 4, 1);
+                if (last3Avg > prev3Avg * 1.15) momentum = 'rising';
+                else if (last3Avg < prev3Avg * 0.85) momentum = 'falling';
+            }
+
+            return {
+                ...p,
+                gapToLeader,
+                leaderPercent,
+                gapToNext,
+                gapFromPrev,
+                momentum,
+                isLeader: i === 0,
+                trackPosition: leaderPercent // 0-100 for CSS positioning
+            };
+        });
+    });
+
+    // ---- Momentum & Streaks Data ----
+    momentumData = computed(() => {
+        const stats = this.playerStats();
+        const chartFull = this.chartData();
+        const daily = this.dailyChampions();
+        const weekly = this.weeklyChampions();
+
+        if (stats.length === 0) return [];
+
+        return stats.map((p, idx) => {
+            const series = chartFull.series.find(s => s.userId === p.userId);
+            const data = series?.data || [];
+
+            // Points this week (latest weekly entry)
+            const weeklyPts = weekly.length > 0
+                ? (weekly[0].topPlayers.find((tp: any) => tp.userId === p.userId)?.points || 0)
+                : 0;
+
+            // Points per match velocity
+            const velocity = p.matchesPlayed > 0
+                ? Math.round((p.totalPoints / p.matchesPlayed) * 10) / 10
+                : 0;
+
+            // Last match points
+            let lastMatchPts = 0;
+            if (data.length >= 2) {
+                lastMatchPts = data[data.length - 1] - data[data.length - 2];
+            } else if (data.length === 1) {
+                lastMatchPts = data[0];
+            }
+
+            // Win streak: count consecutive daily #1 finishes from the latest
+            let winStreak = 0;
+            for (const day of daily) {
+                if (day.players[0]?.userId === p.userId) {
+                    winStreak++;
+                } else {
+                    break;
+                }
+            }
+
+            // Momentum direction
+            let momentum: 'rising' | 'falling' | 'steady' = 'steady';
+            if (data.length >= 4) {
+                const last3Avg = (data[data.length - 1] - data[data.length - 4]) / 3;
+                const prev3Avg = data.length >= 7
+                    ? (data[data.length - 4] - data[data.length - 7]) / 3
+                    : (data[data.length - 4] - data[0]) / Math.max(data.length - 4, 1);
+                if (last3Avg > prev3Avg * 1.15) momentum = 'rising';
+                else if (last3Avg < prev3Avg * 0.85) momentum = 'falling';
+            }
+
+            // Best and worst match
+            let bestMatchPts = 0;
+            let worstMatchPts = Infinity;
+            for (let i = 1; i < data.length; i++) {
+                const delta = data[i] - data[i - 1];
+                if (delta > bestMatchPts) bestMatchPts = delta;
+                if (delta < worstMatchPts) worstMatchPts = delta;
+            }
+            if (worstMatchPts === Infinity) worstMatchPts = 0;
+
+            return {
+                ...p,
+                weeklyPts,
+                velocity,
+                lastMatchPts,
+                winStreak,
+                momentum,
+                bestMatchPts,
+                worstMatchPts,
+                color: this.getPlayerColor(idx)
+            };
+        });
+    });
+
+    // ---- Competitive Landscape Data ----
+    landscapeData = computed(() => {
+        const stats = this.playerStats();
+        if (stats.length === 0) return { tiers: [], rivalries: [] };
+
+        const leader = stats[0];
+        const maxPts = leader.totalPoints || 1;
+
+        const players = stats.map((p, i) => {
+            const pct = (p.totalPoints / maxPts) * 100;
+            let tier: string;
+            let tierLabel: string;
+            let tierIcon: string;
+            if (pct >= 80) { tier = 'champions'; tierLabel = 'Champions Zone'; tierIcon = '🏆'; }
+            else if (pct >= 50) { tier = 'contenders'; tierLabel = 'Contenders Zone'; tierIcon = '⚔️'; }
+            else if (pct >= 25) { tier = 'rising'; tierLabel = 'Rising Stars'; tierIcon = '🌟'; }
+            else { tier = 'rookies'; tierLabel = 'Rookies'; tierIcon = '🌱'; }
+
+            return {
+                ...p,
+                tier,
+                tierLabel,
+                tierIcon,
+                pct: Math.round(pct * 10) / 10,
+                color: this.getPlayerColor(i)
+            };
+        });
+
+        // Find rivalries (players within 20 pts of each other)
+        const rivalries: { player1: string; player2: string; gap: number }[] = [];
+        for (let i = 0; i < stats.length; i++) {
+            for (let j = i + 1; j < stats.length; j++) {
+                const gap = Math.abs(stats[i].totalPoints - stats[j].totalPoints);
+                if (gap <= 20 && gap > 0) {
+                    rivalries.push({
+                        player1: stats[i].username,
+                        player2: stats[j].username,
+                        gap
+                    });
+                }
+            }
+        }
+
+        // Group players by tier
+        const tiers = ['champions', 'contenders', 'rising', 'rookies']
+            .map(t => ({
+                id: t,
+                label: players.find(p => p.tier === t)?.tierLabel || t,
+                icon: players.find(p => p.tier === t)?.tierIcon || '',
+                players: players.filter(p => p.tier === t)
+            }))
+            .filter(t => t.players.length > 0);
+
+        return { tiers, rivalries };
+    });
+
+    // ---- Radar Chart Data ----
+    radarSelectedPlayers = signal<Set<string>>(new Set());
+
+    radarData = computed(() => {
+        const stats = this.playerStats();
+        if (stats.length === 0) return { axes: [], players: [] };
+
+        const maxPoints = Math.max(...stats.map(s => s.totalPoints), 1);
+        const maxWins = Math.max(...stats.map(s => s.rank1Count), 1);
+        const maxAcc = Math.max(...stats.map(s => s.accuracy), 1);
+        const maxAvg = Math.max(...stats.map(s => s.avgPts), 1);
+        const maxBest = Math.max(...stats.map(s => s.bestScore), 1);
+        const maxExact = Math.max(...stats.map(s => s.exactScoreCount), 1);
+
+        const axes = [
+            { key: 'points', label: 'Points' },
+            { key: 'wins', label: 'Wins' },
+            { key: 'accuracy', label: 'Accuracy' },
+            { key: 'avgPts', label: 'Avg Pts' },
+            { key: 'bestScore', label: 'Best' },
+            { key: 'exactScores', label: 'Exact' }
+        ];
+
+        const players = stats.map((p, i) => ({
+            userId: p.userId,
+            username: p.username,
+            color: this.getPlayerColor(i),
+            values: [
+                Math.round((p.totalPoints / maxPoints) * 100),
+                Math.round((p.rank1Count / maxWins) * 100),
+                Math.round((p.accuracy / maxAcc) * 100),
+                Math.round((p.avgPts / maxAvg) * 100),
+                Math.round((p.bestScore / maxBest) * 100),
+                Math.round((p.exactScoreCount / maxExact) * 100)
+            ],
+            rawValues: [p.totalPoints, p.rank1Count, p.accuracy, p.avgPts, p.bestScore, p.exactScoreCount]
+        }));
+
+        return { axes, players };
+    });
+
+    radarFilteredPlayers = computed(() => {
+        const selected = this.radarSelectedPlayers();
+        const all = this.radarData().players;
+        if (selected.size === 0) return all; // show all by default
+        return all.filter(p => selected.has(p.userId));
+    });
+
+    // Radar SVG helpers
+    getRadarPoint(value: number, axisIndex: number, totalAxes: number, radius: number = 120): string {
+        const angle = (Math.PI * 2 * axisIndex) / totalAxes - Math.PI / 2;
+        const r = (value / 100) * radius;
+        const x = 150 + r * Math.cos(angle);
+        const y = 150 + r * Math.sin(angle);
+        return `${x},${y}`;
+    }
+
+    getRadarPolygon(values: number[], totalAxes: number, radius: number = 120): string {
+        return values.map((v, i) => this.getRadarPoint(v, i, totalAxes, radius)).join(' ');
+    }
+
+    getRadarAxisEnd(axisIndex: number, totalAxes: number, radius: number = 130): { x: number; y: number } {
+        const angle = (Math.PI * 2 * axisIndex) / totalAxes - Math.PI / 2;
+        return {
+            x: 150 + radius * Math.cos(angle),
+            y: 150 + radius * Math.sin(angle)
+        };
+    }
+
+    getRadarLabelPos(axisIndex: number, totalAxes: number): { x: number; y: number; anchor: string } {
+        const angle = (Math.PI * 2 * axisIndex) / totalAxes - Math.PI / 2;
+        const r = 145;
+        const x = 150 + r * Math.cos(angle);
+        const y = 150 + r * Math.sin(angle);
+        let anchor = 'middle';
+        if (Math.cos(angle) > 0.3) anchor = 'start';
+        if (Math.cos(angle) < -0.3) anchor = 'end';
+        return { x, y: y + 4, anchor };
+    }
+
+    toggleRadarPlayer(userId: string) {
+        const current = new Set(this.radarSelectedPlayers());
+        if (current.has(userId)) {
+            current.delete(userId);
+        } else {
+            current.add(userId);
+        }
+        this.radarSelectedPlayers.set(current);
+    }
+
+    isRadarPlayerSelected(userId: string): boolean {
+        const sel = this.radarSelectedPlayers();
+        return sel.size === 0 || sel.has(userId);
+    }
+
     getPlayerColor(index: number): string {
         const colors = [
             '#6366f1', // Indigo
@@ -331,7 +723,214 @@ export class StandingsComponent {
         return colors[index % colors.length];
     }
 
-    constructor(public iplService: IplService) { }
+    constructor(
+        public iplService: IplService,
+        private googleCharts: GoogleChartsService,
+        private ngZone: NgZone,
+        private cdr: ChangeDetectorRef
+    ) {
+        // When chart data, player selection, or date range changes, redraw chart
+        effect(() => {
+            const data = this.chartFilteredData();
+            // Trigger draw inside the effect to react to signal changes
+            if (this.chartInitialized && data.labels.length > 0) {
+                // Use setTimeout to let Angular render the container element first
+                setTimeout(() => this.drawChart(data), 50);
+            }
+        });
+
+        // Initialize selectedPlayers once user stats are available
+        effect(() => {
+            const users = this.iplService.userStats();
+            if (users.length > 0 && this.selectedPlayers().size === 0) {
+                this.selectedPlayers.set(new Set(users.map(u => u.userId)));
+            }
+        });
+
+        // Watch for tab switches to analytics — re-render chart when the DOM element becomes available
+        effect(() => {
+            const tab = this.activeTab();
+            if (tab === 'analytics' && this.chartInitialized) {
+                // Force change detection so Angular re-creates the @if block and updates @ViewChild
+                this.cdr.detectChanges();
+
+                // Retry until the ViewChild element is available (Angular may need a frame)
+                let retries = 0;
+                const tryDraw = () => {
+                    const container = this.chartContainerRef?.nativeElement;
+                    if (container) {
+                        const data = this.chartFilteredData();
+                        if (data.labels.length > 0) {
+                            this.chartInstance = null; // Force a fresh chart instance
+                            this.drawChart(data);
+                        }
+                    } else if (retries < 5) {
+                        retries++;
+                        setTimeout(tryDraw, 100);
+                    }
+                };
+                setTimeout(tryDraw, 50);
+            }
+        });
+    }
+
+    ngAfterViewInit() {
+        // Load Google Charts and render once ready
+        if (typeof window !== 'undefined') {
+            this.googleCharts.ready.then(() => {
+                this.chartLoading.set(false);
+                this.chartInitialized = true;
+
+                // Initial draw if data is already available
+                const data = this.chartFilteredData();
+                if (data.labels.length > 0) {
+                    setTimeout(() => this.drawChart(data), 50);
+                }
+
+                // Responsive resize
+                this.resizeListener = () => {
+                    if (this.chartInstance && this.chartContainerRef?.nativeElement) {
+                        this.drawChart(this.chartFilteredData());
+                    }
+                };
+                window.addEventListener('resize', this.resizeListener);
+            }).catch(err => {
+                console.warn('Google Charts failed to load:', err);
+                this.chartLoading.set(false);
+            });
+        }
+    }
+
+    ngOnDestroy() {
+        if (this.resizeListener) {
+            window.removeEventListener('resize', this.resizeListener);
+        }
+    }
+
+    // ---- Chart Drawing ----
+    private drawChart(payload: ChartDataPayload) {
+        const container = this.chartContainerRef?.nativeElement;
+        if (!container || !payload.labels.length || !payload.series.length) return;
+
+        const google = (window as any).google;
+        if (!google?.visualization) return;
+
+        const dataTable = new google.visualization.DataTable();
+        dataTable.addColumn('string', 'Match');
+
+        payload.series.forEach(s => {
+            dataTable.addColumn('number', s.username);
+            dataTable.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });
+        });
+
+        payload.labels.forEach((label, i) => {
+            const row: any[] = [label];
+            payload.series.forEach(s => {
+                const pts = s.data[i] ?? 0;
+                const tooltip = `<div style="padding:10px 14px;font-family:Inter,sans-serif;min-width:140px">
+                    <div style="font-weight:800;font-size:13px;color:${s.color};margin-bottom:4px">${s.username}</div>
+                    <div style="font-size:12px;color:#64748b">${label}</div>
+                    <div style="font-size:18px;font-weight:900;margin-top:6px">${pts} pts</div>
+                </div>`;
+                row.push(pts, tooltip);
+            });
+            dataTable.addRow(row);
+        });
+
+        const isDark = document.body.classList.contains('dark');
+        const textColor = isDark ? '#cbd5e1' : '#5e4b80';
+        const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+        const bgColor = 'transparent';
+
+        const colors = payload.series.map(s => s.color);
+
+        const options: any = {
+            title: '',
+            curveType: 'function',
+            legend: { position: 'none' },
+            tooltip: { isHtml: true, trigger: 'both' },
+            backgroundColor: bgColor,
+            chartArea: {
+                left: 50,
+                top: 20,
+                right: 20,
+                bottom: 50,
+                width: '90%',
+                height: '75%'
+            },
+            colors,
+            lineWidth: 3,
+            pointSize: 5,
+            pointShape: 'circle',
+            hAxis: {
+                textStyle: { color: textColor, fontSize: 11, fontName: 'Inter' },
+                gridlines: { color: gridColor },
+                slantedText: true,
+                slantedTextAngle: 45
+            },
+            vAxis: {
+                textStyle: { color: textColor, fontSize: 11, fontName: 'Inter' },
+                gridlines: { color: gridColor },
+                minorGridlines: { count: 0 },
+                title: 'Cumulative Points',
+                titleTextStyle: { color: textColor, fontSize: 12, fontName: 'Inter', italic: false }
+            },
+            animation: {
+                startup: true,
+                duration: 600,
+                easing: 'out'
+            },
+            focusTarget: 'category',
+            crosshair: { trigger: 'both', orientation: 'vertical', color: isDark ? '#8b5cf6' : '#7c3aed', opacity: 0.3 }
+        };
+
+        this.ngZone.runOutsideAngular(() => {
+            if (!this.chartInstance) {
+                this.chartInstance = new google.visualization.LineChart(container);
+            }
+            this.chartInstance.draw(dataTable, options);
+        });
+    }
+
+    // ---- Player Toggle Methods ----
+    togglePlayer(userId: string) {
+        const current = new Set(this.selectedPlayers());
+        if (current.has(userId)) {
+            // Prevent deselecting the last player
+            if (current.size <= 1) return;
+            current.delete(userId);
+        } else {
+            current.add(userId);
+        }
+        this.selectedPlayers.set(current);
+    }
+
+    isPlayerSelected(userId: string): boolean {
+        return this.selectedPlayers().has(userId);
+    }
+
+    selectAllPlayers() {
+        const users = this.iplService.userStats();
+        this.selectedPlayers.set(new Set(users.map(u => u.userId)));
+    }
+
+    deselectAllPlayers() {
+        // Keep the first player selected to prevent empty state
+        const users = this.iplService.userStats();
+        if (users.length > 0) {
+            this.selectedPlayers.set(new Set([users[0].userId]));
+        }
+    }
+
+    setDateRange(range: '7d' | '30d' | 'all') {
+        this.dateRange.set(range);
+    }
+
+    getPlayerChartColor(userId: string): string {
+        const users = this.iplService.userStats();
+        const idx = users.findIndex(u => u.userId === userId);
+        return this.playerColors[(idx >= 0 ? idx : 0) % this.playerColors.length];
+    }
 
     shortenLabel(label: string): string {
         const map: { [key: string]: string } = {
