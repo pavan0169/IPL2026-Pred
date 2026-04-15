@@ -817,22 +817,42 @@ export class StandingsComponent implements AfterViewInit, OnDestroy {
 
         const dataTable = new google.visualization.DataTable();
         dataTable.addColumn('string', 'Match');
+        dataTable.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });
 
         payload.series.forEach(s => {
             dataTable.addColumn('number', s.username);
-            dataTable.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });
         });
 
         payload.labels.forEach((label, i) => {
-            const row: any[] = [label];
-            payload.series.forEach(s => {
+            // Build combined tooltip with all players
+            const playerRows = payload.series.map(s => {
                 const pts = s.data[i] ?? 0;
-                const tooltip = `<div style="padding:10px 14px;font-family:Inter,sans-serif;min-width:140px">
-                    <div style="font-weight:800;font-size:13px;color:${s.color};margin-bottom:4px">${s.username}</div>
-                    <div style="font-size:12px;color:#64748b">${label}</div>
-                    <div style="font-size:18px;font-weight:900;margin-top:6px">${pts} pts</div>
+                const prevPts = i > 0 ? (s.data[i - 1] ?? 0) : 0;
+                const delta = pts - prevPts;
+                const deltaSign = delta > 0 ? '+' : '';
+                const deltaColor = delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : '#94a3b8';
+                return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;">
+                    <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0;"></span>
+                        <span style="font-weight:700;font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;">${s.username}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+                        <span style="font-size:13px;font-weight:900;color:#1e293b;">${pts}</span>
+                        <span style="font-size:9px;font-weight:700;color:${deltaColor};background:${deltaColor}14;padding:1px 4px;border-radius:3px;">${deltaSign}${delta}</span>
+                    </div>
                 </div>`;
-                row.push(pts, tooltip);
+            }).join('');
+
+            const tooltip = `<div style="padding:0;font-family:Inter,system-ui,sans-serif;min-width:180px;max-width:240px;">
+                <div style="padding:7px 10px;background:linear-gradient(135deg,rgba(139,92,246,0.08),rgba(236,72,153,0.04));border-bottom:1px solid rgba(0,0,0,0.06);">
+                    <span style="font-weight:800;font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">${label}</span>
+                </div>
+                <div style="padding:6px 10px 8px;">${playerRows}</div>
+            </div>`;
+
+            const row: any[] = [label, tooltip];
+            payload.series.forEach(s => {
+                row.push(s.data[i] ?? 0);
             });
             dataTable.addRow(row);
         });

@@ -755,3 +755,14 @@ body.dark .premium-6-icon {
   margin: 0 auto;
   padding: 0 1rem;
 }
+
+/* ---- Google Charts Tooltip Override ---- */
+.google-visualization-tooltip {
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  background: white !important;
+  overflow: hidden !important;
+}
