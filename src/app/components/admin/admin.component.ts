@@ -125,11 +125,13 @@ export class AdminComponent {
 
         const upcoming = _matches
             .filter(m => !m.result && new Date(m.date).getTime() >= nowMs && m.status !== 'completed')
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .slice(0, 6);
 
         const completed = _matches
             .filter(m => !!m.result)
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 8);
 
         const groups = [
             { title: 'Pending Results', icon: '⚠️', matches: pendingResults },
