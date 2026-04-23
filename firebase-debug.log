@@ -1,0 +1,57 @@
+[debug] [2026-04-23T22:58:05.733Z] ----------------------------------------------------------------------
+[debug] [2026-04-23T22:58:05.734Z] Command:       /opt/homebrew/Cellar/node@22/22.22.0/bin/node /Users/tangiralapavan/.npm-global/bin/firebase deploy
+[debug] [2026-04-23T22:58:05.734Z] CLI Version:   15.12.0
+[debug] [2026-04-23T22:58:05.735Z] Platform:      darwin
+[debug] [2026-04-23T22:58:05.735Z] Node Version:  v22.22.0
+[debug] [2026-04-23T22:58:05.735Z] Time:          Fri Apr 24 2026 04:28:05 GMT+0530 (India Standard Time)
+[debug] [2026-04-23T22:58:05.735Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-23T22:58:06.395Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-23T22:58:06.395Z] > authorizing via signed-in user (pavan.tv1999@gmail.com)
+[debug] [2026-04-23T22:58:06.396Z] [iam] checking project ipl2026-pred for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-04-23T22:58:06.396Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:06.396Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:06.396Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/ipl2026-pred:testIamPermissions [none]
+[debug] [2026-04-23T22:58:06.396Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/ipl2026-pred:testIamPermissions  x-goog-user-project=ipl2026-pred
+[debug] [2026-04-23T22:58:06.396Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ipl2026-pred:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-04-23T22:58:07.665Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/ipl2026-pred:testIamPermissions 200
+[debug] [2026-04-23T22:58:07.666Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/ipl2026-pred:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-04-23T22:58:07.666Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:07.666Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:07.666Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/ipl2026-pred [none]
+[debug] [2026-04-23T22:58:08.074Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/ipl2026-pred 200
+[debug] [2026-04-23T22:58:08.075Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/ipl2026-pred {"projectId":"ipl2026-pred","projectNumber":"764166626245","displayName":"IPL2026-Pred","name":"projects/ipl2026-pred","resources":{"hostingSite":"ipl2026-pred"},"state":"ACTIVE","etag":"1_abc222c0-a90f-48d1-aae2-9417e3f96805"}
+[info] 
+[info] === Deploying to 'ipl2026-pred'...
+[info] 
+[info] i  deploying firestore, hosting 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-04-23T22:58:08.078Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:08.078Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:08.078Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/ipl2026-pred/databases/(default) [none]
+[debug] [2026-04-23T22:58:09.608Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/ipl2026-pred/databases/(default) 200
+[debug] [2026-04-23T22:58:09.609Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/ipl2026-pred/databases/(default) {"name":"projects/ipl2026-pred/databases/(default)","uid":"8b246022-5db8-4bbf-92d2-e6bcda862964","createTime":"2026-03-27T20:09:21.524029Z","updateTime":"2026-03-27T20:09:21.524029Z","locationId":"nam5","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-04-23T21:58:09.499210Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"s","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IKi7n6iJhZQDMOyxsKLxwJMD"}
+[info] i  firestore: reading indexes from firestore.indexes.json... 
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2026-04-23T22:58:09.611Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:09.611Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:09.611Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/ipl2026-pred:test [none]
+[debug] [2026-04-23T22:58:09.611Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/ipl2026-pred:test [omitted]
+[debug] [2026-04-23T22:58:10.938Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/ipl2026-pred:test 200
+[debug] [2026-04-23T22:58:10.938Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/ipl2026-pred:test {}
+[info] ✔  cloud.firestore: rules file firestore.rules compiled successfully 
+[debug] [2026-04-23T22:58:10.944Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:10.944Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:10.944Z] >>> [apiv2][query] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/ipl2026-pred/versions [none]
+[debug] [2026-04-23T22:58:10.944Z] >>> [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/ipl2026-pred/versions {"status":"CREATED","labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2026-04-23T22:58:12.644Z] <<< [apiv2][status] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/ipl2026-pred/versions 200
+[debug] [2026-04-23T22:58:12.644Z] <<< [apiv2][body] POST https://firebasehosting.googleapis.com/v1beta1/projects/-/sites/ipl2026-pred/versions {"name":"projects/764166626245/sites/ipl2026-pred/versions/b5d974087ae329aa","status":"CREATED","config":{},"labels":{"deployment-tool":"cli-firebase"}}
+[debug] [2026-04-23T22:58:12.645Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:12.645Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:12.646Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/ipl2026-pred/releases pageSize=10&pageToken=
+[debug] [2026-04-23T22:58:13.143Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/ipl2026-pred/releases 200
+[debug] [2026-04-23T22:58:13.143Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/ipl2026-pred/releases {"releases":[{"name":"projects/ipl2026-pred/releases/cloud.firestore","rulesetName":"projects/ipl2026-pred/rulesets/cba347a5-84c6-4c37-833f-b9ba3956b0ff","createTime":"2026-03-27T20:09:48.246454Z","updateTime":"2026-04-23T22:58:00.668186Z"}]}
+[debug] [2026-04-23T22:58:13.143Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:13.143Z] Checked if tokens are valid: true, expires at: 1776986999785
+[debug] [2026-04-23T22:58:13.144Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/ipl2026-pred/rulesets/cba347a5-84c6-4c37-833f-b9ba3956b0ff [none]

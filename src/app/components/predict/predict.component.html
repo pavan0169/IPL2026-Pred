@@ -1,10 +1,29 @@
 <div class="predict-page fade-in">
 
-    <!-- Page Header -->
+    <!-- Page Header & Bulk Actions -->
     <div class="page-header" style="margin-bottom: 1.25rem;">
-        <div class="section-title" style="margin: 0 0 0.25rem 0;">🏏 IPL 2026 Predictions</div>
-        <p style="color: var(--text-muted); font-size: 0.85rem;">Select a match and predict the scores</p>
+        <div class="header-content"
+            style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+            <div>
+                <div class="section-title" style="margin: 0 0 0.25rem 0;">🏏 IPL 2026 Predictions</div>
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Select a match and predict the scores</p>
+            </div>
+
+            <div class="predict-actions"
+                style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+                <button class="btn btn-ghost btn-sm action-btn" (click)="downloadPredictions()"
+                    title="Download Next 6 Matches as JSON">
+                    <span class="file-icon">📥</span> Download Template
+                </button>
+                <button class="btn btn-primary btn-sm action-btn" (click)="uploadFileClick()" title="Upload JSON">
+                    <span class="file-icon">📤</span> Upload Predictions
+                </button>
+            </div>
+        </div>
     </div>
+
+    <!-- Hidden native file input -->
+    <input type="file" #fileInput accept=".json" (change)="onFileSelected($event)" style="display: none;" />
 
     <!-- Match Groups -->
     @for (group of matchGroups(); track group.title) {
@@ -290,4 +309,58 @@
     }
     }
 
+    <!-- Validation Error Modal -->
+    @if (validationErrors().length > 0) {
+    <div class="modal-overlay fade-in">
+        <div class="modal-content">
+            <h2 style="margin-top: 0;">⚠️ Validation Failed</h2>
+            <ul class="error-list">
+                @for (error of validationErrors(); track error) {
+                <li class="error-item">{{ error }}</li>
+                }
+            </ul>
+            @if (validationWarnings().length > 0) {
+            <h4 style="margin-top: 1rem; color: var(--profile-warning);">Warnings:</h4>
+            <ul class="error-list warning">
+                @for (warn of validationWarnings(); track warn) {
+                <li class="error-item">{{ warn }}</li>
+                }
+            </ul>
+            }
+            <div style="text-align: right; margin-top: 1.5rem;">
+                <button class="btn btn-secondary" (click)="closeModal()">Close & Fix</button>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Confirmation Modal -->
+    @if (showConfirmation()) {
+    <div class="modal-overlay fade-in">
+        <div class="modal-content">
+            <h2 style="margin-top: 0;">Confirm Upload</h2>
+            <p>Found {{ uploadData()?.entries?.length || 0 }} valid matches to predict</p>
+            <ul>
+                <li>{{ newPredictionsCount() }} new predictions</li>
+                <li>{{ updatedPredictionsCount() }} updated predictions</li>
+            </ul>
+            <p style="margin-top: 1rem;"><strong>Save these predictions?</strong></p>
+            <div class="modal-actions" style="margin-top: 1.5rem;">
+                <button class="btn btn-ghost" (click)="cancelUpload()" [disabled]="isProcessingUpload()">Cancel</button>
+                <button class="btn btn-primary" (click)="confirmUpload()" [disabled]="isProcessingUpload()">
+                    {{ isProcessingUpload() ? 'Saving...' : 'Save All' }}
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Success Toast -->
+    @if (showSuccessToast()) {
+    <div class="toast-container fade-in-up">
+        <div class="toast success">
+            ✅ {{ successMessage() }}
+        </div>
+    </div>
+    }
 </div>
