@@ -39,6 +39,7 @@ export class StandingsComponent implements AfterViewInit, OnDestroy {
     @ViewChild('chartContainer') chartContainerRef!: ElementRef<HTMLDivElement>;
     selectedPlayers = signal<Set<string>>(new Set());
     dateRange = signal<'7d' | '30d' | 'all'>('all');
+    chartMode = signal<'cumulative' | 'matchwise'>('cumulative');
     chartLoading = signal(true);
     private chartInstance: any = null;
     private resizeListener: (() => void) | null = null;
@@ -100,9 +101,23 @@ export class StandingsComponent implements AfterViewInit, OnDestroy {
         return { labels, series, matchDates };
     });
 
+    // ---- Computed: match-wise (per-match delta) chart data ----
+    matchWiseChartData = computed<ChartDataPayload>(() => {
+        const full = this.chartData();
+        if (full.labels.length === 0) return full;
+
+        const series: ChartSeries[] = full.series.map(s => {
+            const deltas: number[] = s.data.map((val, i) => i === 0 ? val : val - s.data[i - 1]);
+            return { ...s, data: deltas };
+        });
+
+        return { labels: full.labels, series, matchDates: full.matchDates };
+    });
+
     // ---- Computed: filtered chart data ----
     chartFilteredData = computed<ChartDataPayload>(() => {
-        const full = this.chartData();
+        const mode = this.chartMode();
+        const full = mode === 'matchwise' ? this.matchWiseChartData() : this.chartData();
         const selected = this.selectedPlayers();
         const range = this.dateRange();
 
@@ -864,6 +879,8 @@ export class StandingsComponent implements AfterViewInit, OnDestroy {
 
         const colors = payload.series.map(s => s.color);
 
+        const isMatchWise = this.chartMode() === 'matchwise';
+
         const options: any = {
             title: '',
             curveType: 'function',
@@ -892,7 +909,7 @@ export class StandingsComponent implements AfterViewInit, OnDestroy {
                 textStyle: { color: textColor, fontSize: 11, fontName: 'Inter' },
                 gridlines: { color: gridColor },
                 minorGridlines: { count: 0 },
-                title: 'Cumulative Points',
+                title: isMatchWise ? 'Points per Match' : 'Cumulative Points',
                 titleTextStyle: { color: textColor, fontSize: 12, fontName: 'Inter', italic: false }
             },
             animation: {
@@ -905,9 +922,7 @@ export class StandingsComponent implements AfterViewInit, OnDestroy {
         };
 
         this.ngZone.runOutsideAngular(() => {
-            if (!this.chartInstance) {
-                this.chartInstance = new google.visualization.LineChart(container);
-            }
+            this.chartInstance = new google.visualization.LineChart(container);
             this.chartInstance.draw(dataTable, options);
         });
     }

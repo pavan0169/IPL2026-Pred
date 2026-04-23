@@ -2,7 +2,7 @@ import { Component, signal, computed, effect, untracked, inject } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IplService } from '../../services/ipl.service';
-import { MatchResult, Prediction, getMatchPlayers } from '../../models/ipl.models';
+import { MatchResult, Prediction, getMatchPlayers, AuditLog } from '../../models/ipl.models';
 import { User, AuthService } from '../../services/auth.service';
 
 import { SearchableSelectComponent } from '../shared/searchable-select/searchable-select.component';
@@ -28,6 +28,83 @@ export class AdminComponent {
     manualPredSeedInput = signal<string>('');
     expandedMatchId = signal<string | null>(null);
     sendingEmail = signal<Record<string, boolean>>({});
+
+    // ======== REVISION LOGS ========
+    auditFilterMatch = signal<string>('all');
+    auditFilterAction = signal<string>('all');
+    expandedAuditMatches = signal<Set<string>>(new Set());
+
+    auditMatchOptions = computed(() => {
+        const ids = new Set<string>();
+        this.auditLogs().forEach(l => ids.add(l.matchId));
+        return Array.from(ids).sort((a, b) => {
+            return parseInt(a.replace(/\D/g, ''), 10) - parseInt(b.replace(/\D/g, ''), 10);
+        });
+    });
+
+    groupedAuditLogs = computed(() => {
+        let logs = [...this.auditLogs()];
+
+        const mf = this.auditFilterMatch();
+        if (mf !== 'all') logs = logs.filter(l => l.matchId === mf);
+
+        const af = this.auditFilterAction();
+        if (af !== 'all') {
+            if (af === 'result') logs = logs.filter(l => l.actionType === 'RESULT_ADDED' || l.actionType === 'RESULT_UPDATE');
+            else if (af === 'prediction') logs = logs.filter(l => l.actionType === 'PREDICTION_ADDED' || l.actionType === 'PREDICTION_UPDATE' || l.actionType === 'USER_PREDICTION_ADDED' || l.actionType === 'USER_PREDICTION_UPDATE');
+            else if (af === 'status') logs = logs.filter(l => l.actionType === 'STATUS_ADDED' || l.actionType === 'STATUS_UPDATE');
+        }
+
+        const byMatch = new Map<string, AuditLog[]>();
+        logs.forEach(l => {
+            if (!byMatch.has(l.matchId)) byMatch.set(l.matchId, []);
+            byMatch.get(l.matchId)!.push(l);
+        });
+
+        const groups: {
+            matchId: string; matchLabel: string; team1Emoji: string; team2Emoji: string;
+            totalChanges: number; latestTimestamp: string;
+            sessions: { adminUsername: string; timestamp: string; entries: AuditLog[] }[];
+        }[] = [];
+
+        byMatch.forEach((matchLogs, matchId) => {
+            matchLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+            const sessions: { adminUsername: string; timestamp: string; entries: AuditLog[] }[] = [];
+            for (const log of matchLogs) {
+                const logMs = new Date(log.timestamp).getTime();
+                const existing = sessions.find(s =>
+                    s.adminUsername === log.adminUsername &&
+                    Math.abs(logMs - new Date(s.timestamp).getTime()) < 5 * 60 * 1000
+                );
+                if (existing) existing.entries.push(log);
+                else sessions.push({ adminUsername: log.adminUsername, timestamp: log.timestamp, entries: [log] });
+            }
+            sessions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+            const info = this.getMatchInfo(matchId);
+            groups.push({
+                matchId, matchLabel: info.label, team1Emoji: info.team1Emoji, team2Emoji: info.team2Emoji,
+                totalChanges: matchLogs.length, latestTimestamp: matchLogs[0]?.timestamp || '', sessions
+            });
+        });
+
+        groups.sort((a, b) => new Date(b.latestTimestamp).getTime() - new Date(a.latestTimestamp).getTime());
+        return groups;
+    });
+
+    getMatchInfo(matchId: string): { label: string; team1Emoji: string; team2Emoji: string } {
+        const m = this.matches().find(x => x.id === matchId);
+        if (m) return { label: `${m.team1.shortName} vs ${m.team2.shortName}`, team1Emoji: m.team1.emoji, team2Emoji: m.team2.emoji };
+        return { label: `Match ${matchId.replace(/\D/g, '')}`, team1Emoji: '🏏', team2Emoji: '🏏' };
+    }
+
+    toggleAuditMatch(id: string) {
+        this.expandedAuditMatches.update(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    }
+
+    isAuditExpanded(id: string): boolean { return this.expandedAuditMatches().has(id); }
+    getAuditLogCount(): number { return this.auditLogs().length; }
 
     matchGroups = computed(() => {
         const _matches = this.matches();
@@ -180,7 +257,7 @@ export class AdminComponent {
             economy: 'cancelled',
             superStriker: 'cancelled'
         };
-        
+
         this.iplService.updateMatchResult(matchId, result);
         this.iplService.updateMatchStatus(matchId, 'cancelled');
         this.expandedMatchId.set(null);
@@ -407,6 +484,8 @@ export class AdminComponent {
             case 'PREDICTION_UPDATE': return { icon: '✏️', color: '#f59e0b', label: 'Edited Prediction' };
             case 'STATUS_ADDED': return { icon: '🆕', color: '#10b981', label: 'Set Status' };
             case 'STATUS_UPDATE': return { icon: '🚦', color: '#8b5cf6', label: 'Changed Status' };
+            case 'USER_PREDICTION_ADDED': return { icon: '🚨', color: '#ef4444', label: 'Late Prediction (User)' };
+            case 'USER_PREDICTION_UPDATE': return { icon: '⚠️', color: '#ef4444', label: 'Late Change (User)' };
             default: return { icon: '📋', color: '#6b7280', label: 'Action' };
         }
     }

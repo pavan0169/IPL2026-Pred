@@ -284,10 +284,30 @@ export class IplService {
 
         await setDoc(doc(db, 'predictions', docId), newPred);
 
-        if (this.authService.isAdmin()) {
+        // Determine if we should log this change
+        const match = this._matches().find(m => m.id === pred.matchId);
+        const matchStarted = match ? new Date(match.date).getTime() <= Date.now() : false;
+        const isAdmin = this.authService.isAdmin();
+
+        // Log if: (a) admin is making changes, OR (b) ANY user changes prediction AFTER match has started
+        if (isAdmin || matchStarted) {
             const changes = this.getDifferences(existing || {}, newPred);
             if (changes.length > 0) {
-                this.logAdminAction(existing ? 'PREDICTION_UPDATE' : 'PREDICTION_ADDED', pred.matchId, changes, { id: currentUser.uid, name: currentUser.username });
+                if (isAdmin) {
+                    // Admin action — uses admin-specific action types
+                    this.logAdminAction(
+                        existing ? 'PREDICTION_UPDATE' : 'PREDICTION_ADDED',
+                        pred.matchId, changes,
+                        { id: currentUser.uid, name: currentUser.username }
+                    );
+                } else {
+                    // Regular user changing prediction after match started — capture for transparency
+                    this.logAdminAction(
+                        existing ? 'USER_PREDICTION_UPDATE' : 'USER_PREDICTION_ADDED',
+                        pred.matchId, changes,
+                        { id: currentUser.uid, name: currentUser.username }
+                    );
+                }
             }
         }
     }

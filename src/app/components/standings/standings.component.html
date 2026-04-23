@@ -339,13 +339,19 @@
                 <h4 class="dashboard-title">
                     <span class="trends-icon">📈</span> PERFORMANCE TRENDS
                 </h4>
-                <div class="date-range-filter">
-                    <button class="range-pill" [class.active]="dateRange() === '7d'"
-                        (click)="setDateRange('7d')">Last 7 Days</button>
-                    <button class="range-pill" [class.active]="dateRange() === '30d'"
-                        (click)="setDateRange('30d')">Last 30 Days</button>
-                    <button class="range-pill" [class.active]="dateRange() === 'all'"
-                        (click)="setDateRange('all')">All Time</button>
+                <div class="trends-controls">
+                    <div class="chart-mode-toggle">
+                        <button class="mode-btn" [class.active]="chartMode() === 'cumulative'" (click)="chartMode.set('cumulative')">📊 Cumulative</button>
+                        <button class="mode-btn" [class.active]="chartMode() === 'matchwise'" (click)="chartMode.set('matchwise')">📶 Match-wise</button>
+                    </div>
+                    <div class="date-range-filter">
+                        <button class="range-pill" [class.active]="dateRange() === '7d'"
+                            (click)="setDateRange('7d')">Last 7 Days</button>
+                        <button class="range-pill" [class.active]="dateRange() === '30d'"
+                            (click)="setDateRange('30d')">Last 30 Days</button>
+                        <button class="range-pill" [class.active]="dateRange() === 'all'"
+                            (click)="setDateRange('all')">All Time</button>
+                    </div>
                 </div>
             </div>
 

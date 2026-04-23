@@ -68,7 +68,7 @@ export interface AuditLog {
     timestamp: string;
     adminId: string;
     adminUsername: string;
-    actionType: 'RESULT_UPDATE' | 'PREDICTION_UPDATE' | 'STATUS_UPDATE' | 'RESULT_ADDED' | 'PREDICTION_ADDED' | 'STATUS_ADDED';
+    actionType: 'RESULT_UPDATE' | 'PREDICTION_UPDATE' | 'STATUS_UPDATE' | 'RESULT_ADDED' | 'PREDICTION_ADDED' | 'STATUS_ADDED' | 'USER_PREDICTION_UPDATE' | 'USER_PREDICTION_ADDED';
     matchId: string;
     targetUserId?: string;
     targetUsername?: string;
