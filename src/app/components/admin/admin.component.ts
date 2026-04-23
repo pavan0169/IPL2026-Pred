@@ -32,6 +32,7 @@ export class AdminComponent {
     // ======== REVISION LOGS ========
     auditFilterMatch = signal<string>('all');
     auditFilterAction = signal<string>('all');
+    auditSortBy = signal<'date' | 'match'>('date');
     expandedAuditMatches = signal<Set<string>>(new Set());
 
     auditMatchOptions = computed(() => {
@@ -50,9 +51,8 @@ export class AdminComponent {
 
         const af = this.auditFilterAction();
         if (af !== 'all') {
-            if (af === 'result') logs = logs.filter(l => l.actionType === 'RESULT_ADDED' || l.actionType === 'RESULT_UPDATE');
+            if (af === 'result') logs = logs.filter(l => l.actionType === 'RESULT_ADDED' || l.actionType === 'RESULT_UPDATE' || l.actionType === 'STATUS_ADDED' || l.actionType === 'STATUS_UPDATE');
             else if (af === 'prediction') logs = logs.filter(l => l.actionType === 'PREDICTION_ADDED' || l.actionType === 'PREDICTION_UPDATE' || l.actionType === 'USER_PREDICTION_ADDED' || l.actionType === 'USER_PREDICTION_UPDATE');
-            else if (af === 'status') logs = logs.filter(l => l.actionType === 'STATUS_ADDED' || l.actionType === 'STATUS_UPDATE');
         }
 
         const byMatch = new Map<string, AuditLog[]>();
@@ -62,7 +62,7 @@ export class AdminComponent {
         });
 
         const groups: {
-            matchId: string; matchLabel: string; team1Emoji: string; team2Emoji: string;
+            matchId: string; matchLabel: string; matchDate: string; team1Emoji: string; team2Emoji: string;
             totalChanges: number; latestTimestamp: string;
             sessions: { adminUsername: string; timestamp: string; entries: AuditLog[] }[];
         }[] = [];
@@ -84,19 +84,28 @@ export class AdminComponent {
 
             const info = this.getMatchInfo(matchId);
             groups.push({
-                matchId, matchLabel: info.label, team1Emoji: info.team1Emoji, team2Emoji: info.team2Emoji,
+                matchId, matchLabel: info.label, matchDate: info.date, team1Emoji: info.team1Emoji, team2Emoji: info.team2Emoji,
                 totalChanges: matchLogs.length, latestTimestamp: matchLogs[0]?.timestamp || '', sessions
             });
         });
 
-        groups.sort((a, b) => new Date(b.latestTimestamp).getTime() - new Date(a.latestTimestamp).getTime());
+        const sortBy = this.auditSortBy();
+        if (sortBy === 'date') {
+            groups.sort((a, b) => new Date(b.latestTimestamp).getTime() - new Date(a.latestTimestamp).getTime());
+        } else {
+            groups.sort((a, b) => {
+                const aNum = parseInt(a.matchId.replace(/\D/g, ''), 10);
+                const bNum = parseInt(b.matchId.replace(/\D/g, ''), 10);
+                return aNum - bNum;
+            });
+        }
         return groups;
     });
 
-    getMatchInfo(matchId: string): { label: string; team1Emoji: string; team2Emoji: string } {
+    getMatchInfo(matchId: string): { label: string; date: string; team1Emoji: string; team2Emoji: string } {
         const m = this.matches().find(x => x.id === matchId);
-        if (m) return { label: `${m.team1.shortName} vs ${m.team2.shortName}`, team1Emoji: m.team1.emoji, team2Emoji: m.team2.emoji };
-        return { label: `Match ${matchId.replace(/\D/g, '')}`, team1Emoji: '🏏', team2Emoji: '🏏' };
+        if (m) return { label: `${m.team1.shortName} vs ${m.team2.shortName}`, date: m.date, team1Emoji: m.team1.emoji, team2Emoji: m.team2.emoji };
+        return { label: `Match ${matchId.replace(/\D/g, '')}`, date: '', team1Emoji: '🏏', team2Emoji: '🏏' };
     }
 
     toggleAuditMatch(id: string) {
@@ -482,8 +491,8 @@ export class AdminComponent {
             case 'RESULT_UPDATE': return { icon: '🔄', color: '#3b82f6', label: 'Updated Result' };
             case 'PREDICTION_ADDED': return { icon: '📝', color: '#10b981', label: 'Added Prediction' };
             case 'PREDICTION_UPDATE': return { icon: '✏️', color: '#f59e0b', label: 'Edited Prediction' };
-            case 'STATUS_ADDED': return { icon: '🆕', color: '#10b981', label: 'Set Status' };
-            case 'STATUS_UPDATE': return { icon: '🚦', color: '#8b5cf6', label: 'Changed Status' };
+            case 'STATUS_ADDED': return { icon: '🔄', color: '#10b981', label: 'Updated Result (Status)' };
+            case 'STATUS_UPDATE': return { icon: '🔄', color: '#3b82f6', label: 'Updated Result (Status)' };
             case 'USER_PREDICTION_ADDED': return { icon: '🚨', color: '#ef4444', label: 'Late Prediction (User)' };
             case 'USER_PREDICTION_UPDATE': return { icon: '⚠️', color: '#ef4444', label: 'Late Change (User)' };
             default: return { icon: '📋', color: '#6b7280', label: 'Action' };

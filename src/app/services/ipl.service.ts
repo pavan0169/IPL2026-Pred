@@ -98,16 +98,16 @@ const SEED_MATCHES: Match[] = [
 @Injectable({ providedIn: 'root' })
 export class IplService {
     static readonly SCORING_CATEGORIES = [
-        { key: 'winner', label: 'Match Winner', pts: 3 },
-        { key: 'firstInningRange', label: '1st Inning Range', pts: 3 },
-        { key: 'secondInningRange', label: '2nd Inning Range', pts: 3 },
-        { key: 'teamMore4s', label: 'Team with more 4s', pts: 2 },
-        { key: 'teamMore6s', label: 'Team with more 6s', pts: 2 },
-        { key: 'playerMax6s', label: 'Player with Maximum 6s', pts: 3 },
-        { key: 'most4s', label: 'Player with Maximum 4s', pts: 4 },
-        { key: 'playerOfMatch', label: 'Player of the Match', pts: 5 },
-        { key: 'economy', label: 'Bowler (Less Economy)', pts: 4 },
-        { key: 'superStriker', label: 'Super Striker of the match', pts: 4 }
+        { key: 'winner', label: 'Winner', pts: 3 },
+        { key: 'firstInningRange', label: '1st Inn Range', pts: 3 },
+        { key: 'secondInningRange', label: '2nd Inn Range', pts: 3 },
+        { key: 'teamMore4s', label: 'More 4s Team', pts: 2 },
+        { key: 'teamMore6s', label: 'More 6s Team', pts: 2 },
+        { key: 'playerMax6s', label: 'Max 6s Player', pts: 3 },
+        { key: 'most4s', label: 'Max 4s Player', pts: 4 },
+        { key: 'playerOfMatch', label: 'Player of Match', pts: 5 },
+        { key: 'economy', label: 'Best Economy', pts: 4 },
+        { key: 'superStriker', label: 'Super Striker', pts: 4 }
     ];
 
     private _matches = signal<Match[]>([]);

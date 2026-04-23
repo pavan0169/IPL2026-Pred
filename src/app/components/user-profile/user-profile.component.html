@@ -1,196 +1,559 @@
-<div class="profile-page fade-in" *ngIf="profile; else loading">
+<!-- ═══════════════════════════════════════════════ -->
+<!--  IPL 2026 — PERSONAL PERFORMANCE DASHBOARD   -->
+<!-- ═══════════════════════════════════════════════ -->
 
-    <!-- ── Header ── -->
-    <div class="profile-hero">
-        <div class="avatar-ring">
-            <div class="avatar">{{ profile.displayName.charAt(0) | uppercase }}</div>
-        </div>
-        <h2 class="profile-name">{{ profile.displayName }}</h2>
-        <div class="rank-badge" *ngIf="rank > 0">
-            {{ rankEmoji(rank) }} Rank #{{ rank }}
-        </div>
-    </div>
+@if (myStats(); as stats) {
+<div class="profile-page-layout">
 
-    <!-- ── Stats Row ── -->
-    <div class="stats-row">
-        <div class="stat-card">
-            <div class="stat-value accent">{{ profile.totalPoints }}</div>
-            <div class="stat-label">Total Points</div>
-        </div>
-        <div class="stat-card winners-card">
-            <div class="stat-value success">
-                <span class="val-num">{{ profile.correctWinners }}</span>
-                <span class="val-emoji">✅</span>
-            </div>
-            <div class="stat-label">Winners</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value info">{{ accuracy }}%</div>
-            <div class="stat-label">Win Accuracy</div>
-        </div>
-    </div>
+    <!-- ══════════════════════════════════════ -->
+    <!--  MAIN PROFILE DASHBOARD               -->
+    <!-- ══════════════════════════════════════ -->
+    <div class="profile-dashboard fade-in">
 
-    <div class="tab-bar">
-        <button class="tab-btn" [class.active]="activeTab() === 'upcoming'" (click)="activeTab.set('upcoming')">
-            🔮 Upcoming <span class="tab-count">{{ upcomingPredictions.length }}</span>
-        </button>
-        <button class="tab-btn" [class.active]="activeTab() === 'past'" (click)="activeTab.set('past')">
-            🎬 Past <span class="tab-count">{{ pastPredictions.length }}</span>
-        </button>
-    </div>
-
-    <!-- ══════════ UPCOMING TAB ══════════ -->
-    @if (activeTab() === 'upcoming') {
-    @if (upcomingPredictions.length === 0) {
-    <div class="empty-state">
-        <span class="empty-icon">🔮</span>
-        <p>No upcoming matches yet. Head to Predictions to place a prediction!</p>
-    </div>
-    }
-    @for (item of upcomingPredictions; track item.match.id; let i = $index) {
-    <div class="match-card fade-in-up" [style.animation-delay]="i * 0.06 + 's'">
-        <!-- Match header -->
-        <div class="teams-header">
-            <span
-                style="opacity: 0.8; font-weight: 800; background: rgba(0,0,0,0.05); padding: 0.2rem 0.6rem; border-radius: 6px; margin-right: 0.4rem; font-size: 0.85rem;">Match
-                {{ item.match.id.substring(1) }}</span>
-            <span class="team-name-lg">{{ item.match.team1.emoji }} {{ item.match.team1.shortName }}</span>
-            <span class="vs-text">vs</span>
-            <span class="team-name-lg">{{ item.match.team2.emoji }} {{ item.match.team2.shortName }}</span>
-        </div>
-        <div class="match-meta-line">{{ formatDate(item.match.date) }} · {{ formatTime(item.match.date) }}</div>
-        <div class="match-meta-line venue-line">📍 {{ item.match.venue }}</div>
-
-        @if (item.prediction; as pred) {
-        <!-- Row 1: team/score chips -->
-        <div class="pred-flow">
-            <span class="flow-pill winner-pill">🏆 {{ getTeamName(item.match, pred.winner) }}</span>
-            <span class="flow-pill">🎯 {{ pred.team1Score || '-' }}–{{ pred.team2Score || '-' }}</span>
-            <span class="flow-pill">🏟️ {{ pred.firstInningRange || '-' }}</span>
-            <span class="flow-pill">🏟️ {{ pred.secondInningRange || '-' }}</span>
-            <span class="flow-pill"><span class="premium-4-icon">4</span> {{ getTeamName(item.match, pred.teamMore4s)
-                }}</span>
-            <span class="flow-pill"><span class="premium-6-icon">6</span> {{ getTeamName(item.match, pred.teamMore6s)
-                }}</span>
-        </div>
-        <!-- Row 2: player chips -->
-        <div class="pred-flow">
-            <span class="flow-pill">🔥 <span class="premium-6-icon">6</span> {{ pred.playerMax6s || '-' }}</span>
-            <span class="flow-pill">✨ {{ pred.most4s || '-' }}</span>
-            <span class="flow-pill pom-pill">🎖️ {{ pred.playerOfMatch || '-' }}</span>
-            <span class="flow-pill">🌪️ {{ pred.superStriker || '-' }}</span>
-        </div>
-        <!-- Row 3: dot balls -->
-        <div class="pred-flow">
-            <span class="flow-pill">🧤 {{ pred.economy || '-' }}</span>
-        </div>
-        } @else {
-        <div class="no-pred">🔮 No prediction submitted for this match</div>
-        }
-    </div>
-    }
-    }
-
-    <!-- ══════════ PAST TAB ══════════ -->
-    @if (activeTab() === 'past') {
-    @if (pastPredictions.length === 0) {
-    <div class="empty-state">
-        <span class="empty-icon">📭</span>
-        <p>No completed matches with predictions yet.</p>
-    </div>
-    } @else {
-    <div class="past-summary-banner">
-        <div>
-            🏆 Total points from {{ pastPredictions.length }} match{{ pastPredictions.length !== 1 ? 'es' : '' }}:
-        </div>
-        <strong>{{ totalPastPoints() }} pts</strong>
+    <!-- Viewing other profile banner -->
+    @if (!isViewingOwnProfile()) {
+    <div class="viewing-other-banner fade-in">
+        <span>👀 Viewing <strong>{{ viewedUsername() }}</strong>'s profile</span>
+        <button class="btn-back-own" (click)="switchProfile(null)">← Back to My Profile</button>
     </div>
     }
 
-    @for (item of pastPredictions; track item.match.id; let i = $index) {
-    <div class="match-card fade-in-up clickable-card" [class.expanded]="expandedMatchId() === item.match.id"
-        [style.animation-delay]="i * 0.06 + 's'" (click)="toggleMatch(item.match.id)">
-        <!-- Match header -->
-        <div class="match-header">
-            <div class="teams-pill">
-                <span
-                    style="opacity: 0.8; font-weight: 800; background: rgba(0,0,0,0.05); padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid rgba(0,0,0,0.05); margin-right: 0.3rem; font-size: 0.8rem;">Match
-                    {{ item.match.id.substring(1) }}</span>
-                <span>{{ item.match.team1.emoji }} {{ item.match.team1.shortName }}</span>
-                <span class="vs">vs</span>
-                <span>{{ item.match.team2.emoji }} {{ item.match.team2.shortName }}</span>
-            </div>
+    <!-- ════════════════════════════════════ -->
+    <!--  1️⃣  HERO SECTION                  -->
+    <!-- ════════════════════════════════════ -->
+    <section class="hero-section" id="profile-hero">
+        <div class="hero-bg-glow"></div>
 
-            @if (item.match.result) {
-            <div class="header-winner">
-                🏆 {{ item.match.result.winner === item.match.team1.id ? item.match.team1.shortName :
-                item.match.team2.shortName }}
-            </div>
-            }
-
-            <div class="header-right">
-                @if (item.match.result) {
-                <div class="header-score">
-                    <span class="score-label">🎯 Score</span>
-                    {{ item.match.result.team1Score }} – {{ item.match.result.team2Score }}
+        <div class="hero-content">
+            <!-- Left: Avatar + Identity -->
+            <div class="hero-left">
+                <div class="avatar-container">
+                    <div class="avatar-ring" [style.background]="tier().borderGradient">
+                        <div class="avatar-inner">
+                            <span class="avatar-letter">{{ viewedUserInitial() }}</span>
+                        </div>
+                    </div>
+                    <div class="tier-badge" [style.background]="tier().borderGradient">
+                        <span>{{ tier().icon }} {{ tier().name }}</span>
+                    </div>
                 </div>
-                }
-                <div style="display:flex; align-items:center; gap:0.5rem;">
-                    @if (!item.match.result) {
-                    <span class="pts-badge"
-                        style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">
-                        Pending
-                    </span>
-                    } @else {
-                    <span class="pts-badge" [class.high]="item.pointsEarned >= 15">
-                        +{{ item.pointsEarned }} Pts
-                    </span>
-                    }
-                    <span class="expand-icon">{{ expandedMatchId() === item.match.id ? '▼' : '▶' }}</span>
+
+                <div class="hero-identity">
+                    <h1 class="player-name">{{ viewedUsername() }}</h1>
+                    <div class="rank-badge-hero">
+                        <span class="rank-emoji">{{ rankEmoji(rank()) }}</span>
+                        <span class="rank-text">Rank #{{ rank() }}</span>
+                        <span class="rank-of">of {{ totalPlayers() }}</span>
+                    </div>
+
+                    <!-- Quick Stats Bar -->
+                    <div class="quick-stats">
+                        <div class="quick-stat">
+                            <span class="qs-value accent">{{ stats.totalPoints }}</span>
+                            <span class="qs-label">Points</span>
+                        </div>
+                        <div class="quick-stat-divider"></div>
+                        <div class="quick-stat">
+                            <span class="qs-value">{{ winRate() }}%
+                                <span class="trend-arrow" [class.up]="formTrend() === 'up'"
+                                    [class.down]="formTrend() === 'down'">{{ getTrendArrow(formTrend())
+                                    }}</span>
+                            </span>
+                            <span class="qs-label">Win Rate</span>
+                        </div>
+                        <div class="quick-stat-divider"></div>
+                        <div class="quick-stat">
+                            <span class="qs-value">{{ matchesPlayed() }}<span
+                                    class="qs-total">/{{ completedMatches().length }}</span></span>
+                            <span class="qs-label">Played</span>
+                        </div>
+                        <div class="quick-stat-divider"></div>
+                        <div class="quick-stat">
+                            @if (currentStreak().type === 'podium' && currentStreak().count >= 2) {
+                            <span class="qs-value streak-hot">🔥 {{ currentStreak().count }}</span>
+                            } @else if (currentStreak().type === 'cold' && currentStreak().count >= 2) {
+                            <span class="qs-value streak-cold">❄️ {{ currentStreak().count }}</span>
+                            } @else {
+                            <span class="qs-value">—</span>
+                            }
+                            <span class="qs-label">Streak</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="match-meta">
-            🗓️ {{ formatDate(item.match.date) }}&nbsp;&nbsp;📍 {{ item.match.venue }}
-        </div>
 
+            <!-- Right: At a Glance Metrics -->
+            <div class="hero-right">
+                <!-- Tournament Progress Ring -->
+                <div class="progress-ring-container">
+                    <svg class="progress-ring" width="100" height="100" viewBox="0 0 100 100">
+                        <circle class="ring-bg" cx="50" cy="50" r="42" />
+                        <circle class="ring-fill" cx="50" cy="50" r="42"
+                            [style.stroke-dasharray]="2 * 3.14159 * 42"
+                            [style.stroke-dashoffset]="2 * 3.14159 * 42 * (1 - tournamentProgress() / 100)" />
+                    </svg>
+                    <div class="ring-label">
+                        <span class="ring-value">{{ tournamentProgress() }}%</span>
+                        <span class="ring-text">Complete</span>
+                    </div>
+                </div>
 
-        @if (expandedMatchId() === item.match.id) {
-        <div class="expandable-content fade-in">
-            @if (!item.prediction) {
-            <div class="no-prediction-state">
-                🔮 You didn't submit a prediction for this match.
-            </div>
-            } @else if (!item.match.result) {
-            <div class="no-prediction-state"
-                style="padding: 1.5rem; text-align: center; color: #f59e0b; background: rgba(245, 158, 11, 0.05); border-radius: 12px; font-weight: 500; font-size: 0.9rem;">
-                ⏳ Awaiting Match Result to calculate your points.
-            </div>
-            } @else {
-            <!-- Breakdown pills -->
-            <div class="breakdown-grid">
-                @for (pt of getDetailedPoints(item.prediction, item.match); track pt.label) {
-                <div class="bd-pill" [class.earned]="pt.earned">
-                    <span class="bd-label">{{ pt.label }}</span>
-                    <div class="bd-values">
-                        <span class="my-val">🔮 {{ pt.myValue }}</span>
-                        @if (!pt.earned && pt.myValue !== '100%') {
-                        <span class="actual-val">🎯 {{ pt.actualValue }}</span>
+                <!-- Form indicator: show position per match -->
+                <div class="form-container">
+                    <span class="form-title">Last 5 Positions</span>
+                    <div class="form-dots">
+                        @for (f of currentForm(); track f.matchId) {
+                        <div class="form-dot" [class.gold]="f.matchRank === 1" [class.silver]="f.matchRank === 2" [class.bronze]="f.matchRank === 3" [class.other-rank]="f.matchRank > 3"
+                            [title]="f.matchLabel + ': ' + f.points + ' pts (Rank #' + f.matchRank + ')'">
+                            <span class="form-letter">{{ getPositionEmoji(f.matchRank) }}</span>
+                            <span class="form-pts">{{ f.points }}</span>
+                        </div>
                         }
                     </div>
-                    <span class="bd-pts">{{ pt.earned ? '+' + pt.pts : '0' }}</span>
                 </div>
+
+                <!-- Season High + Avg + Podium Counts -->
+                <div class="hero-mini-stats">
+                    <div class="position-badges">
+                        <span class="pos-badge gold">🥇 {{ positionCounts().first }}</span>
+                        <span class="pos-badge silver">🥈 {{ positionCounts().second }}</span>
+                        <span class="pos-badge bronze">🥉 {{ positionCounts().third }}</span>
+                    </div>
+                    @if (seasonHigh(); as high) {
+                    <div class="mini-stat">
+                        <span class="ms-icon">🏅</span>
+                        <div>
+                            <span class="ms-value">{{ high.points }} pts</span>
+                            <span class="ms-label">Season High</span>
+                        </div>
+                    </div>
+                    }
+                    <div class="mini-stat">
+                        <span class="ms-icon">📊</span>
+                        <div>
+                            <span class="ms-value">{{ avgPointsPerMatch() }}</span>
+                            <span class="ms-label">Avg Pts/Match</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════════════════════════════ -->
+    <!--  SECTION NAVIGATION                 -->
+    <!-- ════════════════════════════════════ -->
+    <nav class="section-nav">
+        <button class="nav-pill" [class.active]="activeSection() === 'insights'" (click)="toggleSection('insights')">
+            💡 Insights
+        </button>
+        <button class="nav-pill" [class.active]="activeSection() === 'achievements'"
+            (click)="toggleSection('achievements')">
+            🏆 Badges <span class="pill-count">{{ unlockedCount() }}/{{ achievements().length }}</span>
+        </button>
+        <button class="nav-pill" [class.active]="activeSection() === 'timeline'" (click)="toggleSection('timeline')">
+            📜 Timeline
+        </button>
+        @if (isViewingOwnProfile()) {
+        <button class="nav-pill" [class.active]="activeSection() === 'h2h'" (click)="toggleSection('h2h')">
+            ⚔️ Rivals
+        </button>
+        }
+        <button class="nav-pill" [class.active]="activeSection() === 'dna'" (click)="toggleSection('dna')">
+            🧬 DNA
+        </button>
+        @if (isViewingOwnProfile()) {
+        <button class="nav-pill" [class.active]="activeSection() === 'settings'" (click)="toggleSection('settings')">
+            ⚙️ Settings
+        </button>
+        }
+    </nav>
+
+    <!-- ════════════════════════════════════ -->
+    <!--  2️⃣  INSIGHTS SECTION               -->
+    <!-- ════════════════════════════════════ -->
+    @if (activeSection() === 'insights') {
+    <section class="section-panel fade-in" id="profile-insights">
+        <h2 class="section-title">💡 Your Story So Far</h2>
+
+        <div class="insight-cards">
+            @for (insight of autoInsights(); track insight.text; let i = $index) {
+            <div class="insight-card fade-in-up" [class.strength]="insight.type === 'strength'"
+                [class.weakness]="insight.type === 'weakness'" [style.animation-delay]="i * 0.08 + 's'">
+                <span class="ic-icon">{{ insight.icon }}</span>
+                <p class="ic-text" [innerHTML]="insight.text"></p>
+            </div>
+            }
+            @if (autoInsights().length === 0) {
+            <div class="empty-insights">
+                <span class="empty-icon">🔮</span>
+                <p>Play more matches to unlock personalized insights!</p>
+            </div>
+            }
+        </div>
+    </section>
+    }
+
+    <!-- ════════════════════════════════════ -->
+    <!--  3️⃣  ACHIEVEMENTS SECTION           -->
+    <!-- ════════════════════════════════════ -->
+    @if (activeSection() === 'achievements') {
+    <section class="section-panel fade-in" id="profile-achievements">
+        <h2 class="section-title">🏆 Achievement Badges</h2>
+        <p class="section-subtitle">{{ unlockedCount() }} of {{ achievements().length }} unlocked</p>
+
+        <div class="achievements-grid">
+            @for (badge of achievements(); track badge.id; let i = $index) {
+            <div class="badge-card fade-in-up" [class.unlocked]="badge.unlocked" [class.locked]="!badge.unlocked"
+                [class.gold]="badge.tier === 'gold' && badge.unlocked"
+                [class.silver]="badge.tier === 'silver' && badge.unlocked"
+                [class.bronze]="badge.tier === 'bronze' && badge.unlocked" [style.animation-delay]="i * 0.06 + 's'">
+                <span class="badge-icon" [class.pulse]="badge.unlocked">{{ badge.icon }}</span>
+                <span class="badge-name">{{ badge.name }}</span>
+                <span class="badge-desc">{{ badge.description }}</span>
+                @if (!badge.unlocked && badge.progress) {
+                <span class="badge-progress">{{ badge.progress }}</span>
+                }
+                @if (badge.unlocked) {
+                <span class="badge-check">✓</span>
                 }
             </div>
             }
         </div>
+    </section>
+    }
+
+    <!-- ════════════════════════════════════ -->
+    <!--  4️⃣  TIMELINE SECTION               -->
+    <!-- ════════════════════════════════════ -->
+    @if (activeSection() === 'timeline') {
+    <section class="section-panel fade-in" id="profile-timeline">
+        <h2 class="section-title">📜 Your Journey</h2>
+
+        <!-- Filter Bar -->
+        <div class="timeline-filters">
+            <button class="filter-btn" [class.active]="timelineFilter() === 'all'"
+                (click)="timelineFilter.set('all')">All</button>
+            <button class="filter-btn" [class.active]="timelineFilter() === 'podium'"
+                (click)="timelineFilter.set('podium')">🏅 Podium</button>
+            <button class="filter-btn" [class.active]="timelineFilter() === 'other'"
+                (click)="timelineFilter.set('other')">📉 Other</button>
+            <span class="filter-count">{{ filteredTimeline().length }} matches</span>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline-container">
+            @for (entry of displayedTimeline(); track entry.match.id; let i = $index; let last = $last) {
+            <div class="timeline-item fade-in-up" [style.animation-delay]="i * 0.05 + 's'">
+                <!-- Timeline node -->
+                <div class="timeline-node">
+                    <div class="node-dot" [style.background]="getNodeColor(entry)">
+                        <span class="node-rank">#{{ entry.matchRank }}</span>
+                    </div>
+                    @if (!last) {
+                    <div class="node-line"></div>
+                    }
+                </div>
+
+                <!-- Match card -->
+                <div class="timeline-card" [class.expanded]="expandedTimelineMatch() === entry.match.id"
+                    (click)="toggleTimelineMatch(entry.match.id)">
+                    <div class="tc-header">
+                        <div class="tc-teams">
+                            <span class="tc-match-num">M{{ entry.match.id.substring(1) }}</span>
+                            <span>{{ entry.match.team1.emoji }} {{ entry.match.team1.shortName }}</span>
+                            <span class="tc-vs">vs</span>
+                            <span>{{ entry.match.team2.emoji }} {{ entry.match.team2.shortName }}</span>
+                        </div>
+                        <div class="tc-right">
+                            <span class="tc-pts" [class.high]="entry.pointsEarned >= 15"
+                                [class.zero]="entry.pointsEarned === 0">
+                                +{{ entry.pointsEarned }}
+                            </span>
+                            <span class="tc-correct">{{ entry.correctCategories }}/{{ entry.totalCategories }}</span>
+                            <span class="tc-expand">{{ expandedTimelineMatch() === entry.match.id ? '▾' : '▸'
+                                }}</span>
+                        </div>
+                    </div>
+                    <div class="tc-meta">
+                        {{ formatDate(entry.match.date) }} · Rank #{{ entry.matchRank }} of {{ entry.totalPlayers }}
+                    </div>
+
+                    <!-- Expanded breakdown -->
+                    @if (expandedTimelineMatch() === entry.match.id) {
+                    <div class="tc-breakdown fade-in">
+                        @if (!entry.prediction) {
+                        <div class="no-prediction">🔮 No prediction submitted</div>
+                        } @else {
+                        <div class="breakdown-grid">
+                            @for (cat of entry.categoryBreakdown; track cat.key) {
+                            <div class="bd-pill" [class.earned]="cat.correct">
+                                <span class="bd-label">{{ cat.label }}</span>
+                                <div class="bd-values">
+                                    <span class="my-val">🔮 {{ cat.predValue }}</span>
+                                    @if (!cat.correct && cat.predValue !== '-') {
+                                    <span class="actual-val">🎯 {{ cat.actualValue }}</span>
+                                    }
+                                </div>
+                                <span class="bd-pts">{{ cat.correct ? '+' + cat.pts : '0' }}</span>
+                            </div>
+                            }
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+
+            @if (displayedTimeline().length === 0) {
+            <div class="empty-state">
+                <span class="empty-icon">📭</span>
+                <p>No matches to show for this filter.</p>
+            </div>
+            }
+        </div>
+
+        @if (hasMoreTimeline()) {
+        <button class="load-more-btn" (click)="loadMoreTimeline()">
+            Load More Matches ↓
+        </button>
         }
-    </div>
-    }
+    </section>
     }
 
+    <!-- ════════════════════════════════════ -->
+    <!--  5️⃣  HEAD-TO-HEAD SECTION           -->
+    <!-- ════════════════════════════════════ -->
+    @if (activeSection() === 'h2h') {
+    <section class="section-panel fade-in" id="profile-h2h">
+        <h2 class="section-title">⚔️ Know Your Rivals</h2>
+
+        <!-- Rival Selector -->
+        <div class="rival-selector">
+            <label class="rival-label">Select a rival:</label>
+            <select class="rival-dropdown" [ngModel]="selectedRivalId() || ''"
+                (ngModelChange)="selectRival($event)">
+                <option value="">— Choose a player —</option>
+                @for (rival of availableRivals(); track rival.userId) {
+                <option [value]="rival.userId">{{ rival.username }} ({{ rival.totalPoints }} pts)</option>
+                }
+            </select>
+        </div>
+
+        @if (headToHead(); as h2h) {
+        <div class="h2h-container fade-in">
+            <!-- Score comparison -->
+            <div class="h2h-score-card">
+                <div class="h2h-player you">
+                    <span class="h2h-name">{{ currentUsername }}</span>
+                    <span class="h2h-pts">{{ h2h.myTotalPts }} pts</span>
+                    <span class="h2h-wins">{{ h2h.myWins }} W</span>
+                </div>
+                <div class="h2h-center">
+                    <div class="rivalry-score">
+                        <span class="rs-value">{{ h2h.rivalryScore }}</span>
+                        <span class="rs-label">Rivalry Score</span>
+                    </div>
+                    <span class="h2h-vs">VS</span>
+                    <span class="h2h-record">{{ h2h.myWins }}-{{ h2h.ties }}-{{ h2h.rivalWins }}</span>
+                </div>
+                <div class="h2h-player rival">
+                    <span class="h2h-name">{{ h2h.rivalName }}</span>
+                    <span class="h2h-pts">{{ h2h.rivalTotalPts }} pts</span>
+                    <span class="h2h-wins">{{ h2h.rivalWins }} W</span>
+                </div>
+            </div>
+
+            <!-- Insight line -->
+            <div class="h2h-insight">
+                @if (h2h.myWins > h2h.rivalWins) {
+                <p>🎉 You've beaten <strong>{{ h2h.rivalName }}</strong> in <strong>{{ h2h.myWins }}/{{ h2h.totalMatches }}</strong> matches — keep dominating!</p>
+                } @else if (h2h.rivalWins > h2h.myWins) {
+                <p>😤 <strong>{{ h2h.rivalName }}</strong> leads <strong>{{ h2h.rivalWins }}/{{ h2h.totalMatches }}</strong> — time for a comeback!</p>
+                } @else {
+                <p>🤝 Dead even at <strong>{{ h2h.myWins }}</strong> wins each — the next match decides!</p>
+                }
+            </div>
+
+            <!-- Category comparison -->
+            <div class="h2h-categories">
+                <h3 class="h2h-cat-title">Category Showdown</h3>
+                @for (cat of h2h.myCatAcc; track cat.key; let i = $index) {
+                <div class="h2h-cat-row">
+                    <span class="h2h-cat-val you" [class.winner]="cat.accuracy > h2h.rivalCatAcc[i].accuracy">{{ cat.accuracy }}%</span>
+                    <span class="h2h-cat-name">{{ cat.label }}</span>
+                    <span class="h2h-cat-val rival" [class.winner]="h2h.rivalCatAcc[i].accuracy > cat.accuracy">{{ h2h.rivalCatAcc[i].accuracy }}%</span>
+                </div>
+                }
+            </div>
+
+            <!-- Recent matchups -->
+            <div class="h2h-recent">
+                <h3 class="h2h-recent-title">Recent Matchups</h3>
+                @for (comp of h2h.recentComparisons; track comp.matchLabel) {
+                <div class="h2h-match-row">
+                    <span class="hmr-date">{{ comp.date }}</span>
+                    <span class="hmr-match">{{ comp.matchLabel }}</span>
+                    <div class="hmr-scores">
+                        <span class="hmr-pts you" [class.winner]="comp.myPts > comp.rivalPts">{{ comp.myPts }}</span>
+                        <span class="hmr-separator">–</span>
+                        <span class="hmr-pts rival" [class.winner]="comp.rivalPts > comp.myPts">{{ comp.rivalPts }}</span>
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+        } @else if (!selectedRivalId()) {
+        <div class="empty-state">
+            <span class="empty-icon">🤺</span>
+            <p>Select a player above to see your head-to-head stats!</p>
+        </div>
+        }
+    </section>
+    }
+
+    <!-- ════════════════════════════════════ -->
+    <!--  6️⃣  PREDICTIVE DNA SECTION         -->
+    <!-- ════════════════════════════════════ -->
+    @if (activeSection() === 'dna') {
+    <section class="section-panel fade-in" id="profile-dna">
+        <h2 class="section-title">🧬 Predictive DNA</h2>
+
+        <div class="dna-container">
+            <!-- Category Performance (accuracy bars) -->
+            <div class="category-card">
+                <h3 class="category-card-title">📊 Category Performance</h3>
+                <p class="category-card-subtitle">Your prediction accuracy by category</p>
+
+                @if (categoryAccuracy().length > 0) {
+                <div class="category-list">
+                    @for (cat of categoryAccuracy(); track cat.key) {
+                    <div class="cat-row">
+                        <span class="cat-name">{{ cat.label }}</span>
+                        <div class="cat-bar-container">
+                            <div class="cat-bar" [style.width.%]="cat.accuracy"
+                                [class.high]="cat.accuracy >= 60" [class.mid]="cat.accuracy >= 30 && cat.accuracy < 60"
+                                [class.low]="cat.accuracy < 30">
+                            </div>
+                        </div>
+                        <span class="cat-pct">{{ cat.accuracy }}%</span>
+                        <span class="cat-detail">{{ cat.correct }}/{{ cat.total }}</span>
+                    </div>
+                    }
+                </div>
+                }
+            </div>
+
+            <!-- Points by Category -->
+            <div class="dna-points-breakdown">
+                <h3 class="dpb-title">Points by Category</h3>
+                @for (cat of categoryAccuracy(); track cat.key) {
+                <div class="dpb-row">
+                    <span class="dpb-name">{{ cat.label }}</span>
+                    <div class="dpb-bar-container">
+                        <div class="dpb-bar" [style.width.%]="cat.totalPoints > 0 ? Math.min((cat.totalPoints / (categoryAccuracy()[0]?.totalPoints || 1)) * 100, 100) : 0"
+                            [class.high]="cat.accuracy >= 60" [class.mid]="cat.accuracy >= 30 && cat.accuracy < 60"
+                            [class.low]="cat.accuracy < 30"></div>
+                    </div>
+                    <span class="dpb-value">{{ cat.totalPoints }} pts</span>
+                </div>
+                }
+            </div>
+        </div>
+    </section>
+    }
+
+    <!-- ════════════════════════════════════ -->
+    <!--  7️⃣  SETTINGS SECTION              -->
+    <!-- ════════════════════════════════════ -->
+    @if (activeSection() === 'settings') {
+    <section class="section-panel fade-in" id="profile-settings">
+        <h2 class="section-title">⚙️ Settings & Data</h2>
+
+        <div class="settings-grid">
+            <div class="settings-card">
+                <h3 class="sc-title">📤 Export Your Data</h3>
+                <p class="sc-desc">Download all your predictions and scores</p>
+                <div class="sc-actions">
+                    <button class="btn btn-ghost btn-sm" (click)="exportData('json')">
+                        📋 Export JSON
+                    </button>
+                    <button class="btn btn-ghost btn-sm" (click)="exportData('csv')">
+                        📊 Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3 class="sc-title">📊 Quick Stats</h3>
+                <div class="sc-stats">
+                    <div class="sc-stat-row">
+                        <span>Total Predictions</span>
+                        <strong>{{ stats.totalPredictions }}</strong>
+                    </div>
+                    <div class="sc-stat-row">
+                        <span>Correct Winners</span>
+                        <strong>{{ stats.correctWinners }}</strong>
+                    </div>
+                    <div class="sc-stat-row">
+                        <span>Total Points</span>
+                        <strong>{{ stats.totalPoints }}</strong>
+                    </div>
+                    <div class="sc-stat-row">
+                        <span>Current Rank</span>
+                        <strong>#{{ rank() }}</strong>
+                    </div>
+                    <div class="sc-stat-row">
+                        <span>Matches Played</span>
+                        <strong>{{ matchesPlayed() }}</strong>
+                    </div>
+                    <div class="sc-stat-row">
+                        <span>Season High</span>
+                        <strong>{{ seasonHigh()?.points ?? 0 }} pts</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    }
+
+</div> <!-- end .profile-dashboard -->
+
+    <!-- ══════════════════════════════════════ -->
+    <!--  DESKTOP SIDEBAR: Player Profiles     -->
+    <!-- ══════════════════════════════════════ -->
+    <aside class="profile-sidebar">
+        <div class="sidebar-header">
+            <h3 class="sidebar-title">👥 Players</h3>
+            <span class="sidebar-count">{{ allPlayers().length }}</span>
+        </div>
+        <div class="sidebar-list">
+            @for (player of allPlayers(); track player.userId) {
+            <button class="sidebar-player"
+                [class.active]="effectiveUserId() === player.userId"
+                [class.is-self]="player.isCurrentUser"
+                (click)="switchProfile(player.isCurrentUser ? null : player.userId)">
+                <div class="sp-avatar" [class.self-ring]="player.isCurrentUser">
+                    <span>{{ player.initial }}</span>
+                </div>
+                <div class="sp-info">
+                    <span class="sp-name">{{ player.username }}
+                        @if (player.isCurrentUser) {
+                        <span class="sp-you">(You)</span>
+                        }
+                    </span>
+                    <span class="sp-meta">#{{ player.rank }} · {{ player.totalPoints }} pts</span>
+                </div>
+            </button>
+            }
+        </div>
+    </aside>
+
+</div> <!-- end .profile-page-layout -->
+} @else {
+<div class="loading-state">
+    <span class="loading-icon">🏏</span>
+    <p>Loading your profile…</p>
 </div>
-
-<ng-template #loading>
-    <div class="loading-state">Loading profile…</div>
-</ng-template>
+}

@@ -126,7 +126,13 @@
                 <button class="audit-chip" [class.active]="auditFilterAction() === 'all'" (click)="auditFilterAction.set('all')">All</button>
                 <button class="audit-chip chip-result" [class.active]="auditFilterAction() === 'result'" (click)="auditFilterAction.set('result')">✅ Results</button>
                 <button class="audit-chip chip-pred" [class.active]="auditFilterAction() === 'prediction'" (click)="auditFilterAction.set('prediction')">✏️ Predictions</button>
-                <button class="audit-chip chip-status" [class.active]="auditFilterAction() === 'status'" (click)="auditFilterAction.set('status')">🚦 Status</button>
+            </div>
+            <div class="audit-sort">
+                <label class="audit-filter-label">Sort by</label>
+                <div class="audit-chips">
+                    <button class="audit-chip" [class.active]="auditSortBy() === 'date'" (click)="auditSortBy.set('date')">📅 Date</button>
+                    <button class="audit-chip" [class.active]="auditSortBy() === 'match'" (click)="auditSortBy.set('match')">🏏 Match</button>
+                </div>
             </div>
         </div>
 
@@ -143,6 +149,9 @@
                             <span class="audit-match-emoji">{{ group.team1Emoji }}</span>
                             <span class="audit-match-teams">{{ group.matchLabel }}</span>
                             <span class="audit-match-emoji">{{ group.team2Emoji }}</span>
+                            @if (group.matchDate) {
+                            <span class="audit-match-date">{{ group.matchDate | date:'d MMM, h:mm a' }}</span>
+                            }
                         </div>
                         <div class="audit-match-right">
                             <span class="audit-badge">{{ group.totalChanges }} {{ group.totalChanges === 1 ? 'change' : 'changes' }}</span>

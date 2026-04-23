@@ -529,9 +529,16 @@
     box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
 }
 
-.audit-chip.chip-status.active {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+/* Sort toggle */
+.audit-sort {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.audit-sort .audit-chips {
+    margin-left: 0;
 }
 
 /* Empty */
@@ -625,6 +632,17 @@
     font-weight: 700;
     color: var(--text-primary);
     white-space: nowrap;
+}
+
+.audit-match-date {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding: 0.15rem 0.5rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .audit-match-right {

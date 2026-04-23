@@ -1,0 +1,184 @@
+# 🏏 IPL 2026 Prediction League — Application Overview
+
+## What Is It?
+
+A **real-time IPL cricket prediction game** where a group of friends compete by predicting match outcomes across 10 categories. After each match, an admin enters the actual results, the system auto-scores everyone's predictions, and a live leaderboard tracks who's winning the tournament.
+
+> **Think of it as:** Fantasy sports meets pub quiz — but for IPL cricket, with a full transparency system to prevent cheating.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Framework** | Angular 19 (standalone components, signals) |
+| **Backend** | Firebase Firestore (real-time NoSQL database) |
+| **Auth** | Firebase Auth (Google Sign-In) |
+| **Hosting** | Firebase Hosting (`iplpred2026.web.app`) |
+| **Charts** | Google Charts (line charts for trends) |
+| **Email** | Firebase Extensions (Trigger Email on Firestore write) |
+| **Styling** | Vanilla CSS with glassmorphic dark theme |
+
+---
+
+## Application Tabs
+
+The app is a **single-page application** with tab-based navigation. No routing — the active tab is managed via a signal.
+
+### ⚡ 1. Predict
+The core experience. Users see upcoming matches in a rolling 7-day window and can submit predictions for each. Each prediction covers **10 scoring categories**:
+
+| Category | Points |
+|----------|--------|
+| Match Winner | 3 |
+| 1st Inning Score Range | 3 |
+| 2nd Inning Score Range | 3 |
+| Team with More 4s | 2 |
+| Team with More 6s | 2 |
+| Player with Maximum 6s | 3 |
+| Player with Maximum 4s | 4 |
+| Player of the Match | 5 |
+| Bowler (Less Economy) | 4 |
+| Super Striker | 4 |
+
+**Bonus points:**
+- **Exact Score Prediction:** +10 pts (if both team scores match exactly)
+- **All 10 Correct:** +25 pts (perfect predictor bonus)
+
+Predictions **lock 1 minute before match start**. After that, no new predictions can be submitted.
+
+### 🔒 2. Predictions (Locked)
+Shows all users' submitted predictions for each match. This is the transparency layer — once a match starts, everyone can see what everyone else predicted.
+
+### 🏆 3. Standings
+Two sub-sections:
+
+**Leaderboards** — Four views:
+- **Overall:** Podium + full ranked list with points, wins, accuracy, weekly pts
+- **Weekly:** Champions per calendar week (Mon–Sun)
+- **Daily:** Champions per match
+- **Today:** Detailed breakdown of the latest match with per-category scoring
+
+**Analytics & Trends** — Data visualizations:
+- **Performance Trends Chart:** Google Charts line graph showing cumulative OR match-wise points over time. Toggle between modes. Filter by date range (7d, 30d, all) and select/deselect individual players.
+- **Race to the Top:** Visual gap analysis showing each player's distance to the leader, with momentum indicators (rising/falling/steady)
+- **Momentum & Streaks:** Per-player cards showing velocity, win streaks, best/worst matches, weekly points
+- **Competitive Landscape:** Tier-based grouping (Champions/Contenders/Rising/Rookies) + active rivalries (players within 20 pts)
+- **Radar Chart:** Multi-metric SVG radar comparing players across 6 axes (points, wins, accuracy, avg pts, best score, exact scores)
+
+### 📜 4. History (Past Predictions)
+Review past completed matches and see how your predictions compared to actual results. Shows per-match point breakdowns.
+
+### ⚙️ 5. Admin (Admin-only)
+Visible only to users with the admin role. Features:
+
+- **Match Result Entry:** Set results for each of the 10 categories per match
+- **Match Status Control:** Toggle between upcoming → live → completed → cancelled
+- **Player Prediction Editing:** Admin can view and edit any user's prediction (super-admin restricted)
+- **Score Recalculation:** One-click button to recompute all users' scores from scratch
+- **Data Seeding:** Import match results or predictions via JSON
+- **Backup & Restore:** Permanent reference backup of all match results, with restore capability
+- **Email Notifications:** Send match result emails to all users via Firebase Extension
+- **Data Reset:** Nuclear option to wipe all predictions and match states
+
+- **Revision Logs (Audit System):**
+  - Tracks ALL admin actions (result adds/updates, prediction edits, status changes)
+  - Tracks ALL user prediction changes made AFTER a match has started (flagged as "Late Change" in red)
+  - Groups logs by **Match → Sessions** (same admin, 5-min window)
+  - Shows field-by-field **before → after** diffs
+  - Filterable by match and action type (Results / Predictions / Status)
+
+### 👤 6. Profile
+User profile page showing personal stats and settings.
+
+---
+
+## Data Architecture
+
+```mermaid
+erDiagram
+    MATCHES ||--o{ PREDICTIONS : "has many"
+    MATCHES ||--o{ AUDIT_LOGS : "tracks changes"
+    USERS ||--o{ PREDICTIONS : "submits"
+    USERS ||--o{ AUDIT_LOGS : "performs actions"
+
+    MATCHES {
+        string id "m1, m2, ... m70"
+        string status "upcoming|live|completed|cancelled"
+        object result "MatchResult (10 categories)"
+    }
+
+    PREDICTIONS {
+        string id "matchId_userId"
+        string matchId
+        string userId
+        object fields "10 scoring categories + scores"
+    }
+
+    AUDIT_LOGS {
+        string id
+        string adminId
+        string actionType "RESULT_UPDATE|USER_PREDICTION_UPDATE|..."
+        string matchId
+        array changes "field, oldValue, newValue"
+    }
+
+    USERS {
+        string uid
+        string username
+        string email
+        string role "admin|user"
+    }
+```
+
+> **Key detail:** Match schedules are **hardcoded** in `SEED_MATCHES` (all 70 IPL 2026 matches). Only status and results are stored in Firestore. This means the schedule never needs a database query.
+
+---
+
+## Scoring Engine
+
+All point calculations flow through `IplService.calcPoints()`:
+
+1. Normalize both prediction and result data via `normalizeData()` (handles legacy field name mappings)
+2. Compare each of the 10 `SCORING_CATEGORIES` using case-insensitive string matching
+3. Add bonus for exact team scores (+10) and perfect prediction (+25)
+4. Returns total points for one prediction against one match result
+
+The `userStats` computed signal aggregates all predictions × all completed matches to produce the live leaderboard. It runs reactively — any Firestore change triggers instant UI updates.
+
+---
+
+## Security & Transparency
+
+| Feature | How It Works |
+|---------|-------------|
+| **Prediction Lock** | Predictions lock 1 min before match start (`isMatchLocked()`) |
+| **Late Change Tracking** | Any prediction change after match start → logged as `USER_PREDICTION_UPDATE` with red 🚨 icon |
+| **Admin Audit Trail** | Every admin action (results, prediction edits, status changes) → logged with full before/after diffs |
+| **Session Grouping** | Audit logs group actions by same admin within 5-min windows |
+| **Super Admin** | Only `pavan.tv1999@gmail.com` can view/edit other users' predictions |
+| **Session Timeout** | Auto-logout after inactivity via `SessionService` |
+
+---
+
+## Key Services
+
+| Service | Purpose |
+|---------|---------|
+| `IplService` | Core data layer — Firestore listeners, predictions, results, scoring, audit logging |
+| `AuthService` | Google Auth, role management, username formatting |
+| `ThemeService` | Dark/light mode toggle |
+| `SessionService` | Inactivity timeout management |
+| `GoogleChartsService` | Lazy-loads Google Charts library |
+
+---
+
+## Summary
+
+This is a **full-stack real-time prediction league** for IPL 2026 with:
+- 🎯 10-category scoring across 70 matches
+- 📊 Rich analytics (trends, radar, momentum, tiers)
+- 🔒 Anti-cheat audit system tracking every change
+- ⚡ Instant reactive updates via Firebase + Angular signals
+- 🎨 Premium glassmorphic dark UI
