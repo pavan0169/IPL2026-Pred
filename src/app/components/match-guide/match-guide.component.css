@@ -41,13 +41,13 @@
 .divider-vertical {
   width: 1px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--border);
   margin: 0 0.25rem;
 }
 
 .match-chip {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   color: #fbbf24;
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -62,22 +62,22 @@
 }
 
 .match-chip:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+  background: var(--accent-light);
   border-color: #fbbf24;
 }
 
 .match-chip.active {
   background: rgba(251, 191, 36, 0.2);
   border-color: #fbbf24;
-  color: #fff;
+  color: var(--text-primary);
   box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
   transform: scale(1.05);
 }
 
 .team-chip {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #a1a1aa;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
   padding: 0.5rem 1rem;
   border-radius: 9999px;
   display: flex;
@@ -90,8 +90,8 @@
 }
 
 .team-chip:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--accent-light);
+  border-color: var(--border);
 }
 
 .team-chip.active {
@@ -105,9 +105,9 @@
 /* Team Summary */
 .team-summary {
   position: relative;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
   border-left: 4px solid var(--team-color);
   border-radius: 16px;
   padding: 1.5rem;
@@ -135,7 +135,7 @@
 .team-summary h2 {
   margin: 0 0 0.5rem 0;
   font-size: 1.5rem;
-  color: #ffffff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -144,18 +144,18 @@
 .summary-stats {
   display: flex;
   gap: 1rem;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   flex-wrap: wrap;
 }
 
 .summary-stats strong {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 1.1rem;
 }
 
 .divider {
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--border);
 }
 
 /* Stats Grid */
@@ -166,10 +166,10 @@
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: 3px solid var(--team-color, rgba(255, 255, 255, 0.2));
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid var(--team-color, var(--border));
   border-radius: 16px;
   padding: 1.25rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -203,12 +203,12 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #a1a1aa;
+  color: var(--text-muted);
 }
 
 .subtext {
   font-size: 0.75rem;
-  color: #71717a;
+  color: var(--text-muted);
   margin-top: 0.1rem;
 }
 
@@ -228,7 +228,7 @@
 
 .progress-label {
   font-size: 0.85rem;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   min-width: 30px;
 }
 
@@ -236,7 +236,7 @@
 .range-track {
   flex-grow: 1;
   height: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.06);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -244,7 +244,7 @@
 .progress-bar,
 .range-bar {
   height: 100%;
-  background: var(--team-color, #fff);
+  background: var(--team-color, var(--accent));
   border-radius: 999px;
   width: 0;
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
@@ -252,14 +252,15 @@
 
 .progress-value {
   font-size: 0.85rem;
-  color: #ffffff;
+  color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 /* Stat Rows */
 .stat-rows {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.75rem;
   display: flex;
@@ -269,14 +270,14 @@
 
 .stat-row {
   font-size: 0.85rem;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
 .stat-row strong {
-  color: #ffffff;
+  color: var(--text-primary);
   margin-left: auto;
 }
 
@@ -295,13 +296,13 @@
 
 .range-count {
   font-size: 0.8rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   width: 20px;
 }
 
 .range-label {
   font-size: 0.85rem;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   width: 70px;
   font-variant-numeric: tabular-nums;
 }
@@ -321,7 +322,7 @@
 
 .player-name {
   font-size: 0.9rem;
-  color: #ffffff;
+  color: var(--text-primary);
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -374,7 +375,7 @@
 
 .player-count {
   font-size: 0.8rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   width: 50px;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -384,27 +385,27 @@
 .stat-highlight {
   margin-top: auto;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--border);
   font-size: 0.85rem;
-  color: #d4d4d8;
+  color: var(--text-secondary);
 }
 
 .stat-highlight strong {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .no-data {
   font-size: 0.85rem;
-  color: #71717a;
+  color: var(--text-muted);
   font-style: italic;
   padding: 1rem 0;
 }
 
 /* --- COMPARISON MODE --- */
 .compare-header {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -418,21 +419,21 @@
   gap: 1.5rem;
   font-size: 1.5rem;
   font-weight: bold;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .team-badge {
   width: 70px;
   height: 74px;
   padding: 0.6rem 1.25rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-bottom: 4px solid var(--team-color);
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 20px var(--team-color);
+  box-shadow: var(--shadow-lg), 0 4px 15px rgba(0, 0, 0, 0.1);
   font-weight: 800;
   letter-spacing: 0.05em;
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -441,13 +442,13 @@
 
 .team-badge:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 30px var(--team-color);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+  box-shadow: var(--shadow-lg);
+  background: var(--accent-light);
 }
 
 .vs {
   font-size: 1rem;
-  color: #a1a1aa;
+  color: var(--text-muted);
   text-transform: uppercase;
   font-style: italic;
 }
@@ -472,13 +473,13 @@
 
 .side-divider {
   width: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border);
   margin: 0 0.5rem;
 }
 
 .compare-val {
   font-size: 0.85rem;
-  color: #d4d4d8;
+  color: var(--text-secondary);
   text-align: center;
   margin-top: 0.25rem;
 }
@@ -486,7 +487,7 @@
 .edge-indicator {
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  border-top: 1px dashed var(--border);
   font-size: 0.85rem;
   color: #fbbf24;
   /* Gold */
@@ -504,7 +505,7 @@
 
 .player-name-small {
   font-size: 0.8rem;
-  color: #fff;
+  color: var(--text-primary);
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
