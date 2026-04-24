@@ -102,7 +102,32 @@ export class PredictComponent {
     matchPlayers = computed(() => {
         const match = this.selectedMatch();
         if (!match) return [];
-        return getMatchPlayers(match.team1.id, match.team2.id);
+        return getMatchPlayers(match.team1.id, match.team2.id, match.team1.color, match.team2.color);
+    });
+
+    playersMax6s = computed(() => {
+        const match = this.selectedMatch();
+        return match ? this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'playerMax6s') : [];
+    });
+
+    playersMost4s = computed(() => {
+        const match = this.selectedMatch();
+        return match ? this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'most4s') : [];
+    });
+
+    playersPoM = computed(() => {
+        const match = this.selectedMatch();
+        return match ? this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'playerOfMatch') : [];
+    });
+
+    playersEconomy = computed(() => {
+        const match = this.selectedMatch();
+        return match ? this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'economy') : [];
+    });
+
+    playersStriker = computed(() => {
+        const match = this.selectedMatch();
+        return match ? this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'superStriker') : [];
     });
 
     existingPrediction = computed(() => {
@@ -245,7 +270,7 @@ export class PredictComponent {
             const teamOptions = [m.team1.shortName, m.team2.shortName, 'Equal'];
 
             // Safely grab player names
-            const players = getMatchPlayers(m.team1.id, m.team2.id).map(p => p.label);
+            const players = getMatchPlayers(m.team1.id, m.team2.id, m.team1.color, m.team2.color).map(p => p.label);
 
             return {
                 matchId: m.id,

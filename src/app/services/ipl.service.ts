@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Match, Team, Prediction, UserStats, MatchResult, AuditLog, AuditChange } from '../models/ipl.models';
+import { Match, Team, Prediction, UserStats, MatchResult, AuditLog, AuditChange, DropdownOption, getMatchPlayers } from '../models/ipl.models';
 import { db } from '../firebase.config';
 import { collection, onSnapshot, doc, setDoc, updateDoc, writeBatch, deleteField, getDocs, addDoc, query } from 'firebase/firestore';
 import { AuthService, User } from './auth.service';
@@ -19,7 +19,7 @@ const IPL_TEAMS: Team[] = [
     { id: 'rr', name: 'Rajasthan Royals', shortName: 'RR', color: '#EA1A85', emoji: '💗' },
     { id: 'pbks', name: 'Punjab Kings', shortName: 'PBKS', color: '#ED1B24', emoji: '🦅' },
     { id: 'lsg', name: 'Lucknow Super Giants', shortName: 'LSG', color: '#A72B2A', emoji: '🦊' },
-    { id: 'gt', name: 'Gujarat Titans', shortName: 'GT', color: '#1C1C1C', emoji: '⚡' },
+    { id: 'gt', name: 'Gujarat Titans', shortName: 'GT', color: '#82a8d4', emoji: '⚡' },
 ];
 
 const SEED_MATCHES: Match[] = [
@@ -317,7 +317,7 @@ export class IplService {
         const [matchId, userId] = predictionId.split('_');
         const existing = this._predictions().find(p => p.id === predictionId);
         const targetUserParam = { id: userId, name: updates.username || existing?.username || 'User' };
-        
+
         await setDoc(doc(db, 'predictions', predictionId), updates, { merge: true });
 
         const changes = this.getDifferences(existing || {}, updates);
@@ -328,6 +328,39 @@ export class IplService {
 
     getPredictionForMatch(matchId: string): Prediction | undefined {
         return this.myPredictions().get(matchId);
+    }
+
+    getTeam(id: string): Team | undefined {
+        return IPL_TEAMS.find(t => t.id === id);
+    }
+
+    getPlayerOptionsWithStats(team1Id: string, team2Id: string, category: keyof MatchResult): DropdownOption[] {
+        const t1 = this.getTeam(team1Id);
+        const t2 = this.getTeam(team2Id);
+        const basePlayers = getMatchPlayers(team1Id, team2Id, t1?.color, t2?.color);
+        const completed = this._matches().filter(m => m.status === 'completed' && m.result);
+        
+        const counts = new Map<string, number>();
+        for (const m of completed) {
+            const winner = m.result![category];
+            if (typeof winner === 'string' && winner) {
+                const lower = winner.toLowerCase();
+                counts.set(lower, (counts.get(lower) || 0) + 1);
+            }
+        }
+
+        return basePlayers.map(p => {
+            const c = counts.get(p.value.toLowerCase()) || 0;
+            return {
+                ...p,
+                suffix: c > 0 ? `🏆 ${c}` : ''
+            };
+        }).sort((a, b) => {
+            const countA = counts.get(a.value.toLowerCase()) || 0;
+            const countB = counts.get(b.value.toLowerCase()) || 0;
+            if (countB !== countA) return countB - countA;
+            return a.label.localeCompare(b.label);
+        });
     }
 
     async updateMatchResult(matchId: string, result: MatchResult) {
@@ -687,7 +720,7 @@ export class IplService {
     }
 
     private logAdminAction(actionType: AuditLog['actionType'], matchId: string, changes: AuditChange[], targetUser?: { id: string; name: string }) {
-        if (changes.length === 0) return; 
+        if (changes.length === 0) return;
         const currentUser = this.authService.currentUser();
         if (!currentUser) return;
 

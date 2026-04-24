@@ -14,13 +14,14 @@ import { UserProfileComponent } from './components/user-profile/user-profile.com
 import { PastPredictionsComponent } from './components/past-predictions/past-predictions.component';
 import { LeagueListComponent } from './components/league-list/league-list.component';
 import { CricketLoaderComponent } from './components/cricket-loader/cricket-loader.component';
+import { MatchGuideComponent } from './components/match-guide/match-guide.component';
 
-type Tab = 'predict' | 'standings' | 'locked' | 'admin' | 'leagues' | 'profile' | 'history';
+type Tab = 'predict' | 'guide' | 'standings' | 'locked' | 'admin' | 'leagues' | 'profile' | 'history';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, LayoutModule, PredictComponent, StandingsComponent, LockedPredictionsComponent, AdminComponent, LandingComponent, UserProfileComponent, PastPredictionsComponent, CricketLoaderComponent],
+  imports: [CommonModule, LayoutModule, PredictComponent, StandingsComponent, LockedPredictionsComponent, AdminComponent, LandingComponent, UserProfileComponent, PastPredictionsComponent, CricketLoaderComponent, MatchGuideComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -46,6 +47,11 @@ export class AppComponent implements OnInit {
         id: 'predict', label: 'Predict',
         // Lightning bolt — amber-orange gradient, filled
         icon: svg(`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><defs><linearGradient id="gi-predict" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f97316"/></linearGradient></defs><path d="M13 2L3 14h9l-1 8 10-12h-9z" fill="url(#gi-predict)"/><path d="M14 2l-2 10h7z" fill="url(#gi-predict)" opacity="0.5"/></svg>`)
+      },
+      {
+        id: 'guide', label: 'Guide',
+        // Book icon — emerald gradient
+        icon: svg(`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><defs><linearGradient id="gi-guide" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient></defs><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" fill="url(#gi-guide)"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" fill="url(#gi-guide)" opacity="0.7"/></svg>`)
       },
       {
         id: 'locked', label: 'Predictions',

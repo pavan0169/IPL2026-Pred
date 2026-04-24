@@ -112,6 +112,8 @@ export interface DropdownOption {
     label: string;
     value: string;
     badge?: string;
+    teamColor?: string;
+    suffix?: string;
 }
 
 export const TEAM_SQUADS: Record<string, Player[]> = {
@@ -386,8 +388,8 @@ export const TEAM_SQUADS: Record<string, Player[]> = {
     ]
 };
 
-export function getMatchPlayers(team1Id: string, team2Id: string): DropdownOption[] {
-    const list1 = (TEAM_SQUADS[team1Id] || []).map(p => ({ label: p.name, value: p.name, badge: p.role }));
-    const list2 = (TEAM_SQUADS[team2Id] || []).map(p => ({ label: p.name, value: p.name, badge: p.role }));
+export function getMatchPlayers(team1Id: string, team2Id: string, team1Color?: string, team2Color?: string): DropdownOption[] {
+    const list1 = (TEAM_SQUADS[team1Id] || []).map(p => ({ label: p.name, value: p.name, badge: p.role, teamColor: team1Color }));
+    const list2 = (TEAM_SQUADS[team2Id] || []).map(p => ({ label: p.name, value: p.name, badge: p.role, teamColor: team2Color }));
     return [...list1, ...list2].sort((a, b) => a.label.localeCompare(b.label));
 }

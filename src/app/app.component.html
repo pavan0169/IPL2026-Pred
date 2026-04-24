@@ -90,6 +90,7 @@
     <app-cricket-loader size="sm"></app-cricket-loader>
     } @else {
     <app-predict *ngIf="activeTab() === 'predict'"></app-predict>
+    <app-match-guide *ngIf="activeTab() === 'guide'"></app-match-guide>
     <app-standings *ngIf="activeTab() === 'standings'"></app-standings>
     <app-locked-predictions *ngIf="activeTab() === 'locked'"></app-locked-predictions>
     <app-past-predictions *ngIf="activeTab() === 'history'"></app-past-predictions>

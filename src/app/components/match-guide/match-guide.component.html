@@ -1,0 +1,429 @@
+<div class="match-guide-container">
+  <!-- Team Selector Header -->
+  <div class="team-selector-wrapper">
+    <div class="team-selector">
+      <!-- Next Matches Shortcut Chips -->
+      <button 
+        *ngFor="let m of nextMatches()" 
+        class="match-chip" 
+        [class.active]="selectedMatchId() === m.id && viewMode() === 'match'"
+        (click)="selectMatch(m.id)">
+        <span class="match-teams">{{m.team1.shortName}} ⚡ {{m.team2.shortName}}</span>
+      </button>
+
+      <div class="divider-vertical" *ngIf="nextMatches().length > 0"></div>
+
+      <!-- Single Team Chips -->
+      <button 
+        *ngFor="let team of teams" 
+        class="team-chip" 
+        [class.active]="selectedTeamId() === team.id && viewMode() === 'team'"
+        [style.--team-color]="team.color"
+        (click)="selectTeam(team.id)">
+        <span class="team-emoji">{{team.emoji}}</span>
+        <span class="team-abbr">{{team.shortName}}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SINGLE TEAM VIEW -->
+  <ng-container *ngIf="viewMode() === 'team' && singleStats() as s">
+    <!-- Team Summary Header -->
+    <div class="team-summary" [style.--team-color]="s.teamColor">
+      <div class="summary-content">
+        <h2><span class="team-emoji">{{s.teamEmoji}}</span> {{s.teamName | uppercase}}</h2>
+        <div class="summary-stats">
+          <span>Matches Played: <strong>{{s.matchesPlayed}}</strong></span>
+          <span class="divider">|</span>
+          <span>Matches Won: <strong>{{s.matchesWon}}</strong></span>
+          <span class="divider">|</span>
+          <span>Win Rate: <strong>{{getWinRate(s.matchesWon, s.matchesPlayed)}}%</strong></span>
+        </div>
+      </div>
+      <div class="summary-glow" [style.background-color]="s.teamColor"></div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid" [style.--team-color]="s.teamColor">
+      <!-- Card 1: Match Winner -->
+      <div class="stat-card">
+        <div class="card-header"><span class="icon">🏆</span><h3>MATCH WINNER</h3></div>
+        <div class="card-body">
+          <div class="progress-container">
+            <div class="progress-label">Won</div>
+            <div class="progress-track"><div class="progress-bar" [style.width]="getBarWidth(s.matchWinner.won, s.matchWinner.total)"></div></div>
+            <div class="progress-value">{{s.matchWinner.won}} / {{s.matchWinner.total}}</div>
+          </div>
+          <div class="stat-rows">
+            <div class="stat-row"><span class="check">✅</span> Won: <strong>{{s.matchWinner.won}} times</strong></div>
+            <div class="stat-row"><span class="cross">❌</span> Lost: <strong>{{s.matchWinner.total - s.matchWinner.won}} times</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Score Range -->
+      <div class="stat-card">
+        <div class="card-header"><span class="icon">📈</span><div class="header-text"><h3>SCORE RANGE</h3><span class="subtext">Across all innings</span></div></div>
+        <div class="card-body">
+          <div class="range-rows" *ngIf="s.scoreRanges.length > 0; else noData">
+            <div class="range-row" *ngFor="let range of s.scoreRanges">
+              <span class="range-count">{{range.count}}x</span>
+              <span class="range-label">{{range.range}}</span>
+              <div class="range-track"><div class="range-bar" [style.width]="getBarWidth(range.count, s.matchesPlayed)"></div></div>
+            </div>
+          </div>
+          <div class="stat-highlight" *ngIf="s.scoreRanges.length > 0">Most common: <strong>{{s.scoreRanges[0].range}}</strong></div>
+        </div>
+      </div>
+
+      <!-- Card 3: Most 4s -->
+      <div class="stat-card">
+        <div class="card-header"><span class="icon">4️⃣</span><h3>MOST 4s</h3></div>
+        <div class="card-body">
+          <div class="progress-container">
+            <div class="progress-label">Won</div>
+            <div class="progress-track"><div class="progress-bar" [style.width]="getBarWidth(s.most4s.won, s.most4s.total)"></div></div>
+            <div class="progress-value">{{s.most4s.won}} / {{s.most4s.total}}</div>
+          </div>
+          <div class="stat-rows">
+            <div class="stat-row"><span class="check">✅</span> {{s.teamId | uppercase}} had more 4s: <strong>{{s.most4s.won}} times</strong></div>
+            <div class="stat-row"><span class="cross">❌</span> Opponent had more: <strong>{{s.most4s.total - s.most4s.won}} times</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Most 6s -->
+      <div class="stat-card">
+        <div class="card-header"><span class="icon">6️⃣</span><h3>MOST 6s</h3></div>
+        <div class="card-body">
+          <div class="progress-container">
+            <div class="progress-label">Won</div>
+            <div class="progress-track"><div class="progress-bar" [style.width]="getBarWidth(s.most6s.won, s.most6s.total)"></div></div>
+            <div class="progress-value">{{s.most6s.won}} / {{s.most6s.total}}</div>
+          </div>
+          <div class="stat-rows">
+            <div class="stat-row"><span class="check">✅</span> {{s.teamId | uppercase}} had more 6s: <strong>{{s.most6s.won}} times</strong></div>
+            <div class="stat-row"><span class="cross">❌</span> Opponent had more: <strong>{{s.most6s.total - s.most6s.won}} times</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5: Player Most 6s -->
+      <div class="stat-card">
+        <div class="card-header"><span class="icon">💥</span><div class="header-text"><h3>PLAYER WITH MOST 6s</h3><span class="subtext">From {{s.teamId | uppercase}} squad</span></div></div>
+        <div class="card-body">
+          <div class="player-rows" *ngIf="s.playerMost6s.length > 0; else noData">
+            <div class="player-row" *ngFor="let p of s.playerMost6s">
+              <span class="player-name">{{p.playerName}}</span>
+              <div class="dots-container"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              <span class="player-count">{{p.count}} {{p.count === 1 ? 'time' : 'times'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 6: Player Most 4s -->
+      <div class="stat-card">
+        <div class="card-header"><span class="icon">⚡</span><div class="header-text"><h3>PLAYER WITH MOST 4s</h3><span class="subtext">From {{s.teamId | uppercase}} squad</span></div></div>
+        <div class="card-body">
+          <div class="player-rows" *ngIf="s.playerMost4s.length > 0; else noData">
+            <div class="player-row" *ngFor="let p of s.playerMost4s">
+              <span class="player-name">{{p.playerName}}</span>
+              <div class="dots-container"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              <span class="player-count">{{p.count}} {{p.count === 1 ? 'time' : 'times'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 7: Player of the Match -->
+      <div class="stat-card">
+        <div class="card-header"><span class="icon">🌟</span><div class="header-text"><h3>PLAYER OF THE MATCH</h3><span class="subtext">{{s.teamId | uppercase}} players who won PoM</span></div></div>
+        <div class="card-body">
+          <div class="player-rows" *ngIf="s.playerOfMatch.players.length > 0; else noData">
+            <div class="player-row" *ngFor="let p of s.playerOfMatch.players">
+              <span class="player-name">{{p.playerName}}</span>
+              <div class="dots-container"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              <span class="player-count">{{p.count}} {{p.count === 1 ? 'time' : 'times'}}</span>
+            </div>
+          </div>
+          <div class="stat-highlight" *ngIf="s.playerOfMatch.players.length > 0">From {{s.teamId | uppercase}} won PoM: <strong>{{s.playerOfMatch.totalFromThisTeam}} out of {{s.matchesPlayed}} matches</strong></div>
+        </div>
+      </div>
+
+      <!-- Card 8: Best Economy -->
+      <div class="stat-card">
+        <div class="card-header"><span class="icon">🎯</span><div class="header-text"><h3>BOWLER LEAST ECONOMY</h3><span class="subtext">{{s.teamId | uppercase}} bowlers with best economy</span></div></div>
+        <div class="card-body">
+          <div class="player-rows" *ngIf="s.bowlerEconomy.players.length > 0; else noData">
+            <div class="player-row" *ngFor="let p of s.bowlerEconomy.players">
+              <span class="player-name">{{p.playerName}}</span>
+              <div class="dots-container"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              <span class="player-count">{{p.count}} {{p.count === 1 ? 'time' : 'times'}}</span>
+            </div>
+          </div>
+          <div class="stat-highlight" *ngIf="s.bowlerEconomy.players.length > 0">{{s.teamId | uppercase}} bowler won economy: <strong>{{s.bowlerEconomy.totalFromThisTeam}} out of {{s.matchesPlayed}} matches</strong></div>
+        </div>
+      </div>
+
+      <!-- Card 9: Super Striker -->
+      <div class="stat-card">
+        <div class="card-header"><span class="icon">🔥</span><div class="header-text"><h3>SUPER STRIKER</h3><span class="subtext">Highest SR player from {{s.teamId | uppercase}}</span></div></div>
+        <div class="card-body">
+          <div class="player-rows" *ngIf="s.superStriker.players.length > 0; else noData">
+            <div class="player-row" *ngFor="let p of s.superStriker.players">
+              <span class="player-name">{{p.playerName}}</span>
+              <div class="dots-container"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              <span class="player-count">{{p.count}} {{p.count === 1 ? 'time' : 'times'}}</span>
+            </div>
+          </div>
+          <div class="stat-highlight" *ngIf="s.superStriker.players.length > 0">{{s.teamId | uppercase}} batter won Super Striker: <strong>{{s.superStriker.totalFromThisTeam}} out of {{s.matchesPlayed}} matches</strong></div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- COMPARISON TEAM VIEW -->
+  <ng-container *ngIf="viewMode() === 'match' && compareStats() as cmp">
+    <div class="compare-header">
+      <div class="compare-title">
+        <span class="team-badge" [style.--team-color]="cmp.t1.teamColor">{{cmp.t1.teamEmoji}} {{cmp.t1.teamId | uppercase}}</span>
+        <span class="vs">vs</span>
+        <span class="team-badge" [style.--team-color]="cmp.t2.teamColor">{{cmp.t2.teamEmoji}} {{cmp.t2.teamId | uppercase}}</span>
+      </div>
+    </div>
+
+    <div class="stats-grid compare-mode">
+      
+      <!-- Card 1: Match Winner -->
+      <div class="stat-card split-card">
+        <div class="card-header"><span class="icon">🏆</span><h3>MATCH WINNER</h3></div>
+        <div class="split-body">
+          <div class="side" [style.--team-color]="cmp.t1.teamColor">
+            <div class="progress-container"><div class="progress-track"><div class="progress-bar" [style.width]="getBarWidth(cmp.t1.matchWinner.won, cmp.t1.matchWinner.total)"></div></div></div>
+            <div class="compare-val">{{getWinRate(cmp.t1.matchWinner.won, cmp.t1.matchWinner.total)}}% Win Rate</div>
+          </div>
+          <div class="side-divider"></div>
+          <div class="side" [style.--team-color]="cmp.t2.teamColor">
+            <div class="progress-container"><div class="progress-track"><div class="progress-bar" [style.width]="getBarWidth(cmp.t2.matchWinner.won, cmp.t2.matchWinner.total)"></div></div></div>
+            <div class="compare-val">{{getWinRate(cmp.t2.matchWinner.won, cmp.t2.matchWinner.total)}}% Win Rate</div>
+          </div>
+        </div>
+        <div class="edge-indicator">
+          <span *ngIf="getWinRate(cmp.t1.matchWinner.won, cmp.t1.matchWinner.total) > getWinRate(cmp.t2.matchWinner.won, cmp.t2.matchWinner.total)">👑 Edge: {{cmp.t1.teamName}}</span>
+          <span *ngIf="getWinRate(cmp.t1.matchWinner.won, cmp.t1.matchWinner.total) < getWinRate(cmp.t2.matchWinner.won, cmp.t2.matchWinner.total)">👑 Edge: {{cmp.t2.teamName}}</span>
+          <span *ngIf="getWinRate(cmp.t1.matchWinner.won, cmp.t1.matchWinner.total) === getWinRate(cmp.t2.matchWinner.won, cmp.t2.matchWinner.total)">🤝 Tie</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Score Range -->
+      <div class="stat-card split-card">
+        <div class="card-header"><span class="icon">📈</span><div class="header-text"><h3>SCORE RANGE</h3></div></div>
+        <div class="split-body">
+          <div class="side" [style.--team-color]="cmp.t1.teamColor">
+            <div *ngIf="cmp.t1.scoreRanges.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let r of cmp.t1.scoreRanges">
+                <span class="player-name-small">{{r.range}}</span><span style="font-size: 0.8rem; color: #a1a1aa;">x{{r.count}}</span>
+              </div>
+            </div>
+          </div>
+          <div class="side-divider"></div>
+          <div class="side" [style.--team-color]="cmp.t2.teamColor">
+            <div *ngIf="cmp.t2.scoreRanges.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let r of cmp.t2.scoreRanges">
+                <span class="player-name-small">{{r.range}}</span><span style="font-size: 0.8rem; color: #a1a1aa;">x{{r.count}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Most 4s -->
+      <div class="stat-card split-card">
+        <div class="card-header"><span class="icon">4️⃣</span><h3>TEAM MOST 4s</h3></div>
+        <div class="split-body">
+          <div class="side" [style.--team-color]="cmp.t1.teamColor">
+            <div class="progress-container"><div class="progress-track"><div class="progress-bar" [style.width]="getBarWidth(cmp.t1.most4s.won, cmp.t1.most4s.total)"></div></div></div>
+            <div class="compare-val">{{getWinRate(cmp.t1.most4s.won, cmp.t1.most4s.total)}}% Win Rate</div>
+          </div>
+          <div class="side-divider"></div>
+          <div class="side" [style.--team-color]="cmp.t2.teamColor">
+            <div class="progress-container"><div class="progress-track"><div class="progress-bar" [style.width]="getBarWidth(cmp.t2.most4s.won, cmp.t2.most4s.total)"></div></div></div>
+            <div class="compare-val">{{getWinRate(cmp.t2.most4s.won, cmp.t2.most4s.total)}}% Win Rate</div>
+          </div>
+        </div>
+        <div class="edge-indicator">
+          <span *ngIf="getWinRate(cmp.t1.most4s.won, cmp.t1.most4s.total) > getWinRate(cmp.t2.most4s.won, cmp.t2.most4s.total)">👑 Edge: {{cmp.t1.teamName}}</span>
+          <span *ngIf="getWinRate(cmp.t1.most4s.won, cmp.t1.most4s.total) < getWinRate(cmp.t2.most4s.won, cmp.t2.most4s.total)">👑 Edge: {{cmp.t2.teamName}}</span>
+          <span *ngIf="getWinRate(cmp.t1.most4s.won, cmp.t1.most4s.total) === getWinRate(cmp.t2.most4s.won, cmp.t2.most4s.total)">🤝 Tie</span>
+        </div>
+      </div>
+
+      <!-- Card 4: Most 6s -->
+      <div class="stat-card split-card">
+        <div class="card-header"><span class="icon">6️⃣</span><h3>TEAM MOST 6s</h3></div>
+        <div class="split-body">
+          <div class="side" [style.--team-color]="cmp.t1.teamColor">
+            <div class="progress-container"><div class="progress-track"><div class="progress-bar" [style.width]="getBarWidth(cmp.t1.most6s.won, cmp.t1.most6s.total)"></div></div></div>
+            <div class="compare-val">{{getWinRate(cmp.t1.most6s.won, cmp.t1.most6s.total)}}% Win Rate</div>
+          </div>
+          <div class="side-divider"></div>
+          <div class="side" [style.--team-color]="cmp.t2.teamColor">
+            <div class="progress-container"><div class="progress-track"><div class="progress-bar" [style.width]="getBarWidth(cmp.t2.most6s.won, cmp.t2.most6s.total)"></div></div></div>
+            <div class="compare-val">{{getWinRate(cmp.t2.most6s.won, cmp.t2.most6s.total)}}% Win Rate</div>
+          </div>
+        </div>
+        <div class="edge-indicator">
+          <span *ngIf="getWinRate(cmp.t1.most6s.won, cmp.t1.most6s.total) > getWinRate(cmp.t2.most6s.won, cmp.t2.most6s.total)">👑 Edge: {{cmp.t1.teamName}}</span>
+          <span *ngIf="getWinRate(cmp.t1.most6s.won, cmp.t1.most6s.total) < getWinRate(cmp.t2.most6s.won, cmp.t2.most6s.total)">👑 Edge: {{cmp.t2.teamName}}</span>
+          <span *ngIf="getWinRate(cmp.t1.most6s.won, cmp.t1.most6s.total) === getWinRate(cmp.t2.most6s.won, cmp.t2.most6s.total)">🤝 Tie</span>
+        </div>
+      </div>
+
+      <!-- Card 5: Player Most 6s -->
+      <div class="stat-card split-card">
+        <div class="card-header"><span class="icon">💥</span><h3>PLAYER WITH MOST 6s</h3></div>
+        <div class="split-body">
+          <div class="side" [style.--team-color]="cmp.t1.teamColor">
+            <div class="player-rows" *ngIf="cmp.t1.playerMost6s.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t1.playerMost6s">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="side-divider"></div>
+          <div class="side" [style.--team-color]="cmp.t2.teamColor">
+            <div class="player-rows" *ngIf="cmp.t2.playerMost6s.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t2.playerMost6s">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 6: Player Most 4s -->
+      <div class="stat-card split-card">
+        <div class="card-header"><span class="icon">⚡</span><h3>PLAYER WITH MOST 4s</h3></div>
+        <div class="split-body">
+          <div class="side" [style.--team-color]="cmp.t1.teamColor">
+            <div class="player-rows" *ngIf="cmp.t1.playerMost4s.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t1.playerMost4s">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="side-divider"></div>
+          <div class="side" [style.--team-color]="cmp.t2.teamColor">
+            <div class="player-rows" *ngIf="cmp.t2.playerMost4s.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t2.playerMost4s">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 7: Player of the Match -->
+      <div class="stat-card split-card">
+        <div class="card-header"><span class="icon">🌟</span><h3>PLAYER OF THE MATCH</h3></div>
+        <div class="split-body">
+          <div class="side" [style.--team-color]="cmp.t1.teamColor">
+            <div class="player-rows" *ngIf="cmp.t1.playerOfMatch.players.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t1.playerOfMatch.players">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="side-divider"></div>
+          <div class="side" [style.--team-color]="cmp.t2.teamColor">
+            <div class="player-rows" *ngIf="cmp.t2.playerOfMatch.players.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t2.playerOfMatch.players">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="edge-indicator">
+          <span *ngIf="getWinRate(cmp.t1.playerOfMatch.totalFromThisTeam, cmp.t1.matchesPlayed) > getWinRate(cmp.t2.playerOfMatch.totalFromThisTeam, cmp.t2.matchesPlayed)">👑 Edge: {{cmp.t1.teamName}} (PoM freq)</span>
+          <span *ngIf="getWinRate(cmp.t1.playerOfMatch.totalFromThisTeam, cmp.t1.matchesPlayed) < getWinRate(cmp.t2.playerOfMatch.totalFromThisTeam, cmp.t2.matchesPlayed)">👑 Edge: {{cmp.t2.teamName}} (PoM freq)</span>
+          <span *ngIf="getWinRate(cmp.t1.playerOfMatch.totalFromThisTeam, cmp.t1.matchesPlayed) === getWinRate(cmp.t2.playerOfMatch.totalFromThisTeam, cmp.t2.matchesPlayed)">🤝 Tie</span>
+        </div>
+      </div>
+      
+      <!-- Card 8: Best Economy -->
+      <div class="stat-card split-card">
+        <div class="card-header"><span class="icon">🎯</span><h3>BOWLER LEAST ECONOMY</h3></div>
+        <div class="split-body">
+          <div class="side" [style.--team-color]="cmp.t1.teamColor">
+            <div class="player-rows" *ngIf="cmp.t1.bowlerEconomy.players.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t1.bowlerEconomy.players">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="side-divider"></div>
+          <div class="side" [style.--team-color]="cmp.t2.teamColor">
+            <div class="player-rows" *ngIf="cmp.t2.bowlerEconomy.players.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t2.bowlerEconomy.players">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="edge-indicator">
+          <span *ngIf="getWinRate(cmp.t1.bowlerEconomy.totalFromThisTeam, cmp.t1.matchesPlayed) > getWinRate(cmp.t2.bowlerEconomy.totalFromThisTeam, cmp.t2.matchesPlayed)">👑 Edge: {{cmp.t1.teamName}} (Econ freq)</span>
+          <span *ngIf="getWinRate(cmp.t1.bowlerEconomy.totalFromThisTeam, cmp.t1.matchesPlayed) < getWinRate(cmp.t2.bowlerEconomy.totalFromThisTeam, cmp.t2.matchesPlayed)">👑 Edge: {{cmp.t2.teamName}} (Econ freq)</span>
+          <span *ngIf="getWinRate(cmp.t1.bowlerEconomy.totalFromThisTeam, cmp.t1.matchesPlayed) === getWinRate(cmp.t2.bowlerEconomy.totalFromThisTeam, cmp.t2.matchesPlayed)">🤝 Tie</span>
+        </div>
+      </div>
+
+      <!-- Card 9: Super Striker -->
+      <div class="stat-card split-card">
+        <div class="card-header"><span class="icon">🔥</span><h3>SUPER STRIKER</h3></div>
+        <div class="split-body">
+          <div class="side" [style.--team-color]="cmp.t1.teamColor">
+            <div class="player-rows" *ngIf="cmp.t1.superStriker.players.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t1.superStriker.players">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="side-divider"></div>
+          <div class="side" [style.--team-color]="cmp.t2.teamColor">
+            <div class="player-rows" *ngIf="cmp.t2.superStriker.players.length > 0; else none">
+              <div class="compare-player-row" *ngFor="let p of cmp.t2.superStriker.players">
+                <span class="player-name-small">{{p.playerName.split(' ')[0]}}</span>
+                <div class="dots-container-small"><span class="dot" *ngFor="let d of getDots(p.count)"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="edge-indicator">
+          <span *ngIf="getWinRate(cmp.t1.superStriker.totalFromThisTeam, cmp.t1.matchesPlayed) > getWinRate(cmp.t2.superStriker.totalFromThisTeam, cmp.t2.matchesPlayed)">👑 Edge: {{cmp.t1.teamName}} (Striker freq)</span>
+          <span *ngIf="getWinRate(cmp.t1.superStriker.totalFromThisTeam, cmp.t1.matchesPlayed) < getWinRate(cmp.t2.superStriker.totalFromThisTeam, cmp.t2.matchesPlayed)">👑 Edge: {{cmp.t2.teamName}} (Striker freq)</span>
+          <span *ngIf="getWinRate(cmp.t1.superStriker.totalFromThisTeam, cmp.t1.matchesPlayed) === getWinRate(cmp.t2.superStriker.totalFromThisTeam, cmp.t2.matchesPlayed)">🤝 Tie</span>
+        </div>
+      </div>
+      
+    </div>
+  </ng-container>
+
+  <ng-template #noData>
+    <div class="no-data">No data available yet.</div>
+  </ng-template>
+  
+  <ng-template #none>
+    <div class="no-data" style="padding:0">None</div>
+  </ng-template>
+
+</div>

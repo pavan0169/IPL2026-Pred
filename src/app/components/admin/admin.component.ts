@@ -2,7 +2,7 @@ import { Component, signal, computed, effect, untracked, inject } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IplService } from '../../services/ipl.service';
-import { MatchResult, Prediction, getMatchPlayers, AuditLog } from '../../models/ipl.models';
+import { Match, MatchResult, Prediction, getMatchPlayers, AuditLog } from '../../models/ipl.models';
 import { User, AuthService } from '../../services/auth.service';
 
 import { SearchableSelectComponent } from '../shared/searchable-select/searchable-select.component';
@@ -168,9 +168,11 @@ export class AdminComponent {
         team2Score: 0
     };
 
-    getMatchPlayers(team1Id: string, team2Id: string) {
-        return getMatchPlayers(team1Id, team2Id);
-    }
+    getPlayersMax6s(match: Match) { return this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'playerMax6s'); }
+    getPlayersMost4s(match: Match) { return this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'most4s'); }
+    getPlayersPoM(match: Match) { return this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'playerOfMatch'); }
+    getPlayersEconomy(match: Match) { return this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'economy'); }
+    getPlayersStriker(match: Match) { return this.iplService.getPlayerOptionsWithStats(match.team1.id, match.team2.id, 'superStriker'); }
 
     constructor(public iplService: IplService) {
         // Automatically sync formData when matches() updates

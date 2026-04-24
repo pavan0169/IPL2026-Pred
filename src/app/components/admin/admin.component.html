@@ -337,14 +337,14 @@
                     <!-- 6. Max 6s Player -->
                     <div class="form-group">
                         <label class="form-label">6. Max <span class="premium-6-icon">6</span>s Player 🔥</label>
-                        <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                        <app-searchable-select [options]="getPlayersMax6s(match)"
                             placeholder="Select Player" [(ngModel)]="formData[match.id].playerMax6s">
                         </app-searchable-select>
                     </div>
                     <!-- 7. Max 4s Player -->
                     <div class="form-group half-group">
                         <span class="form-label">7. Player with Max 4s 🔥</span>
-                        <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                        <app-searchable-select [options]="getPlayersMost4s(match)"
                             placeholder="Select Player" [(ngModel)]="formData[match.id].most4s"
                             [name]="'most4s_' + match.id">
                         </app-searchable-select>
@@ -356,7 +356,7 @@
                     <!-- 8. Player of Match -->
                     <div class="form-group half-group">
                         <span class="form-label">8. Player of the Match 🎖️</span>
-                        <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                        <app-searchable-select [options]="getPlayersPoM(match)"
                             placeholder="Select Player" [(ngModel)]="formData[match.id].playerOfMatch"
                             [name]="'playerOfMatch_' + match.id">
                         </app-searchable-select>
@@ -364,7 +364,7 @@
                     <!-- 9. Bowler (Less Economy) -->
                     <div class="form-group half-group">
                         <span class="form-label">9. Best Economy 🧤</span>
-                        <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                        <app-searchable-select [options]="getPlayersEconomy(match)"
                             placeholder="Select Player" [(ngModel)]="formData[match.id].economy"
                             [name]="'economy_' + match.id">
                         </app-searchable-select>
@@ -374,7 +374,7 @@
                 <!-- 10. Super Striker -->
                 <div class="form-group half-group" style="margin-top: 1rem;">
                     <span class="form-label">10. Super Striker 🌪️</span>
-                    <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                    <app-searchable-select [options]="getPlayersStriker(match)"
                         placeholder="Select Player" [(ngModel)]="formData[match.id].superStriker"
                         [name]="'superStriker_' + match.id">
                     </app-searchable-select>
@@ -508,35 +508,35 @@
                             <div class="form-group">
                                 <label class="form-label">💥 6. Max <span class="premium-6-icon">6</span>s
                                     Player</label>
-                                <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                                <app-searchable-select [options]="getPlayersMax6s(match)"
                                     placeholder="Select Player" [(ngModel)]="userPredForm.playerMax6s">
                                 </app-searchable-select>
                             </div>
 
                             <div class="form-group grid-group">
                                 <span class="form-label">7. Player Max 4s 🏏</span>
-                                <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                                <app-searchable-select [options]="getPlayersMost4s(match)"
                                     placeholder="Select Player" [(ngModel)]="userPredForm.most4s" name="upMost4s">
                                 </app-searchable-select>
                             </div>
 
                             <div class="form-group grid-group">
                                 <span class="form-label">8. Player of Match 🏆</span>
-                                <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                                <app-searchable-select [options]="getPlayersPoM(match)"
                                     placeholder="Select Player" [(ngModel)]="userPredForm.playerOfMatch" name="upPom">
                                 </app-searchable-select>
                             </div>
 
                             <div class="form-group grid-group">
                                 <span class="form-label">9. Best Economy 🧤</span>
-                                <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                                <app-searchable-select [options]="getPlayersEconomy(match)"
                                     placeholder="Select Player" [(ngModel)]="userPredForm.economy" name="upEconomy">
                                 </app-searchable-select>
                             </div>
 
                             <div class="form-group grid-group">
                                 <span class="form-label">10. Super Striker 🚀</span>
-                                <app-searchable-select [options]="getMatchPlayers(match.team1.id, match.team2.id)"
+                                <app-searchable-select [options]="getPlayersStriker(match)"
                                     placeholder="Select Player" [(ngModel)]="userPredForm.superStriker"
                                     name="upStriker">
                                 </app-searchable-select>

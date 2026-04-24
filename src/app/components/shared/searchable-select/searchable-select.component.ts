@@ -52,9 +52,15 @@ import { DropdownOption } from '../../../models/ipl.models';
                 [class.focused]="focusedIndex() === i"
                 (click)="selectOption(opt)"
                 (mouseenter)="focusedIndex.set(i)"
+                [style.background]="getOptionBackground(opt, i)"
               >
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span>{{ opt.label }}</span>
+                    <span>
+                      {{ opt.label }}
+                      @if (opt.suffix) {
+                        <span style="color: #fbbf24; font-size: 0.75rem; margin-left: 0.4rem; font-weight: bold;">{{ opt.suffix }}</span>
+                      }
+                    </span>
                     @if (opt.badge) {
                         <span class="role-badge" [ngClass]="opt.badge.toLowerCase().replace(' ', '-')">{{ opt.badge }}</span>
                     }
@@ -259,6 +265,16 @@ export class SearchableSelectComponent implements ControlValueAccessor {
         (opt.badge && opt.badge.toLowerCase().includes(query))
     );
   });
+
+  getOptionBackground(opt: DropdownOption, index: number): string {
+    if (opt.value === this.selectedValue()) {
+      return opt.teamColor || '#8b5cf6';
+    }
+    if (this.focusedIndex() === index) {
+      return opt.teamColor ? `${opt.teamColor}50` : 'rgba(139, 92, 246, 0.2)';
+    }
+    return opt.teamColor ? `${opt.teamColor}22` : '';
+  }
 
   toggleDropdown() {
     this.isOpen.update(v => !v);
