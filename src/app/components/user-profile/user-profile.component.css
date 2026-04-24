@@ -558,6 +558,21 @@
 }
 
 /* Position Badges (🥇🥈🥉 counts) */
+.position-badges-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.badges-heading {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+}
+
 .position-badges {
     display: flex;
     gap: 0.35rem;
@@ -590,6 +605,12 @@
     background: rgba(217, 119, 6, 0.12);
     color: #d97706;
     border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+.pos-badge.weekly {
+    background: rgba(139, 92, 246, 0.12);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
 .mini-stat {

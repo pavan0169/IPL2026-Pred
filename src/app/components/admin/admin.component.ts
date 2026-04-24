@@ -46,6 +46,16 @@ export class AdminComponent {
     groupedAuditLogs = computed(() => {
         let logs = [...this.auditLogs()];
 
+        // Filter: Only show logs changed AFTER the match started
+        const allMatches = this.matches();
+        logs = logs.filter(log => {
+            const match = allMatches.find(m => m.id === log.matchId);
+            if (!match) return true; // Keep if match info missing
+            const matchStartTime = new Date(match.date).getTime();
+            const logTime = new Date(log.timestamp).getTime();
+            return logTime >= matchStartTime;
+        });
+
         const mf = this.auditFilterMatch();
         if (mf !== 'all') logs = logs.filter(l => l.matchId === mf);
 

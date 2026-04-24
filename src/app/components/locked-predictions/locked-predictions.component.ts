@@ -77,9 +77,11 @@ export class LockedPredictionsComponent implements OnInit, OnDestroy {
   activeMatches() {
     const matches = this.matches();
     const now = new Date();
-    const todayStr = now.toDateString();
+    // Shift time back by 8 hours so "today" definition lasts until 8 AM next day
+    const shiftedNow = new Date(now.getTime() - (8 * 60 * 60 * 1000));
+    const todayStr = shiftedNow.toDateString();
 
-    // 1. Try to find matches scheduled for today
+    // 1. Try to find matches scheduled for today (effective day)
     const todayMatches = matches.filter(m => new Date(m.date).toDateString() === todayStr || m.status === 'live');
 
     if (todayMatches.length > 0) {

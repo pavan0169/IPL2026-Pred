@@ -114,10 +114,14 @@
 
                 <!-- Season High + Avg + Podium Counts -->
                 <div class="hero-mini-stats">
-                    <div class="position-badges">
-                        <span class="pos-badge gold">🥇 {{ positionCounts().first }}</span>
-                        <span class="pos-badge silver">🥈 {{ positionCounts().second }}</span>
-                        <span class="pos-badge bronze">🥉 {{ positionCounts().third }}</span>
+                    <div class="position-badges-container">
+                        <span class="badges-heading">🏅 Achievement Stats</span>
+                        <div class="position-badges">
+                            <span class="pos-badge gold" title="1st Place Finishes">🥇 {{ positionCounts().first }}</span>
+                            <span class="pos-badge silver" title="2nd Place Finishes">🥈 {{ positionCounts().second }}</span>
+                            <span class="pos-badge bronze" title="3rd Place Finishes">🥉 {{ positionCounts().third }}</span>
+                            <span class="pos-badge weekly" title="Weekly Champion Wins">🗓️ {{ weeklyWinsCount() }}</span>
+                        </div>
                     </div>
                     @if (seasonHigh(); as high) {
                     <div class="mini-stat">

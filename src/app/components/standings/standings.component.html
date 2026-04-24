@@ -44,7 +44,8 @@
                     </div>
                 </div>
                 <span class="podium-medal">🥈</span>
-                <span class="podium-name" [style.color]="getPlayerColor(1)">{{ dashboardLeaderboard()[1].username }}</span>
+                <span class="podium-name" [style.color]="getPlayerColor(1)">{{ dashboardLeaderboard()[1].username
+                    }}</span>
                 <span class="podium-pts-big">{{ dashboardLeaderboard()[1].totalPoints }}</span>
                 <span class="podium-pts-label">POINTS</span>
                 <div class="podium-bar" [style.height.%]="dashboardLeaderboard()[1].pointsPercent * 0.7"></div>
@@ -59,7 +60,8 @@
                     </div>
                 </div>
                 <span class="podium-medal">🥇</span>
-                <span class="podium-name" [style.color]="getPlayerColor(0)">{{ dashboardLeaderboard()[0].username }}</span>
+                <span class="podium-name" [style.color]="getPlayerColor(0)">{{ dashboardLeaderboard()[0].username
+                    }}</span>
                 <span class="podium-pts-big">{{ dashboardLeaderboard()[0].totalPoints }}</span>
                 <span class="podium-pts-label">POINTS</span>
                 <div class="podium-bar" [style.height.%]="100 * 0.7"></div>
@@ -73,7 +75,8 @@
                     </div>
                 </div>
                 <span class="podium-medal">🥉</span>
-                <span class="podium-name" [style.color]="getPlayerColor(2)">{{ dashboardLeaderboard()[2].username }}</span>
+                <span class="podium-name" [style.color]="getPlayerColor(2)">{{ dashboardLeaderboard()[2].username
+                    }}</span>
                 <span class="podium-pts-big">{{ dashboardLeaderboard()[2].totalPoints }}</span>
                 <span class="podium-pts-label">POINTS</span>
                 <div class="podium-bar" [style.height.%]="dashboardLeaderboard()[2].pointsPercent * 0.7"></div>
@@ -90,9 +93,7 @@
                 <div class="ots-rank-col">
                     <span class="ots-rank-num" [class.ots-rank-gold]="i === 0" [class.ots-rank-silver]="i === 1"
                         [class.ots-rank-bronze]="i === 2">
-                        @if (i < 3) { {{ rankEmoji(i + 1) }} }
-                        @else { {{ i + 1 }} }
-                    </span>
+                        @if (i < 3) { {{ rankEmoji(i + 1) }} } @else { {{ i + 1 }} } </span>
                 </div>
                 <!-- Avatar + Name -->
                 <div class="ots-player-col">
@@ -341,8 +342,10 @@
                 </h4>
                 <div class="trends-controls">
                     <div class="chart-mode-toggle">
-                        <button class="mode-btn" [class.active]="chartMode() === 'cumulative'" (click)="chartMode.set('cumulative')">📊 Cumulative</button>
-                        <button class="mode-btn" [class.active]="chartMode() === 'matchwise'" (click)="chartMode.set('matchwise')">📶 Match-wise</button>
+                        <button class="mode-btn" [class.active]="chartMode() === 'cumulative'"
+                            (click)="chartMode.set('cumulative')">📊 Cumulative</button>
+                        <button class="mode-btn" [class.active]="chartMode() === 'matchwise'"
+                            (click)="chartMode.set('matchwise')">📶 Match-wise</button>
                     </div>
                     <div class="date-range-filter">
                         <button class="range-pill" [class.active]="dateRange() === '7d'"
@@ -377,14 +380,11 @@
                 <div class="toggle-header">
                     <span class="toggle-title">🎯 Filter Players</span>
                     <div class="toggle-actions">
-                        <button class="toggle-btn select-all"
-                            [class.active]="allPlayersSelected()"
-                            (click)="selectAllPlayers()"
-                            [disabled]="allPlayersSelected()">
+                        <button class="toggle-btn select-all" [class.active]="allPlayersSelected()"
+                            (click)="selectAllPlayers()" [disabled]="allPlayersSelected()">
                             ✅ Select All
                         </button>
-                        <button class="toggle-btn deselect-all"
-                            (click)="deselectAllPlayers()"
+                        <button class="toggle-btn deselect-all" (click)="deselectAllPlayers()"
                             [disabled]="selectedPlayers().size <= 1">
                             ❌ Deselect All
                         </button>
@@ -392,12 +392,9 @@
                 </div>
                 <div class="player-checkbox-grid">
                     @for (s of chartData().series; track s.userId) {
-                    <label class="player-checkbox-item"
-                        [class.checked]="isPlayerSelected(s.userId)"
+                    <label class="player-checkbox-item" [class.checked]="isPlayerSelected(s.userId)"
                         [class.disabled]="selectedPlayers().size <= 1 && isPlayerSelected(s.userId)">
-                        <input type="checkbox"
-                            [checked]="isPlayerSelected(s.userId)"
-                            (change)="togglePlayer(s.userId)"
+                        <input type="checkbox" [checked]="isPlayerSelected(s.userId)" (change)="togglePlayer(s.userId)"
                             class="sr-only">
                         <span class="color-indicator" [style.background]="s.color"></span>
                         <span class="checkbox-player-name">{{ s.username }}</span>
@@ -468,16 +465,15 @@
                     (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
                     <div class="momentum-card-top" [style.border-color]="p.color">
                         <div class="mc-player">
-                            <div class="mc-avatar" [style.background]="p.color">{{ p.username.charAt(0) | uppercase }}</div>
+                            <div class="mc-avatar" [style.background]="p.color">{{ p.username.charAt(0) | uppercase }}
+                            </div>
                             <div class="mc-info">
                                 <span class="mc-name" [style.color]="p.color">{{ p.username }}</span>
                                 <span class="mc-rank">#{{ p.rank }} · {{ p.totalPoints }} pts</span>
                             </div>
                         </div>
-                        <div class="mc-momentum-badge"
-                            [class.rising]="p.momentum === 'rising'"
-                            [class.falling]="p.momentum === 'falling'"
-                            [class.steady]="p.momentum === 'steady'">
+                        <div class="mc-momentum-badge" [class.rising]="p.momentum === 'rising'"
+                            [class.falling]="p.momentum === 'falling'" [class.steady]="p.momentum === 'steady'">
                             @if (p.momentum === 'rising') { 📈 Rising }
                             @else if (p.momentum === 'falling') { 📉 Falling }
                             @else { ➡️ Steady }
@@ -515,7 +511,9 @@
                             <span class="mc-range-val best">{{ p.bestMatchPts }}</span>
                         </div>
                         <div class="mc-range-bar">
-                            <div class="mc-range-fill" [style.width.%]="p.bestScore > 0 ? (p.avgPts / p.bestScore) * 100 : 0" [style.background]="p.color"></div>
+                            <div class="mc-range-fill"
+                                [style.width.%]="p.bestScore > 0 ? (p.avgPts / p.bestScore) * 100 : 0"
+                                [style.background]="p.color"></div>
                         </div>
                         <div class="mc-range-item">
                             <span class="mc-range-label">Avg</span>
@@ -544,7 +542,8 @@
                         @for (p of tier.players; track p.userId) {
                         <div class="tier-player-chip" [style.border-color]="p.color"
                             (click)="selectedUserId.set(p.userId); $event.stopPropagation()">
-                            <div class="tier-chip-avatar" [style.background]="p.color">{{ p.username.charAt(0) | uppercase }}</div>
+                            <div class="tier-chip-avatar" [style.background]="p.color">{{ p.username.charAt(0) |
+                                uppercase }}</div>
                             <div class="tier-chip-info">
                                 <span class="tier-chip-name">{{ p.username }}</span>
                                 <span class="tier-chip-pts">{{ p.totalPoints }} pts · {{ p.pct }}%</span>
@@ -557,7 +556,8 @@
                 <!-- Rivalries -->
                 @if (landscapeData().rivalries.length > 0) {
                 <div class="rivalries-section">
-                    <h5 class="rivalries-title">⚔️ Active Rivalries <span class="rivalry-subtitle">(within 20 pts)</span></h5>
+                    <h5 class="rivalries-title">⚔️ Active Rivalries <span class="rivalry-subtitle">(within 20
+                            pts)</span></h5>
                     <div class="rivalry-chips">
                         @for (r of landscapeData().rivalries; track r.player1 + r.player2) {
                         <div class="rivalry-chip">
@@ -582,8 +582,7 @@
             <div class="radar-player-pills">
                 @for (p of radarData().players; track p.userId) {
                 <button class="radar-pill" [class.active]="isRadarPlayerSelected(p.userId)"
-                    [style.--pill-color]="p.color"
-                    (click)="toggleRadarPlayer(p.userId)">
+                    [style.--pill-color]="p.color" (click)="toggleRadarPlayer(p.userId)">
                     <span class="radar-pill-dot" [style.background]="p.color"></span>
                     {{ p.username }}
                 </button>
@@ -594,32 +593,30 @@
                 <svg viewBox="0 0 300 300" class="radar-svg">
                     <!-- Grid rings -->
                     @for (ring of [25, 50, 75, 100]; track ring) {
-                    <circle [attr.cx]="150" [attr.cy]="150" [attr.r]="ring * 1.2"
-                        fill="none" stroke="var(--glass-border)" stroke-width="0.5" opacity="0.5"/>
+                    <circle [attr.cx]="150" [attr.cy]="150" [attr.r]="ring * 1.2" fill="none"
+                        stroke="var(--glass-border)" stroke-width="0.5" opacity="0.5" />
                     }
                     <!-- Axis lines -->
                     @for (axis of radarData().axes; track axis.key; let ai = $index) {
-                    <line [attr.x1]="150" [attr.y1]="150"
-                        [attr.x2]="getRadarAxisEnd(ai, radarData().axes.length).x"
-                        [attr.y2]="getRadarAxisEnd(ai, radarData().axes.length).y"
-                        stroke="var(--glass-border)" stroke-width="0.5" opacity="0.5"/>
+                    <line [attr.x1]="150" [attr.y1]="150" [attr.x2]="getRadarAxisEnd(ai, radarData().axes.length).x"
+                        [attr.y2]="getRadarAxisEnd(ai, radarData().axes.length).y" stroke="var(--glass-border)"
+                        stroke-width="0.5" opacity="0.5" />
                     <!-- Axis labels -->
                     <text [attr.x]="getRadarLabelPos(ai, radarData().axes.length).x"
                         [attr.y]="getRadarLabelPos(ai, radarData().axes.length).y"
-                        [attr.text-anchor]="getRadarLabelPos(ai, radarData().axes.length).anchor"
-                        class="radar-label">{{ axis.label }}</text>
+                        [attr.text-anchor]="getRadarLabelPos(ai, radarData().axes.length).anchor" class="radar-label">{{
+                        axis.label }}</text>
                     }
                     <!-- Player polygons -->
                     @for (p of radarFilteredPlayers(); track p.userId) {
-                    <polygon [attr.points]="getRadarPolygon(p.values, radarData().axes.length)"
-                        [attr.fill]="p.color" fill-opacity="0.15"
-                        [attr.stroke]="p.color" stroke-width="2" stroke-linejoin="round"
-                        class="radar-polygon"/>
+                    <polygon [attr.points]="getRadarPolygon(p.values, radarData().axes.length)" [attr.fill]="p.color"
+                        fill-opacity="0.15" [attr.stroke]="p.color" stroke-width="2" stroke-linejoin="round"
+                        class="radar-polygon" />
                     <!-- Data points -->
                     @for (v of p.values; track $index) {
                     <circle [attr.cx]="getRadarPoint(v, $index, radarData().axes.length).split(',')[0]"
-                        [attr.cy]="getRadarPoint(v, $index, radarData().axes.length).split(',')[1]"
-                        r="3.5" [attr.fill]="p.color" [attr.stroke]="'white'" stroke-width="1.5"/>
+                        [attr.cy]="getRadarPoint(v, $index, radarData().axes.length).split(',')[1]" r="3.5"
+                        [attr.fill]="p.color" [attr.stroke]="'white'" stroke-width="1.5" />
                     }
                     }
                 </svg>
@@ -665,35 +662,77 @@
                 <div class="profile-banner fade-in-up"
                     style="display: flex; gap: 1rem; justify-content: space-around; flex-wrap: wrap; background: rgba(0,0,0,0.02); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--glass-border); text-align: center; margin-bottom: 1.5rem;">
                     <div class="pb-stat" style="min-width: 80px;">
-                        <span class="pb-label" style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Rank</span>
-                        <span class="pb-val" style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--accent);">#{{ profile.rank }}</span>
+                        <span class="pb-label"
+                            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Rank</span>
+                        <span class="pb-val"
+                            style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--accent);">#{{
+                            profile.rank }}</span>
                     </div>
                     <div class="pb-stat" style="min-width: 80px;">
-                        <span class="pb-label" style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Points</span>
-                        <span class="pb-val" style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--text-primary);">{{ profile.totalPoints }}</span>
+                        <span class="pb-label"
+                            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Points</span>
+                        <span class="pb-val"
+                            style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--text-primary);">{{
+                            profile.totalPoints }}</span>
                     </div>
                     <div class="pb-stat" style="min-width: 80px;">
-                        <span class="pb-label" style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Accuracy</span>
-                        <span class="pb-val" style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--success);">{{ profile.accuracy }}%</span>
+                        <span class="pb-label"
+                            style="display: block; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Accuracy</span>
+                        <span class="pb-val"
+                            style="display: block; font-size: 2.2rem; font-weight: 900; color: var(--success);">{{
+                            profile.accuracy }}%</span>
                     </div>
                 </div>
-                <h4 style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">🏆 Tournament Performance</h4>
+                <h4
+                    style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">
+                    🏆 Tournament Performance</h4>
                 <div class="pstat-grid fade-in-up" style="margin-bottom: 1.5rem; animation-delay: 0.05s;">
-                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span class="pstat-icon" style="margin-bottom: 0.25rem;">🥇</span><span class="pstat-label">Daily Wins</span><span class="pstat-value">{{ profile.rank1Count }}</span></div>
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span
+                            class="pstat-icon" style="margin-bottom: 0.25rem;">🥇</span><span class="pstat-label">Daily
+                            Wins</span><span class="pstat-value">{{ profile.rank1Count }}</span></div>
                     <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;">
-                        <span class="pstat-icon" style="margin-bottom: 0.25rem;">📅</span><span class="pstat-label">Weekly Wins</span>
-                        @if (profile.weeklyWins > 0) { <span class="pstat-value highlight">{{ profile.weeklyWins }}</span> }
+                        <span class="pstat-icon" style="margin-bottom: 0.25rem;">📅</span><span
+                            class="pstat-label">Weekly Wins</span>
+                        @if (profile.weeklyWins > 0) { <span class="pstat-value highlight">{{ profile.weeklyWins
+                            }}</span> }
                         @else { <span class="pstat-value">0</span> }
                     </div>
-                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span class="pstat-icon" style="margin-bottom: 0.25rem;">💎</span><span class="pstat-label">Exact Scores</span><span class="pstat-value">{{ profile.exactScoreCount }}</span></div>
-                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span class="pstat-icon" style="margin-bottom: 0.25rem;">⭐</span><span class="pstat-label">Perfect</span><span class="pstat-value">{{ profile.perfectCount }}</span></div>
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span
+                            class="pstat-icon" style="margin-bottom: 0.25rem;">💎</span><span class="pstat-label">Exact
+                            Scores</span><span class="pstat-value">{{ profile.exactScoreCount }}</span></div>
+                    <div class="pstat-item" style="padding: 0.75rem; align-items: center; text-align: center;"><span
+                            class="pstat-icon" style="margin-bottom: 0.25rem;">⭐</span><span
+                            class="pstat-label">Perfect</span><span class="pstat-value">{{ profile.perfectCount
+                            }}</span></div>
                 </div>
-                <h4 style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">📊 Key Metrics</h4>
+                <h4
+                    style="margin-bottom: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; font-weight: 800;">
+                    📊 Key Metrics</h4>
                 <div class="pstat-grid fade-in-up" style="animation-delay: 0.1s;">
-                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span class="pstat-icon" style="font-size: 1.8rem; margin:0;">🔥</span><div style="display:flex; flex-direction:column; align-items: flex-start;"><span class="pstat-label">Best Match</span><span class="pstat-value">{{ profile.bestScore }} pts</span></div></div>
-                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span class="pstat-icon" style="font-size: 1.8rem; margin:0;">📈</span><div style="display:flex; flex-direction:column; align-items: flex-start;"><span class="pstat-label">Average Pts</span><span class="pstat-value">{{ profile.avgPts }} / match</span></div></div>
-                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎯</span><div style="display:flex; flex-direction:column; align-items: flex-start;"><span class="pstat-label">Correct Winners</span><span class="pstat-value">{{ profile.correctWinners }}</span></div></div>
-                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎮</span><div style="display:flex; flex-direction:column; align-items: flex-start;"><span class="pstat-label">Participation</span><span class="pstat-value">{{ profile.participationRate }}%</span></div></div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
+                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">🔥</span>
+                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
+                                class="pstat-label">Best Match</span><span class="pstat-value">{{ profile.bestScore }}
+                                pts</span></div>
+                    </div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
+                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">📈</span>
+                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
+                                class="pstat-label">Average Pts</span><span class="pstat-value">{{ profile.avgPts }} /
+                                match</span></div>
+                    </div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
+                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎯</span>
+                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
+                                class="pstat-label">Correct Winners</span><span class="pstat-value">{{
+                                profile.correctWinners }}</span></div>
+                    </div>
+                    <div class="pstat-item" style="flex-direction: row; align-items: center; gap: 1rem;"><span
+                            class="pstat-icon" style="font-size: 1.8rem; margin:0;">🎮</span>
+                        <div style="display:flex; flex-direction:column; align-items: flex-start;"><span
+                                class="pstat-label">Participation</span><span class="pstat-value">{{
+                                profile.participationRate }}%</span></div>
+                    </div>
                 </div>
             </div>
             } @else {

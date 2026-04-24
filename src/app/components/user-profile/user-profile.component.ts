@@ -273,6 +273,57 @@ export class UserProfileComponent {
         };
     });
 
+    // Weekly wins calculation (Monday-Sunday weeks)
+    weeklyWinsCount = computed(() => {
+        const uid = this.effectiveUserId();
+        if (!uid) return 0;
+
+        const completedMatches = this.completedMatches();
+        const predictions = this.iplService.predictions();
+        const users = this.iplService.userStats();
+
+        if (completedMatches.length === 0) return 0;
+
+        const weeklyData = new Map<string, Map<string, number>>();
+
+        completedMatches.forEach(m => {
+            const d = new Date(m.date);
+            // Monday-Sunday weeks
+            const day = d.getDay();
+            const diff = day === 0 ? 6 : day - 1; 
+            const start = new Date(d);
+            start.setDate(d.getDate() - diff);
+            start.setHours(0, 0, 0, 0);
+            const label = start.toDateString();
+
+            if (!weeklyData.has(label)) {
+                weeklyData.set(label, new Map<string, number>());
+            }
+            const weekScores = weeklyData.get(label)!;
+
+            const matchPreds = predictions.filter(p => p.matchId === m.id);
+            users.forEach(user => {
+                const p = matchPreds.find(pred => pred.userId === user.userId);
+                const pts = p ? this.iplService.calcPoints(p, m.result!) : 0;
+                weekScores.set(user.userId, (weekScores.get(user.userId) || 0) + pts);
+            });
+        });
+
+        let wins = 0;
+        weeklyData.forEach((scores) => {
+            const sorted = Array.from(scores.entries()).sort((a, b) => b[1] - a[1]);
+            if (sorted.length > 0) {
+                const maxPts = sorted[0][1];
+                if (maxPts > 0) {
+                    const winners = sorted.filter(s => s[1] === maxPts).map(s => s[0]);
+                    if (winners.includes(uid)) wins++;
+                }
+            }
+        });
+
+        return wins;
+    });
+
     podiumRate = computed(() => {
         const played = this.matchesPlayed();
         if (played === 0) return 0;
